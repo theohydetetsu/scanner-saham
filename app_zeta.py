@@ -5,10 +5,10 @@ import numpy as np
 import time
 
 # 1. KONFIGURASI HALAMAN
-st.set_page_config(page_title="AI Stock Dashboard Interactive", page_icon="📈", layout="wide")
+st.set_page_config(page_title="AI Stock Dashboard Pro", page_icon="📈", layout="wide")
 
-st.title("📈 AI AUTOMATED STOCK SCANNER DASHBOARD (INTERACTIVE)")
-st.markdown("*Fitur Baru: Dropdown Bandarmologi Per Saham + Perbaikan Akurasi Data Fundamental*")
+st.title("📈 AI AUTOMATED STOCK SCANNER DASHBOARD (PRO EDITION)")
+st.markdown("*Sistem Interaktif: Dropdown Bandarmologi + Sensor Warna Font + Ringkasan Grafik Pro*")
 st.markdown("---")
 
 # 2. DEFAULT 20 SAHAM BLUECHIP INDONESIA
@@ -52,20 +52,18 @@ def fetch_raw_data(saham_list):
             sig_skg = float(df['Signal'].iloc[-1])
             rsi_skg = float(df['RSI'].iloc[-1]) if not np.isnan(df['RSI'].iloc[-1]) else 50.0
             
-            # Ambil Data Fundamental & Perbaikan Bug Satuan Yahoo Finance
+            # Ambil Data Fundamental
             ticker = yf.Ticker(emiten)
             info = ticker.info
             
             per = info.get('trailingPE', 0)
             pbv = info.get('priceToBook', 0)
             
-            # Proteksi jika PBV ngawur/minus dari Yahoo Finance
             if pbv and (pbv > 50 or pbv < 0): 
-                pbv = 1.0 # default aman jika data rusak
+                pbv = 1.0
                 
             div_yield = info.get('dividendYield', 0)
             if div_yield:
-                # Koreksi Bug Perkalian Ratusan Persen
                 if div_yield < 1.0:
                     div_yield = div_yield * 100
             else:
@@ -91,30 +89,23 @@ if "raw_stocks" not in st.session_state:
     st.session_state.raw_stocks = []
 
 if muat_data or len(st.session_state.raw_stocks) == 0:
-    with st.spinner("⏳ Mengunduh data 20 saham dari Yahoo Finance..."):
+    with st.spinner("⏳ Mengunduh data bursa saham..."):
         st.session_state.raw_stocks = fetch_raw_data(daftar_saham)
 
 if st.session_state.raw_stocks:
-    # Buat DataFrame Awal untuk diedit User
     df_base = pd.DataFrame(st.session_state.raw_stocks)
-    
-    # Tambahkan Kolom Bandarmologi Default jika belum ada di memori
     df_base["BANDARMOLOGI"] = "NEUTRAL"
     
     st.subheader("📥 STEP 1: Isi Analisis Bandarmologi Anda di Sini")
-    st.markdown("👇 *Klik pada kolom **BANDARMOLOGI** di bawah untuk mengubah status tiap saham secara manual.*")
     
-    # TABEL INTERAKTIF UNTUK DROPDOWN
     df_edited = st.data_editor(
         df_base[["TICKER", "HARGA", "PER", "PBV", "DIV_YIELD", "RSI", "BANDARMOLOGI"]],
         column_config={
             "BANDARMOLOGI": st.column_config.SelectboxColumn(
                 "BANDARMOLOGI (Pilihan)",
-                help="Tentukan kondisi akumulasi/distribusi asing saat ini",
                 options=["AKUMULASI", "NEUTRAL", "DISTRIBUSI"],
                 required=True,
             ),
-            # Kunci kolom lain agar tidak bisa diedit sembarangan
             "TICKER": st.column_config.Column(disabled=True),
             "HARGA": st.column_config.Column(disabled=True),
             "PER": st.column_config.Column(disabled=True),
@@ -127,53 +118,55 @@ if st.session_state.raw_stocks:
         key="editor_saham"
     )
     
-    # 5. PROSES KALKULASI OTOMATIS OLEH PYTHON (REAL-TIME)
     st.markdown("---")
     st.subheader("📊 STEP 2: Dashboard Hasil Rekomendasi Akhir AI Pro")
     
     hasil_rekomendasi = []
+    raw_scores_for_chart = {} # Memori simpan skor untuk grafik
     
-    # Gabungkan data teknikal tersembunyi dengan pilihan bandarmologi user
     for idx, row in df_edited.iterrows():
         ticker = row["TICKER"]
         raw_info = next(item for item in st.session_state.raw_stocks if item["TICKER"] == ticker)
         
-        # Logika Pembobotan AI Skor (Maksimal 100)
+        # Hitung Skor AI
         skor = 0
         if raw_info["UP_EMA20"]: skor += 15
         if raw_info["MACD_GOLDEN"]: skor += 15
-        if 30 <= row["RSI"] <= 70: skor += 10 # RSI Sehat
-        
+        if 30 <= row["RSI"] <= 70: skor += 10
         if row["PER"] != 0 and row["PER"] < 15: skor += 15
         if row["PBV"] != 0 and row["PBV"] < 2: skor += 15
         if row["DIV_YIELD"] > 3: skor += 10
             
-        # Bobot Pengaruh Tombol Dropdown Pilihan Anda
         if row["BANDARMOLOGI"] == "AKUMULASI": skor += 20
         elif row["BANDARMOLOGI"] == "DISTRIBUSI": skor -= 10
-        else: skor += 5 # Neutral
+        else: skor += 5
         
-        # Batasi skor antara 0 - 100
         skor = max(0, min(100, skor))
+        raw_scores_for_chart[ticker] = skor # catat skor asli
         
-        # Penentuan Keputusan Akhir & Sinyal AI
+        # Penentuan Sinyal Bulatan 3D
         if skor >= 70:
-            keputusan = "🟩 CICIL BELI"
+            keputusan = "🟢 CICIL BELI"
             sinyal = "BUY / ACCUMULATE"
         elif skor >= 45:
-            keputusan = "🟨 HOLD / WATCHING"
+            keputusan = "🟡 HOLD / WATCHING"
             sinyal = "NEUTRAL"
         else:
-            keputusan = "🟥 STRONG SELL"
+            keputusan = "🔴 STRONG SELL"
             sinyal = "TAKE PROFIT / SELL"
             
+        per_val = f"{float(row['PER']):.2f}" if row['PER'] and float(row['PER']) > 0 else "-"
+        pbv_val = f"{float(row['PBV']):.2f}" if row['PBV'] and float(row['PBV']) > 0 else "-"
+        div_val = f"{float(row['DIV_YIELD']):.2f}%"
+        rsi_val = f"{float(row['RSI']):.2f}"
+
         hasil_rekomendasi.append({
             "TICKER": row["TICKER"],
             "HARGA TERAKHIR": f"Rp {int(row['HARGA']):,}".replace(",", "."),
-            "PER (x)": row["PER"] if row["PER"] > 0 else "-",
-            "PBV (x)": row["PBV"] if row["PBV"] > 0 else "-",
-            "DIV YIELD": f"{row['DIV_YIELD']}%",
-            "RSI": row["RSI"],
+            "PER (x)": per_val,
+            "PBV (x)": pbv_val,
+            "DIV YIELD": div_val,
+            "RSI": rsi_val,
             "BANDARMOLOGI": row["BANDARMOLOGI"],
             "SKOR AI": skor,
             "SINYAL TEKNIKAL": sinyal,
@@ -182,21 +175,79 @@ if st.session_state.raw_stocks:
         
     df_final = pd.DataFrame(hasil_rekomendasi)
     
-    # FUNGSI STYLING WARNA SEPERTI EXCEL
-    def styling_excel(val):
-        val_str = str(val)
-        if 'CICIL BELI' in val_str or 'BUY' in val_str:
-            return 'background-color: #c6efce; color: #006100; font-weight: bold;'
-        elif 'HOLD' in val_str or 'NEUTRAL' in val_str:
-            return 'background-color: #ffeb9c; color: #9c5700; font-weight: bold;'
-        elif 'STRONG SELL' in val_str or 'TAKE PROFIT' in val_str:
-            return 'background-color: #ffc7ce; color: #9c0006; font-weight: bold;'
-        return ''
-
-    df_styled = df_final.style.map(styling_excel, subset=['KEPUTUSAN AKHIR', 'SINYAL TEKNIKAL'])
+    # --- TAMBAHAN BARU: METRICS PANEL (RINGKASAN COUNTER) ---
+    total_buy = sum('🟢' in x for x in df_final['KEPUTUSAN AKHIR'])
+    total_hold = sum('🟡' in x for x in df_final['KEPUTUSAN AKHIR'])
+    total_sell = sum('🔴' in x for x in df_final['KEPUTUSAN AKHIR'])
     
-    # Tampilkan Tabel Hasil Akhir yang Sudah Diwarnai
-    st.dataframe(df_styled, use_container_width=True, hide_index=True, height=550)
-    st.caption("💡 *Tips: Jika ingin menyegarkan harga saham terbaru dari bursa, silakan klik tombol **TARIK DATA MARKET** di sidebar kiri.*")
+    m_col1, m_col2, m_col3 = st.columns(3)
+    m_col1.metric("🟢 REKOMENDASI BUY", f"{total_buy} Emiten", help="Saham dengan skor AI >= 70")
+    m_col2.metric("🟡 REKOMENDASI HOLD", f"{total_hold} Emiten", help="Saham dengan skor AI antara 45 - 69")
+    m_col3.metric("🔴 REKOMENDASI SELL", f"{total_sell} Emiten", help="Saham dengan skor AI di bawah 45")
+    
+    st.markdown(" ") # Beri jarak spasi sedikit
+
+    # --- TAMBAHAN BARU: PRO STOCK CHART VISUALIZATION ---
+    st.write("### 📈 Grafik Kekuatan Emiten (Top Skor AI)")
+    # Buat DataFrame khusus grafik dan urutkan dari skor tertinggi
+    df_chart = pd.DataFrame(list(raw_scores_for_chart.items()), columns=['TICKER', 'SKOR AI'])
+    df_chart = df_chart.sort_values(by='SKOR AI', ascending=False).reset_index(drop=True)
+    df_chart_indexed = df_chart.set_index('TICKER')
+    
+    # Munculkan Grafik Batang Premium Streamlit
+    st.bar_chart(df_chart_indexed, color="#00af50", height=280)
+    
+    st.write("### 📋 Detail Tabel Analisis Fundamental & Teknikal")
+    
+    # 5. ENGINE SENSOR WARNA OTOMATIS (FONT HIJAU & MERAH)
+    def sensor_warna_otomatis(df):
+        styles = pd.DataFrame('', index=df.index, columns=df.columns)
+        for idx, row in df.iterrows():
+            # Sensor PER
+            try:
+                per = float(row['PER (x)'])
+                if per < 15.0: styles.at[idx, 'PER (x)'] = 'color: #00af50; font-weight: bold;'
+                elif per > 25.0: styles.at[idx, 'PER (x)'] = 'color: #ff0000; font-weight: bold;'
+            except: pass
+            
+            # Sensor PBV
+            try:
+                pbv = float(row['PBV (x)'])
+                if pbv < 2.0: styles.at[idx, 'PBV (x)'] = 'color: #00af50; font-weight: bold;'
+                elif pbv > 4.0: styles.at[idx, 'PBV (x)'] = 'color: #ff0000; font-weight: bold;'
+            except: pass
+            
+            # Sensor Dividend Yield
+            try:
+                div = float(row['DIV YIELD'].replace('%', ''))
+                if div > 3.0: styles.at[idx, 'DIV YIELD'] = 'color: #00af50; font-weight: bold;'
+                elif div == 0.0: styles.at[idx, 'DIV YIELD'] = 'color: #ff0000; font-weight: bold;'
+            except: pass
+            
+            # Sensor RSI
+            try:
+                rsi = float(row['RSI'])
+                if rsi <= 30.0: styles.at[idx, 'RSI'] = 'color: #00af50; font-weight: bold;'
+                elif rsi >= 70.0: styles.at[idx, 'RSI'] = 'color: #ff0000; font-weight: bold;'
+            except: pass
+            
+            # Sensor Sinyal & Keputusan Akhir
+            kep = row['KEPUTUSAN AKHIR']
+            if '🟢' in kep:
+                styles.at[idx, 'KEPUTUSAN AKHIR'] = 'color: #00af50; font-weight: bold;'
+                styles.at[idx, 'SINYAL TEKNIKAL'] = 'color: #00af50; font-weight: bold;'
+            elif '🟡' in kep:
+                styles.at[idx, 'KEPUTUSAN AKHIR'] = 'color: #ffc000; font-weight: bold;'
+                styles.at[idx, 'SINYAL TEKNIKAL'] = 'color: #ffc000; font-weight: bold;'
+            elif '🔴' in kep:
+                styles.at[idx, 'KEPUTUSAN AKHIR'] = 'color: #ff0000; font-weight: bold;'
+                styles.at[idx, 'SINYAL TEKNIKAL'] = 'color: #ff0000; font-weight: bold;'
+                
+        return styles
+
+    df_styled = df_final.style.apply(sensor_warna_otomatis, axis=None)
+    st.dataframe(df_styled, use_container_width=True, hide_index=True, height=500)
+    
+    st.caption("💡 *Info: Grafik batang di atas akan otomatis bergeser naik/turun posisinya secara dinamis setiap kali Anda mengganti opsi Bandarmologi di tabel atas.*")
 else:
     st.info("Silakan klik tombol di sidebar kiri untuk memuat data saham.")
