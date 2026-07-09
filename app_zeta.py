@@ -18,26 +18,26 @@ except ImportError:
 # ==========================================
 # 1. KONFIGURASI HALAMAN UTAMA & UI STYLE
 # ==========================================
-st.set_page_config(page_title="AI Stock Dashboard Pro Max v3.4", page_icon="💎", layout="wide")
+st.set_page_config(page_title="AI Stock Dashboard Pro Max v3.5", page_icon="💎", layout="wide")
 
 # Inject Custom CSS Premium Theme & Ukuran Font Raksasa
 st.markdown("""
 <style>
     .block-container { padding-top: 1.5rem; padding-bottom: 2rem; }
-    h1 { color: #ffffff; font-weight: 800; letter-spacing: -0.5px; font-size: 26pt !important; }
+    h1 { color: #ffffff; font-weight: 800; letter-spacing: -0.5px; font-size: 32pt !important; }
     
     [data-testid="stSidebar"] {
         background-color: #111318 !important;
         border-right: 1px solid #232731;
     }
     
-    /* Premium Metric Cards - DIPERBESAR SESUAI REQUEST FOTO 2 */
+    /* Premium Metric Cards - DIPERBESAR EXTRA MAXIMAL */
     .metric-card {
         background-color: #161920;
         border: 1px solid #242936;
         padding: 25px 20px;
         border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         text-align: center;
         transition: transform 0.2s;
     }
@@ -46,13 +46,15 @@ st.markdown("""
         transform: translateY(-3px);
     }
     
-    .stTabs [data-baseweb="tab"] { font-size: 14px; font-weight: bold; }
+    .stTabs [data-baseweb="tab"] { font-size: 15px; font-weight: bold; }
     div.stButton > button:first-child {
         background-color: #00ffcc !important;
         color: #0b0c10 !important;
-        font-weight: 700 !important;
+        font-weight: 800 !important;
+        font-size: 16px !important;
         border-radius: 6px !important;
         border: none !important;
+        padding: 10px !important;
     }
     div.stButton > button:first-child:hover {
         background-color: #00cc55 !important;
@@ -85,10 +87,10 @@ def fetch_ihsg_data():
 def fetch_advanced_financials(ticker_code):
     try:
         ticker = yf.Ticker(ticker_code + ".JK")
-        # Tambahan: Menarik ticker.dividends untuk riwayat 4 tahun
-        return ticker.financials, ticker.quarterly_financials, ticker.info, ticker.dividends
+        # Tarik semua data termasuk historical price 5 tahun untuk hitung devidend yield
+        return ticker.financials, ticker.quarterly_financials, ticker.info, ticker.dividends, ticker.history(period="5y")
     except Exception:
-        return None, None, None, None
+        return None, None, None, None, None
 
 # TAMPILAN HEADER UTAMA (INSTITUTIONAL STYLE)
 st.markdown("<h1 style='margin-bottom:0px;'>📈 AI AUTOMATED STOCK SCANNER</h1>", unsafe_allow_html=True)
@@ -101,17 +103,18 @@ with col_header1:
         st.markdown(f"🕒 **Terakhir Diperbarui Otomatis:** `{st.session_state.last_update}`")
     else:
         st.markdown("🕒 **Terakhir Diperbarui Otomatis:** `Menunggu sinkronisasi bursa...`")
-    st.markdown("<p style='color: #6c757d; font-size: 11pt; margin-top:-5px;'>Multi-Pilar Integrasi Terminal: Teknikal Quantum, Analisis Konsensus Fundamental, & Real-Time Bandarmologi</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #6c757d; font-size: 13pt; margin-top:-5px;'>Multi-Pilar Integrasi Terminal: Teknikal Quantum, Analisis Konsensus Fundamental, & Real-Time Bandarmologi</p>", unsafe_allow_html=True)
 
 with col_header2:
     if ihsg_now:
         warna_panah = "▲" if ihsg_chg >= 0 else "▼"
         warna_hex = "#00ffcc" if ihsg_chg >= 0 else "#ff3366"
+        # PANEL IHSG DIPERBESAR EXTREME MENGGUNAKAN HTML KHUSUS
         st.markdown(f"""
-        <div style="text-align: right; background-color: #161920; padding: 10px 15px; border-radius: 8px; border: 1px solid #242936;">
-            <span style="color: #8a90a6; font-size: 10px; font-weight: bold; letter-spacing: 0.5px;">INDEX GABUNGAN (IHSG)</span><br/>
-            <span style="color: #ffffff; font-size: 20px; font-weight: 800;">{ihsg_now:,.2f}</span> 
-            <span style="color: {warna_hex}; font-size: 12px; font-weight: bold;">{warna_panah} {ihsg_pct:+.2f}%</span>
+        <div style="text-align: right; background-color: #161920; padding: 15px 25px; border-radius: 12px; border: 1px solid #242936;">
+            <span style="color: #8a90a6; font-size: 14px; font-weight: 800; letter-spacing: 1px;">INDEX GABUNGAN (IHSG)</span><br/>
+            <span style="color: #ffffff; font-size: 46px; font-weight: 900; line-height: 1.1;">{ihsg_now:,.2f}</span><br/> 
+            <span style="color: {warna_hex}; font-size: 18px; font-weight: bold;">{warna_panah} {ihsg_chg:+,.2f} ({ihsg_pct:+.2f}%)</span>
         </div>
         """, unsafe_allow_html=True)
 
@@ -143,21 +146,21 @@ if df_ihsg_hist is not None:
                     paper_bgcolor='rgba(0,0,0,0)',
                     plot_bgcolor='rgba(0,0,0,0)',
                     margin=dict(l=10, r=10, t=10, b=10),
-                    height=320,
+                    height=360,
                     xaxis_rangeslider_visible=False,
-                    yaxis=dict(gridcolor='rgba(255,255,255,0.04)', title="Poin Indeks"),
-                    xaxis=dict(gridcolor='rgba(255,255,255,0.04)', title="Tanggal")
+                    yaxis=dict(gridcolor='rgba(255,255,255,0.04)', title="Poin Indeks", tickfont=dict(size=14)),
+                    xaxis=dict(gridcolor='rgba(255,255,255,0.04)', title="Tanggal", tickfont=dict(size=14))
                 )
                 st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
             else:
-                st.error("⚠️ Library Plotly belum terinstal di GitHub Anda. Silakan tambahkan 'plotly' ke file requirements.txt")
-                st.line_chart(df_ihsg_hist[['Close']], color="#00ffcc", height=250)
+                st.error("⚠️ Library Plotly belum terinstal di GitHub Anda. Silakan tambahkan 'plotly' ke file requirements.txt untuk memunculkan Candlestick.")
+                st.line_chart(df_ihsg_hist[['Close']], color="#00ffcc", height=300)
                 
         elif "Line Chart" in tipe_grafik:
-            st.line_chart(df_ihsg_hist[['Close']], color="#00ffcc", height=260)
+            st.line_chart(df_ihsg_hist[['Close']], color="#00ffcc", height=300)
             
         elif "Area Chart" in tipe_grafik:
-            st.area_chart(df_ihsg_hist[['Close']], color="#00af50", height=260)
+            st.area_chart(df_ihsg_hist[['Close']], color="#00af50", height=300)
 
 st.markdown("---")
 
@@ -166,8 +169,8 @@ st.markdown("---")
 # ==========================================
 st.sidebar.markdown("""
 <div style="padding: 5px 0px 15px 0px;">
-    <h2 style="color: #00ffcc; font-size: 22px; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 0px;">💎 CYBER PANEL</h2>
-    <p style="color: #6c757d; font-size: 11px; margin-top: 2px; margin-bottom: 0px;">AI Premium Scanner Engine v3.4</p>
+    <h2 style="color: #00ffcc; font-size: 26px; font-weight: 900; letter-spacing: 0.5px; margin-bottom: 0px;">💎 CYBER PANEL</h2>
+    <p style="color: #6c757d; font-size: 13px; margin-top: 2px; margin-bottom: 0px;">AI Premium Scanner Engine v3.5</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -190,11 +193,11 @@ st.sidebar.write(" ")
 muat_data = st.sidebar.button("🔄 RE-SCAN MARKET DATA", use_container_width=True, type="primary")
 st.sidebar.markdown("<br/>", unsafe_allow_html=True)
 
-st.sidebar.markdown("<span style='color:#8a90a6; font-size:11px; font-weight:bold;'>🎛️ PARAMETER AI CONFIDENCE</span>", unsafe_allow_html=True)
+st.sidebar.markdown("<span style='color:#8a90a6; font-size:12px; font-weight:bold;'>🎛️ PARAMETER AI CONFIDENCE</span>", unsafe_allow_html=True)
 profil_risiko = st.sidebar.selectbox("🎯 Profil Risiko Trading:", ["Moderat (Standar)", "Agresif (High Risk)", "Konservatif (Aman)"], label_visibility="collapsed")
 st.sidebar.markdown("---")
 
-st.sidebar.markdown("<span style='color:#8a90a6; font-size:11px; font-weight:bold;'>📡 ENGINE CONNECTIVITY</span>", unsafe_allow_html=True)
+st.sidebar.markdown("<span style='color:#8a90a6; font-size:12px; font-weight:bold;'>📡 ENGINE CONNECTIVITY</span>", unsafe_allow_html=True)
 st.sidebar.info(f"📊 **Active Watchlist:** {len(daftar_saham)} Emiten")
 if st.session_state.last_update: st.sidebar.success("● NETWORK STATUS: ONLINE")
 else: st.sidebar.warning("○ NETWORK STATUS: IDLE")
@@ -277,7 +280,7 @@ if st.session_state.raw_stocks:
     df_base = pd.DataFrame(st.session_state.raw_stocks)
     
     with st.expander("📥 MATRIX EVALUASI BANDARMOLOGI (Klik untuk Membuka)", expanded=False):
-        st.markdown("<p style='color: #8a90a6; font-size:13px;'>Tentukan parameter pergerakan akumulasi bandar. AI akan otomatis mengalkulasi skor secara real-time.</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color: #8a90a6; font-size:14px;'>Tentukan parameter pergerakan akumulasi bandar. AI akan otomatis mengalkulasi skor secara real-time.</p>", unsafe_allow_html=True)
         df_edited = st.data_editor(
             df_base[["TICKER", "HARGA", "PER", "PBV", "DIV_YIELD", "RSI"]].assign(BANDARMOLOGI="NEUTRAL"),
             column_config={
@@ -290,7 +293,7 @@ if st.session_state.raw_stocks:
         )
     
     st.markdown("---")
-    st.markdown("<h3 style='margin-bottom:12px;'>📊 AI PRO MAX INTELLIGENCE RECOMMENDATION</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='margin-bottom:12px; font-size: 26px;'>📊 AI PRO MAX INTELLIGENCE RECOMMENDATION</h3>", unsafe_allow_html=True)
     
     skor_buy_target = 70
     if "Agresif" in profil_risiko: skor_buy_target = 60
@@ -348,9 +351,9 @@ if st.session_state.raw_stocks:
         list_top_picks.sort(key=lambda x: x[1], reverse=True)
         string_picks = ", ".join([f"**{t}** ({s} Pts)" for t, s in list_top_picks[:5]])
         st.markdown(f"""
-        <div style="background-color: #0c1f1a; border: 1px solid #00e676; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-            <span style="color: #00ffcc; font-weight: bold; font-size: 15px;">🔥 AI INSTITUTIONAL TOP PICKS HARI INI:</span><br/>
-            <span style="color: #ffffff; font-size: 14px;">Emiten dengan konfirmasi teknikal terbaik & akumulasi masif: {string_picks}</span>
+        <div style="background-color: #0c1f1a; border: 1px solid #00e676; padding: 20px; border-radius: 12px; margin-bottom: 25px;">
+            <span style="color: #00ffcc; font-weight: 900; font-size: 18px;">🔥 AI INSTITUTIONAL TOP PICKS HARI INI:</span><br/>
+            <span style="color: #ffffff; font-size: 15px;">Emiten dengan konfirmasi teknikal terbaik & akumulasi masif: {string_picks}</span>
         </div>
         """, unsafe_allow_html=True)
 
@@ -358,32 +361,32 @@ if st.session_state.raw_stocks:
     t_hold = sum('🟡' in x for x in df_final['KEPUTUSAN AKHIR'])
     t_sell = sum('🔴' in x for x in df_final['KEPUTUSAN AKHIR'])
     
-    # --- PERBESAR FONT STRATEGI (SESUAI FOTO 2) ---
+    # --- PERBESARAN EXTREME FONT STRATEGI (HTML CUSTOM) ---
     m_col1, m_col2, m_col3 = st.columns(3)
     with m_col1:
         st.markdown(f"""
         <div class='metric-card'>
-            <span style='color:#00e676; font-size:16px; font-weight:800; letter-spacing:1px;'>🟢 STRATEGI BUY ACCUMULATE</span><br/>
-            <h2 style='margin:10px 0 0 0; color:#ffffff; font-size:46px;'>{t_buy} <span style='font-size:16px; color:#8a90a6; font-weight:normal;'>Emiten</span></h2>
+            <span style='color:#00e676; font-size:18px; font-weight:900; letter-spacing:1px;'>🟢 STRATEGI BUY ACCUMULATE</span><br/>
+            <h2 style='margin:10px 0 0 0; color:#ffffff; font-size:75px; font-weight:900;'>{t_buy} <span style='font-size:20px; color:#8a90a6; font-weight:normal;'>Emiten</span></h2>
         </div>
         """, unsafe_allow_html=True)
     with m_col2:
         st.markdown(f"""
         <div class='metric-card'>
-            <span style='color:#ffb300; font-size:16px; font-weight:800; letter-spacing:1px;'>🟡 STRATEGI WATCHING / HOLD</span><br/>
-            <h2 style='margin:10px 0 0 0; color:#ffffff; font-size:46px;'>{t_hold} <span style='font-size:16px; color:#8a90a6; font-weight:normal;'>Emiten</span></h2>
+            <span style='color:#ffb300; font-size:18px; font-weight:900; letter-spacing:1px;'>🟡 STRATEGI WATCHING / HOLD</span><br/>
+            <h2 style='margin:10px 0 0 0; color:#ffffff; font-size:75px; font-weight:900;'>{t_hold} <span style='font-size:20px; color:#8a90a6; font-weight:normal;'>Emiten</span></h2>
         </div>
         """, unsafe_allow_html=True)
     with m_col3:
         st.markdown(f"""
         <div class='metric-card'>
-            <span style='color:#ff1744; font-size:16px; font-weight:800; letter-spacing:1px;'>🔴 STRATEGI LIQUIDATE / SELL</span><br/>
-            <h2 style='margin:10px 0 0 0; color:#ffffff; font-size:46px;'>{t_sell} <span style='font-size:16px; color:#8a90a6; font-weight:normal;'>Emiten</span></h2>
+            <span style='color:#ff1744; font-size:18px; font-weight:900; letter-spacing:1px;'>🔴 STRATEGI LIQUIDATE / SELL</span><br/>
+            <h2 style='margin:10px 0 0 0; color:#ffffff; font-size:75px; font-weight:900;'>{t_sell} <span style='font-size:20px; color:#8a90a6; font-weight:normal;'>Emiten</span></h2>
         </div>
         """, unsafe_allow_html=True)
     
     st.write(" ")
-    st.markdown("#### 📋 Comprehensive Radar Matrix Table")
+    st.markdown("<h4 style='font-size: 20px; margin-top: 15px;'>📋 Comprehensive Radar Matrix Table</h4>", unsafe_allow_html=True)
     
     def style_tabel_premium(df):
         styles = pd.DataFrame('', index=df.index, columns=df.columns)
@@ -400,21 +403,20 @@ if st.session_state.raw_stocks:
             elif '🔴' in kep: styles.iloc[idx, -3:] = 'background-color: #240f13; color: #ff1744;'
         return styles
 
-    st.dataframe(df_final.style.apply(style_tabel_premium, axis=None), use_container_width=True, hide_index=True, height=400)
+    st.dataframe(df_final.style.apply(style_tabel_premium, axis=None), use_container_width=True, hide_index=True, height=500)
     
     st.markdown("---")
     
     # ==========================================
     # 5. ANALISIS KINERJA & RIWAYAT DIVIDEN (4 TAHUN)
     # ==========================================
-    # --- REVISI HILANGKAN TULISAN "STEP 3" (SESUAI FOTO 3) ---
-    st.subheader("📑 Analisis Ringkas Laporan Keuangan & Riwayat Dividen")
+    st.markdown("<h3 style='margin-bottom:10px; font-size: 24px;'>📑 Analisis Ringkas Laporan Keuangan & Riwayat Dividen</h3>", unsafe_allow_html=True)
     
     pilihan_emiten = st.selectbox("🎯 Pilih Kode Emiten untuk Cek Financials:", options=df_final["TICKER"].tolist())
     
     if pilihan_emiten:
         with st.spinner(f"⏳ Menarik data finansial & dividen {pilihan_emiten}..."):
-            tahunan, kuartalan, info_tambahan, div_history = fetch_advanced_financials(pilihan_emiten)
+            tahunan, kuartalan, info_tambahan, div_history, hist_price = fetch_advanced_financials(pilihan_emiten)
             
         if info_tambahan:
             def safe_extract_row(df, row_name):
@@ -437,13 +439,13 @@ if st.session_state.raw_stocks:
             if pilihan_metrik == "EPS": yahoo_row_name = "Basic EPS"
             elif pilihan_metrik == "Revenue": yahoo_row_name = "Total Revenue"
             
-            # --- REVISI PERIODE 4 TAHUN (SESUAI FOTO 3) ---
+            # --- REVISI PERIODE 4 TAHUN ---
             set_tahun = set()
             if tahunan is not None: set_tahun.update([pd.to_datetime(c).year for c in tahunan.columns])
             if kuartalan is not None: set_tahun.update([pd.to_datetime(c).year for c in kuartalan.columns])
             
-            list_tahun = sorted([str(y) for y in set_tahun], reverse=True)[:4] # Mengambil 4 Tahun Terakhir
-            if not list_tahun: list_tahun = ["2026", "2025", "2024", "2023"] # Cadangan
+            list_tahun = sorted([str(y) for y in set_tahun], reverse=True)[:4]
+            if not list_tahun: list_tahun = ["2026", "2025", "2024", "2023"]
 
             df_grid = pd.DataFrame(index=["Q1", "Q2", "Q3", "Q4", "Annualised", "TTM"], columns=list_tahun).fillna("-")
 
@@ -472,16 +474,16 @@ if st.session_state.raw_stocks:
             for c in df_grid.columns:
                 df_grid[c] = df_grid[c].apply(lambda x: safe_format_duit(x, is_eps=is_eps_mode))
 
-            st.markdown(f"**Period / {pilihan_metrik}**")
+            st.markdown(f"<p style='font-size:16px; font-weight:bold; color:#00ffcc;'>Period / {pilihan_metrik}</p>", unsafe_allow_html=True)
             st.dataframe(df_grid, use_container_width=True)
             
             st.write(" ")
             
-            # --- REVISI TABEL DIVIDEN MENGIKUTI PERIODE 4 TAHUN (SESUAI FOTO 3) ---
-            st.markdown("**💸 Riwayat Dividen & Payout Ratio (4 Tahun Terakhir)**")
-            df_div_grid = pd.DataFrame(index=["Dividend Per Share", "EPS (Earning Per Share)", "Payout Ratio (%)"], columns=list_tahun).fillna("-")
+            # --- PENAMBAHAN TABEL RIWAYAT YIELD DIVIDEN 4 TAHUN TERAKHIR ---
+            st.markdown("<p style='font-size:16px; font-weight:bold; color:#00ffcc;'>💸 Riwayat Dividen & Yield (4 Tahun Terakhir)</p>", unsafe_allow_html=True)
+            df_div_grid = pd.DataFrame(index=["Dividend Per Share", "EPS (Earning Per Share)", "Payout Ratio (%)", "Dividend Yield (%)"], columns=list_tahun).fillna("-")
             
-            # 1. Ambil Data EPS Tahunan ke dalam Tabel Dividen
+            # 1. Ambil Data EPS Tahunan
             eps_data = safe_extract_row(tahunan, "Basic EPS")
             if eps_data is not None:
                 for col_date in eps_data.index:
@@ -489,33 +491,42 @@ if st.session_state.raw_stocks:
                     if y_str in df_div_grid.columns:
                         df_div_grid.at["EPS (Earning Per Share)", y_str] = eps_data[col_date]
             
-            # 2. Ambil Data Riwayat Dividen dari Yahoo Finance
+            # 2. Ambil Data Riwayat Dividen Historis
             if div_history is not None and not div_history.empty:
                 for y_str in list_tahun:
                     mask = div_history.index.year == int(y_str)
                     if mask.any():
                         df_div_grid.at["Dividend Per Share", y_str] = div_history[mask].sum()
+                        
+            # 3. Ambil Harga Penutupan Terakhir Tiap Tahun untuk Kalkulasi Yield Historis
+            yearly_close = {}
+            if hist_price is not None and not hist_price.empty:
+                for y_str in list_tahun:
+                    mask = hist_price.index.year == int(y_str)
+                    if mask.any():
+                        yearly_close[y_str] = hist_price[mask]['Close'].iloc[-1]
             
-            # 3. Kalkulasi Payout Ratio Historis secara Mandiri
+            # 4. Kalkulasi Payout Ratio & YIELD Historis
             for c in df_div_grid.columns:
                 div_val = df_div_grid.at["Dividend Per Share", c]
                 eps_val = df_div_grid.at["EPS (Earning Per Share)", c]
                 
-                if div_val != "-" and eps_val != "-" and eps_val > 0:
-                    pr = (div_val / eps_val) * 100
-                    df_div_grid.at["Payout Ratio (%)", c] = f"{pr:,.2f}%".replace(".", ",")
+                if div_val != "-":
+                    # Hitung Payout Ratio
+                    if eps_val != "-" and eps_val > 0:
+                        pr = (div_val / eps_val) * 100
+                        df_div_grid.at["Payout Ratio (%)", c] = f"{pr:,.2f}%".replace(".", ",")
+                        
+                    # Hitung Dividend Yield Historis
+                    if c in yearly_close and yearly_close[c] > 0:
+                        dy = (div_val / yearly_close[c]) * 100
+                        df_div_grid.at["Dividend Yield (%)", c] = f"{dy:,.2f}%".replace(".", ",")
                 
-                # Format ke mata uang Rp
+                # Format Mata Uang Rupiah Akhir
                 if div_val != "-": df_div_grid.at["Dividend Per Share", c] = f"Rp {div_val:,.2f}".replace(",", "x").replace(".", ",").replace("x", ".")
                 if eps_val != "-": df_div_grid.at["EPS (Earning Per Share)", c] = f"Rp {eps_val:,.2f}".replace(",", "x").replace(".", ",").replace("x", ".")
             
             st.dataframe(df_div_grid, use_container_width=True)
-            
-            # Info Current Real-Time Yield
-            div_yield_raw = info_tambahan.get('dividendYield', 0)
-            div_yield = (div_yield_raw * 100) if (div_yield_raw and div_yield_raw < 1.0) else (div_yield_raw or 0.0)
-            if div_yield > 100.0: div_yield /= 100.0
-            st.caption(f"*Current Real-Time Dividend Yield:* **{div_yield:.2f}%**")
             
         else:
             st.warning(f"⚠️ Berkas keuangan {pilihan_emiten} sedang sibuk di sisi bursa. Silakan klik ulang tombol di atas.")
