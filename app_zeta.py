@@ -19,6 +19,7 @@ if "last_update" not in st.session_state:
 def fetch_ihsg_data():
     try:
         df_ihsg = yf.download("^JKSE", period="1mo", interval="1d", progress=False)
+        if df_ihsg.empty: return None, None, None, None
         df_ihsg.columns = [col[0] if isinstance(col, tuple) else col for col in df_ihsg.columns]
         
         harga_skg = float(df_ihsg['Close'].iloc[-1])
@@ -30,16 +31,17 @@ def fetch_ihsg_data():
     except Exception:
         return None, None, None, None
 
-# Fungsi Memuat Laporan Keuangan Sederhana (Step 3)
-def fetch_simple_financials(ticker_code):
+# Fungsi Memuat Laporan Keuangan Lengkap (Tahunan & Kuartalan)
+def fetch_advanced_financials(ticker_code):
     try:
         ticker = yf.Ticker(ticker_code + ".JK")
-        return ticker.financials, ticker.info
+        # Mengambil laporan tahunan, kuartalan, dan info mendalam
+        return ticker.financials, ticker.quarterly_financials, ticker.info
     except Exception:
-        return None, None
+        return None, None, None
 
 # TAMPILAN HEADER UTAMA
-st.title("📈 AI AUTOMATED STOCK SCANNER DASHBOARD (PRO MAX EDITION)")
+st.title("📈 AI AUTOMATED STOCK SCANNER DASHBOARD")
 
 # MEMUAT & MENAMPILKAN RADAR INDEKS IHSG
 df_ihsg_hist, ihsg_now, ihsg_chg, ihsg_pct = fetch_ihsg_data()
@@ -69,8 +71,8 @@ if df_ihsg_hist is not None:
 
 st.markdown("---")
 
-# 2. PENGATURAN AWAL & 25 SAHAM PILIHAN BEI
-default_stocks = "BBCA, BBRI, BMRI, BBNI, TLKM, ASII, UNTR, ICBP, INDF, AMRT, GOTO, PGAS, PTBA, ITMG, KLBF, ADRO, UNVR, BRIS, CPIN, ANTM, BREN, AMMN, TPIA, BRPT, MDKA"
+# 2. PENGATURAN AWAL & EMITEN PILIHAN BEI
+default_stocks = "BBCA, BBRI, BMRI, BBNI, TLKM, ASII, UNTR, ICBP, INDF, AMRT, GOTO, PGAS, PTBA, ITMG, KLBF, ADRO, UNVR, BRIS, CPIN, ANTM"
 
 st.sidebar.header("⚙️ Pengaturan Awal")
 saham_input = st.sidebar.text_area("Daftar Emiten Pantauan:", default_stocks, height=150)
@@ -135,7 +137,8 @@ def fetch_raw_data(saham_list):
                 "UP_EMA20": harga_skg > ema20_skg,
                 "MACD_GOLDEN": macd_skg > sig_skg
             })
-            time.sleep(0.05)
+            # Anti-Rate Limit (Jeda bursa agar tidak terkena 'Too Many Requests')
+            time.sleep(0.2)
         except Exception:
             continue
     return master_data
@@ -160,12 +163,11 @@ if len(st.session_state.raw_stocks) == 0 and daftar_saham:
 # TAMPILAN DASHBOARD CORE UTAMA
 if st.session_state.raw_stocks:
     df_base = pd.DataFrame(st.session_state.raw_stocks)
-    df_base["BANDARMOLOGI"] = "NEUTRAL"
     
     # STEP 1: INTERAKTIF INPUT BANDARMOLOGI
     st.subheader("📥 STEP 1: Isi Analisis Bandarmologi Anda di Sini")
     df_edited = st.data_editor(
-        df_base[["TICKER", "HARGA", "PER", "PBV", "DIV_YIELD", "RSI", "BANDARMOLOGI"]],
+        df_base[["TICKER", "HARGA", "PER", "PBV", "DIV_YIELD", "RSI"]].assign(BANDARMOLOGI="NEUTRAL"),
         column_config={
             "BANDARMOLOGI": st.column_config.SelectboxColumn(
                 "BANDARMOLOGI (Pilihan)",
@@ -194,7 +196,8 @@ if st.session_state.raw_stocks:
     
     for idx, row in df_edited.iterrows():
         ticker = row["TICKER"]
-        raw_info = next(item for item in st.session_state.raw_stocks if item["TICKER"] == ticker)
+        raw_info = next((item for item in st.session_state.raw_stocks if item["TICKER"] == ticker), None)
+        if not raw_info: continue
         
         # Algoritma Scoring AI Komprehensif
         skor = 0
@@ -254,12 +257,12 @@ if st.session_state.raw_stocks:
     
     st.write(" ")
     
-    # 📌 UPDATE: Grafik Kekuatan Emiten sekarang bisa di-minimize!
-    with st.expander("📈 Lihat Grafik Kekuatan Emiten (Top Skor AI)", expanded=False):
+    # MODIF STEP 2: FITUR MINIMIZE PADA GRAFIK KEKUATAN EMITEN
+    with st.expander("📊 Lihat Grafik Kekuatan Emiten (Top Skor AI)", expanded=False):
         df_chart = pd.DataFrame(list(raw_scores_for_chart.items()), columns=['TICKER', 'SKOR AI']).sort_values(by='SKOR AI', ascending=False)
         st.bar_chart(df_chart.set_index('TICKER'), color="#00af50", height=280)
     
-    # TABEL UTAMA DENGAN SENSOR WARNA INDONESIA
+    # TABEL DETAIL UTAMA
     st.write("### 📋 Detail Tabel Analisis Fundamental & Teknikal")
     def sensor_warna_otomatis(df):
         styles = pd.DataFrame('', index=df.index, columns=df.columns)
@@ -295,74 +298,116 @@ if st.session_state.raw_stocks:
     
     st.markdown("---")
     
-    # 📌 UPDATE: STEP 3 - Tampilan Laporan Keuangan Simple ala Aplikasi Saham
+    # MODIF STEP 3: ANALISIS LAPORAN KEUANGAN SIMPLE PERSIS SEPERTI FOTO
     st.subheader("📑 STEP 3: Analisis Ringkas Laporan Keuangan & Dividen")
-    st.markdown("*Pilih emiten untuk melihat ringkasan performa finansial dan riwayat dividen yang disederhanakan.*")
     
     pilihan_emiten = st.selectbox("🎯 Pilih Kode Emiten untuk Cek Financials:", options=df_final["TICKER"].tolist())
     
     if pilihan_emiten:
-        with st.spinner(f"⏳ Menarik data finansial ringkas untuk {pilihan_emiten}..."):
-            tahunan, info_tambahan = fetch_simple_financials(pilihan_emiten)
+        with st.spinner(f"⏳ Menarik berkas finansial untuk {pilihan_emiten}..."):
+            tahunan, kuartalan, info_tambahan = fetch_advanced_financials(pilihan_emiten)
             
         if info_tambahan:
-            st.write(f"#### 🏦 Ringkasan Kinerja Tahunan: **{pilihan_emiten}**")
+            # Fungsi pembantu ekstraksi baris aman (Solusi Anti-Crash/Anti-Duplicate Index)
+            def safe_extract_row(df, row_name):
+                if df is None or row_name not in df.index: return None
+                data = df.loc[row_name]
+                if isinstance(data, pd.DataFrame): data = data.iloc[0] # Ambil baris pertama jika duplikat
+                return data
+
+            # Fungsi pemformat angka Rupiah ke Miliar/Triliun ("B" ala Foto Aplikasi)
+            def safe_format_duit(val, is_eps=False):
+                try:
+                    if pd.isna(val) or val == "-" or val == 0: return "-"
+                    val_float = float(val)
+                    if is_eps:
+                        return f"{val_float:,.2f}".replace(",", "x").replace(".", ",").replace("x", ".")
+                    else:
+                        # Dibagi 1 Miliar untuk memunculkan satuan "B" (Billions) seperti foto Anda
+                        return f"{val_float / 1e9:,.2f} B"
+                except:
+                    return "-"
+
+            st.write(f"### 🏦 Ringkasan Kinerja Performa: **{pilihan_emiten}**")
             
-            # 1. TABEL PENDAPATAN & LABA YANG DISIMPLIFIKASI (Kolom = Tahun)
-            if tahunan is not None and not tahunan.empty:
-                df_display = pd.DataFrame()
-                
-                # Ekstrak metrik penting saja
-                if "Net Income" in tahunan.index:
-                    df_display["Net Income"] = tahunan.loc["Net Income"]
-                if "Total Revenue" in tahunan.index:
-                    df_display["Total Revenue"] = tahunan.loc["Total Revenue"]
-                if "Basic EPS" in tahunan.index:
-                    df_display["EPS (Earning Per Share)"] = tahunan.loc["Basic EPS"]
-                elif "Diluted EPS" in tahunan.index:
-                    df_display["EPS (Earning Per Share)"] = tahunan.loc["Diluted EPS"]
-                    
-                if not df_display.empty:
-                    # Ubah index jadi tahun (YYYY)
-                    df_display.index = [str(idx)[:4] for idx in df_display.index]
-                    df_display = df_display.T # Transpose agar Tahun jadi Kolom di atas (persis seperti foto)
-                    
-                    def format_duit(val):
-                        if pd.isna(val) or val == 0: return "-"
-                        if abs(val) >= 1e12: return f"Rp {val/1e12:,.2f} Triliun".replace(",", "*").replace(".", ",").replace("*", ".")
-                        if abs(val) >= 1e9: return f"Rp {val/1e9:,.2f} Miliar".replace(",", "*").replace(".", ",").replace("*", ".")
-                        return f"Rp {val:,.2f}".replace(",", "*").replace(".", ",").replace("*", ".")
-                    
-                    for row in df_display.index:
-                        if "EPS" in row:
-                            df_display.loc[row] = df_display.loc[row].apply(lambda x: f"Rp {x:,.2f}".replace(",", "*").replace(".", ",").replace("*", ".") if pd.notnull(x) else "-")
-                        else:
-                            df_display.loc[row] = df_display.loc[row].apply(format_duit)
-                    
-                    st.dataframe(df_display, use_container_width=True)
-            else:
-                st.info("Data laporan tahunan terperinci belum di-update oleh bursa.")
-                
-            st.markdown("---")
+            # FITUR NAVIGATION BUTTONS (Net Income / EPS / Revenue) persis di atas foto
+            pilihan_metrik = st.radio(
+                "Pilih Kategori Tampilan:", 
+                options=["Net Income", "EPS", "Revenue"], 
+                horizontal=True, 
+                label_visibility="collapsed"
+            )
             
-            # 2. PANEL METRIK DIVIDEN (Persis seperti bagian bawah di foto)
-            st.write(f"#### 💸 Metrik Dividen & Rasio Payout")
+            # Mapping baris internal bursa Yahoo Finance
+            yahoo_row_name = "Net Income"
+            if pilihan_metrik == "EPS": yahoo_row_name = "Basic EPS"
+            elif pilihan_metrik == "Revenue": yahoo_row_name = "Total Revenue"
+            
+            # Menentukan daftar kolom Tahun secara dinamis (Top 3 tahun terakhir)
+            set_tahun = set()
+            if tahunan is not None: set_tahun.update([pd.to_datetime(c).year for c in tahunan.columns])
+            if kuartalan is not None: set_tahun.update([pd.to_datetime(c).year for c in kuartalan.columns])
+            list_tahun = sorted([str(y) for y in set_tahun], reverse=True)[:3]
+            if not list_tahun: list_tahun = ["2026", "2025", "2024"]
+
+            # Membuat Grid Tabel Kosong Persis Sesuai Gambar Pendukung
+            df_grid = pd.DataFrame(
+                index=["Q1", "Q2", "Q3", "Q4", "Annualised", "TTM"],
+                columns=list_tahun
+            ).fillna("-")
+
+            # Isi data Kuartalan (Q1 - Q4)
+            data_k = safe_extract_row(kuartalan, yahoo_row_name)
+            if data_k is not None:
+                for col_date in data_k.index:
+                    dt = pd.to_datetime(col_date)
+                    y_str = str(dt.year)
+                    m = dt.month
+                    if y_str in df_grid.columns:
+                        if m in [1, 2, 3]: df_grid.at["Q1", y_str] = data_k[col_date]
+                        elif m in [4, 5, 6]: df_grid.at["Q2", y_str] = data_k[col_date]
+                        elif m in [7, 8, 9]: df_grid.at["Q3", y_str] = data_k[col_date]
+                        elif m in [10, 11, 12]: df_grid.at["Q4", y_str] = data_k[col_date]
+
+            # Isi data Tahunan (Annualised & TTM)
+            data_t = safe_extract_row(tahunan, yahoo_row_name)
+            if data_t is not None:
+                for col_date in data_t.index:
+                    dt = pd.to_datetime(col_date)
+                    y_str = str(dt.year)
+                    if y_str in df_grid.columns:
+                        df_grid.at["Annualised", y_str] = data_t[col_date]
+                        df_grid.at["TTM", y_str] = data_t[col_date]
+
+            # Terapkan fungsi pemformat angka aman ke seluruh isi tabel grid
+            is_eps_mode = (pilihan_metrik == "EPS")
+            for c in df_grid.columns:
+                df_grid[c] = df_grid[c].apply(lambda x: safe_format_duit(x, is_eps=is_eps_mode))
+
+            # TAMPILKAN TABEL GRID UTAMA
+            st.markdown(f"**Period / {pilihan_metrik}**")
+            st.dataframe(df_grid, use_container_width=True)
+            
+            # BAGIAN BAWAH FOTO: Rincian Riwayat Deviden Ringkas
+            st.write(" ")
+            st.markdown("**Dividend Summary**")
             
             div_yield = info_tambahan.get('dividendYield', 0)
             payout_ratio = info_tambahan.get('payoutRatio', 0)
             div_rate = info_tambahan.get('dividendRate', 0)
             
-            div_yield_fmt = f"{div_yield * 100:.2f}%".replace(".", ",") if div_yield else "-"
-            payout_ratio_fmt = f"{payout_ratio * 100:.2f}%".replace(".", ",") if payout_ratio else "-"
-            div_rate_fmt = f"Rp {div_rate:,.2f}".replace(",", "*").replace(".", ",").replace("*", ".") if div_rate else "-"
-            
-            d_col1, d_col2, d_col3 = st.columns(3)
-            d_col1.metric("📈 Dividend Yield", div_yield_fmt)
-            d_col2.metric("📊 Payout Ratio", payout_ratio_fmt)
-            d_col3.metric("💵 Dividend Rate (Tahunan)", div_rate_fmt)
+            df_div_bottom = pd.DataFrame({
+                "Metrik Dividen": ["Dividend", "Payout Ratio", "Dividend Yield"],
+                "Nilai": [
+                    f"Rp {div_rate:,.2f}".replace(",", "x").replace(".", ",").replace("x", ".") if div_rate else "-",
+                    f"{payout_ratio * 100:.2f}%".replace(".", ",") if payout_ratio else "-",
+                    f"{div_yield * 100:.2f}%".replace(".", ",") if div_yield else "-"
+                ]
+            })
+            st.dataframe(df_div_bottom, use_container_width=True, hide_index=True)
             
         else:
-            st.warning(f"⚠️ Data finansial untuk {pilihan_emiten} sementara tidak dapat ditarik. Coba lagi nanti.")
+            st.warning(f"⚠️ Berkas keuangan {pilihan_emiten} sedang sibuk di sisi bursa. Silakan klik ulang tombol di atas.")
 
 else:
     st.info("💡 Masukkan kode emiten di kolom sebelah kiri, lalu klik 'TARIK DATA MARKET' untuk memulai sistem.")
