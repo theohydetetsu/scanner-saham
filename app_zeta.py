@@ -3,10 +3,10 @@ import pandas as pd
 import yfinance as yf
 import numpy as np
 import time
-from datetime import datetime  # TAMBAHAN BARU: Untuk mencatat waktu
+from datetime import datetime
 
 # 1. KONFIGURASI HALAMAN
-st.set_page_config(page_title="AI Stock Dashboard Pro", page_icon="📈", layout="wide")
+st.set_page_config(page_title="AI Stock Dashboard Pro Max", page_icon="📈", layout="wide")
 
 # Inisialisasi Memori Aplikasi (Session State)
 if "raw_stocks" not in st.session_state:
@@ -14,29 +14,73 @@ if "raw_stocks" not in st.session_state:
 if "last_update" not in st.session_state:
     st.session_state.last_update = None
 
-st.title("📈 AI AUTOMATED STOCK SCANNER DASHBOARD (PRO EDITION)")
+# Fungsi Memuat Data IHSG
+@st.cache_data(ttl=600, show_spinner=False)
+def fetch_ihsg_data():
+    try:
+        df_ihsg = yf.download("^JKSE", period="1mo", interval="1d", progress=False)
+        df_ihsg.columns = [col[0] if isinstance(col, tuple) else col for col in df_ihsg.columns]
+        
+        harga_skg = float(df_ihsg['Close'].iloc[-1])
+        harga_lalu = float(df_ihsg['Close'].iloc[-2])
+        perubahan = harga_skg - harga_lalu
+        persen = (perubahan / harga_lalu) * 100
+        
+        return df_ihsg[['Close']], harga_skg, perubahan, persen
+    except Exception:
+        return None, None, None, None
 
-# TAMBAHAN BARU: Menampilkan Waktu Update Pro di Bawah Judul Utama
-if st.session_state.last_update:
-    st.markdown(f"🕒 **Terakhir Diperbarui Otomatis:** `{st.session_state.last_update}`")
-else:
-    st.markdown("🕒 **Terakhir Diperbarui Otomatis:** `Belum memuat data`")
+# Fungsi Memuat Laporan Keuangan Per Saham (Step 3)
+def fetch_financial_statements(ticker_code):
+    try:
+        ticker = yf.Ticker(ticker_code + ".JK")
+        return ticker.financials, ticker.balance_sheet, ticker.cashflow
+    except Exception:
+        return None, None, None
 
-st.markdown("*Sistem Interaktif: Dropdown Bandarmologi + Sensor Warna Font + Ringkasan Grafik Pro*")
+# TAMPILAN HEADER UTAMA
+st.title("📈 AI AUTOMATED STOCK SCANNER DASHBOARD (PRO MAX EDITION)")
+
+# MEMUAT & MENAMPILKAN RADAR INDEKS IHSG
+df_ihsg_hist, ihsg_now, ihsg_chg, ihsg_pct = fetch_ihsg_data()
+
+col_header1, col_header2 = st.columns([2, 1])
+
+with col_header1:
+    if st.session_state.last_update:
+        st.markdown(f"🕒 **Terakhir Diperbarui Otomatis:** `{st.session_state.last_update}`")
+    else:
+        st.markdown("🕒 **Terakhir Diperbarui Otomatis:** `Belum memuat data market`")
+    st.markdown("*Sistem Integrasi Multi-Pilar: Teknikal, Fundamental, Bandarmologi, dan Financial Statements*")
+
+with col_header2:
+    if ihsg_now:
+        warna_panah = "📈" if ihsg_chg >= 0 else "📉"
+        st.metric(
+            label=f"{warna_panah} INDEKS HARGA SAHAM GABUNGAN (IHSG)",
+            value=f"{ihsg_now:,.2f}".replace(",", "."),
+            delta=f"{ihsg_chg:+,.2f} ({ihsg_pct:+.2f}%)".replace(",", "."),
+        )
+
+# Grafik Tren IHSG Kompak
+if df_ihsg_hist is not None:
+    with st.expander("📊 Lihat Grafik Pergerakan Tren IHSG (1 Bulan Terakhir)", expanded=False):
+        st.line_chart(df_ihsg_hist, color="#00ffcc", height=200)
+
 st.markdown("---")
 
-# 2. DEFAULT 20 SAHAM BLUECHIP INDONESIA
-default_bluechips = "BBCA, BBRI, BMRI, BBNI, TLKM, ASII, UNTR, ICBP, INDF, AMRT, GOTO, PGAS, PTBA, ITMG, KLBF, ADRO, UNVR, BRIS, CPIN, ANTM"
+# 2. PENGATURAN AWAL & 25 SAHAM PILIHAN BEI (TAMBAHAN 5 SAHAM TOP BARU)
+default_stocks = "BBCA, BBRI, BMRI, BBNI, TLKM, ASII, UNTR, ICBP, INDF, AMRT, GOTO, PGAS, PTBA, ITMG, KLBF, ADRO, UNVR, BRIS, CPIN, ANTM, BREN, AMMN, TPIA, BRPT, MDKA"
 
 st.sidebar.header("⚙️ Pengaturan Awal")
-saham_input = st.sidebar.text_area("Daftar Emiten:", default_bluechips, height=120)
+saham_input = st.sidebar.text_area("Daftar Emiten Pantauan:", default_stocks, height=150)
 
-# Parsing data emiten (menghapus spasi kosong dan mengubah ke uppercase)
+# Parsing data emiten
 daftar_saham = [s.strip().upper() + ".JK" for s in saham_input.split(",") if s.strip()]
 
 muat_data = st.sidebar.button("🔄 TARIK DATA MARKET", use_container_width=True)
 
-# 3. FUNGSI TEKNIKAL & AMBIL DATA
+# FUNGSI TEKNIKAL & AMBIL DATA KESELURUHAN
 def hitung_rsi(df, periods=14):
     delta = df['Close'].diff()
     gain = (delta.where(delta > 0, 0)).rolling(window=periods).mean()
@@ -75,15 +119,11 @@ def fetch_raw_data(saham_list):
             per = info.get('trailingPE', 0)
             pbv = info.get('priceToBook', 0)
             
-            if pbv and (pbv > 50 or pbv < 0): 
-                pbv = 1.0
-                
+            if pbv and (pbv > 100 or pbv < 0): pbv = 1.0
             div_yield = info.get('dividendYield', 0)
             if div_yield:
-                if div_yield < 1.0:
-                    div_yield = div_yield * 100
-            else:
-                div_yield = 0.0
+                if div_yield < 1.0: div_yield = div_yield * 100
+            else: div_yield = 0.0
                 
             master_data.append({
                 "TICKER": kode,
@@ -95,35 +135,35 @@ def fetch_raw_data(saham_list):
                 "UP_EMA20": harga_skg > ema20_skg,
                 "MACD_GOLDEN": macd_skg > sig_skg
             })
-            time.sleep(0.1)
+            time.sleep(0.05)
         except Exception:
             continue
     return master_data
 
-# 4. ALUR PROSES APLIKASI (DENGAN SISTEM PROTEKSI INPUT & ANIMASI LOADING)
+# ALUR PROSES UPDATE DASHBOARD
 if muat_data:
     if not daftar_saham:
         st.sidebar.error("⚠️ Daftar emiten tidak boleh kosong!")
     else:
-        st.cache_data.clear() # Memaksa sistem hapus cache lama agar memunculkan loading kembali
-        with st.spinner("⏳ Sedang memperbarui data market dari Yahoo Finance..."):
+        st.cache_data.clear()
+        with st.spinner("⏳ Sedang memperbarui data bursa & menghitung metrik AI..."):
             st.session_state.raw_stocks = fetch_raw_data(daftar_saham)
             st.session_state.last_update = datetime.now().strftime("%d %B %Y | %H:%M:%S WIB")
         st.sidebar.success("✅ Berhasil diperbarui!")
 
-# Trigger pertama kali saat aplikasi dibuka (jika input ada isinya)
+# Trigger muat data awal otomatis jika memori kosong
 if len(st.session_state.raw_stocks) == 0 and daftar_saham:
     with st.spinner("⏳ Memuat data bursa awal..."):
         st.session_state.raw_stocks = fetch_raw_data(daftar_saham)
         st.session_state.last_update = datetime.now().strftime("%d %B %Y | %H:%M:%S WIB")
 
-# Tampilkan dashboard jika data berhasil didapatkan
+# TAMPILAN DASHBOARD CORE UTAMA
 if st.session_state.raw_stocks:
     df_base = pd.DataFrame(st.session_state.raw_stocks)
     df_base["BANDARMOLOGI"] = "NEUTRAL"
     
+    # STEP 1: INTERAKTIF INPUT BANDARMOLOGI
     st.subheader("📥 STEP 1: Isi Analisis Bandarmologi Anda di Sini")
-    
     df_edited = st.data_editor(
         df_base[["TICKER", "HARGA", "PER", "PBV", "DIV_YIELD", "RSI", "BANDARMOLOGI"]],
         column_config={
@@ -145,6 +185,8 @@ if st.session_state.raw_stocks:
     )
     
     st.markdown("---")
+    
+    # STEP 2: DASHBOARD KEPUTUSAN AI & GRAFIK KEKUATAN EMITEN
     st.subheader("📊 STEP 2: Dashboard Hasil Rekomendasi Akhir AI Pro")
     
     hasil_rekomendasi = []
@@ -154,7 +196,7 @@ if st.session_state.raw_stocks:
         ticker = row["TICKER"]
         raw_info = next(item for item in st.session_state.raw_stocks if item["TICKER"] == ticker)
         
-        # Hitung Skor AI
+        # Algoritma Scoring AI Komprehensif
         skor = 0
         if raw_info["UP_EMA20"]: skor += 15
         if raw_info["MACD_GOLDEN"]: skor += 15
@@ -200,29 +242,23 @@ if st.session_state.raw_stocks:
         
     df_final = pd.DataFrame(hasil_rekomendasi)
     
-    # METRICS PANEL
-    total_buy = sum('🟢' in x for x in df_final['KEPUTUSAN AKHIR'])
-    total_hold = sum('🟡' in x for x in df_final['KEPUTUSAN AKHIR'])
-    total_sell = sum('🔴' in x for x in df_final['KEPUTUSAN AKHIR'])
+    # PANEL METRIK RINGKASAN
+    t_buy = sum('🟢' in x for x in df_final['KEPUTUSAN AKHIR'])
+    t_hold = sum('🟡' in x for x in df_final['KEPUTUSAN AKHIR'])
+    t_sell = sum('🔴' in x for x in df_final['KEPUTUSAN AKHIR'])
     
     m_col1, m_col2, m_col3 = st.columns(3)
-    m_col1.metric("🟢 REKOMENDASI BUY", f"{total_buy} Emiten", help="Saham dengan skor AI >= 70")
-    m_col2.metric("🟡 REKOMENDASI HOLD", f"{total_hold} Emiten", help="Saham dengan skor AI antara 45 - 69")
-    m_col3.metric("🔴 REKOMENDASI SELL", f"{total_sell} Emiten", help="Saham dengan skor AI di bawah 45")
+    m_col1.metric("🟢 REKOMENDASI BUY", f"{t_buy} Emiten", help="Skor AI >= 70")
+    m_col2.metric("🟡 REKOMENDASI HOLD", f"{t_hold} Emiten", help="Skor AI 45 - 69")
+    m_col3.metric("🔴 REKOMENDASI SELL", f"{t_sell} Emiten", help="Skor AI < 45")
     
-    st.markdown(" ")
-
-    # PRO STOCK CHART VISUALIZATION
+    st.write(" ")
     st.write("### 📈 Grafik Kekuatan Emiten (Top Skor AI)")
-    df_chart = pd.DataFrame(list(raw_scores_for_chart.items()), columns=['TICKER', 'SKOR AI'])
-    df_chart = df_chart.sort_values(by='SKOR AI', ascending=False).reset_index(drop=True)
-    df_chart_indexed = df_chart.set_index('TICKER')
+    df_chart = pd.DataFrame(list(raw_scores_for_chart.items()), columns=['TICKER', 'SKOR AI']).sort_values(by='SKOR AI', ascending=False)
+    st.bar_chart(df_chart.set_index('TICKER'), color="#00af50", height=280)
     
-    st.bar_chart(df_chart_indexed, color="#00af50", height=280)
-    
+    # TABEL UTAMA DENGAN SENSOR WARNA INDONESIA
     st.write("### 📋 Detail Tabel Analisis Fundamental & Teknikal")
-    
-    # ENGINE SENSOR WARNA OTOMATIS
     def sensor_warna_otomatis(df):
         styles = pd.DataFrame('', index=df.index, columns=df.columns)
         for idx, row in df.iterrows():
@@ -231,19 +267,16 @@ if st.session_state.raw_stocks:
                 if per < 15.0: styles.at[idx, 'PER (x)'] = 'color: #00af50; font-weight: bold;'
                 elif per > 25.0: styles.at[idx, 'PER (x)'] = 'color: #ff0000; font-weight: bold;'
             except: pass
-            
             try:
                 pbv = float(row['PBV (x)'])
                 if pbv < 2.0: styles.at[idx, 'PBV (x)'] = 'color: #00af50; font-weight: bold;'
                 elif pbv > 4.0: styles.at[idx, 'PBV (x)'] = 'color: #ff0000; font-weight: bold;'
             except: pass
-            
             try:
                 div = float(row['DIV YIELD'].replace('%', ''))
                 if div > 3.0: styles.at[idx, 'DIV YIELD'] = 'color: #00af50; font-weight: bold;'
                 elif div == 0.0: styles.at[idx, 'DIV YIELD'] = 'color: #ff0000; font-weight: bold;'
             except: pass
-            
             try:
                 rsi = float(row['RSI'])
                 if rsi <= 30.0: styles.at[idx, 'RSI'] = 'color: #00af50; font-weight: bold;'
@@ -251,20 +284,41 @@ if st.session_state.raw_stocks:
             except: pass
             
             kep = row['KEPUTUSAN AKHIR']
-            if '🟢' in kep:
-                styles.at[idx, 'KEPUTUSAN AKHIR'] = 'color: #00af50; font-weight: bold;'
-                styles.at[idx, 'SINYAL TEKNIKAL'] = 'color: #00af50; font-weight: bold;'
-            elif '🟡' in kep:
-                styles.at[idx, 'KEPUTUSAN AKHIR'] = 'color: #ffc000; font-weight: bold;'
-                styles.at[idx, 'SINYAL TEKNIKAL'] = 'color: #ffc000; font-weight: bold;'
-            elif '🔴' in kep:
-                styles.at[idx, 'KEPUTUSAN AKHIR'] = 'color: #ff0000; font-weight: bold;'
-                styles.at[idx, 'SINYAL TEKNIKAL'] = 'color: #ff0000; font-weight: bold;'
-                
+            if '🟢' in kep: styles.iloc[idx, -2:] = 'color: #00af50; font-weight: bold;'
+            elif '🟡' in kep: styles.iloc[idx, -2:] = 'color: #ffc000; font-weight: bold;'
+            elif '🔴' in kep: styles.iloc[idx, -2:] = 'color: #ff0000; font-weight: bold;'
         return styles
 
-    df_styled = df_final.style.apply(sensor_warna_otomatis, axis=None)
-    st.dataframe(df_styled, use_container_width=True, hide_index=True, height=500)
+    st.dataframe(df_final.style.apply(sensor_warna_otomatis, axis=None), use_container_width=True, hide_index=True, height=450)
     
+    st.markdown("---")
+    
+    # TAMBAHAN BARU: STEP 3 - AUDIT LAPORAN KEUANGAN (INCOME STATEMENT, BALANCE SHEET, CASH FLOW)
+    st.subheader("📑 STEP 3: Analisis Laporan Keuangan Tahunan Per Emiten")
+    st.markdown("*Pilih salah satu emiten di bawah ini untuk mengaudit Laporan Laba Rugi, Neraca, dan Arus Kas asli.*")
+    
+    pilihan_emiten = st.selectbox("🎯 Pilih Kode Emiten untuk Cek Financials:", options=df_final["TICKER"].tolist())
+    
+    if pilihan_emiten:
+        with st.spinner(f"⏳ Mengunduh Laporan Keuangan Kuartal/Tahunan untuk {pilihan_emiten} dari Bursa..."):
+            inc_stmt, bal_sheet, cash_flow = fetch_financial_statements(pilihan_emiten)
+            
+        if inc_stmt is not None and not inc_stmt.empty:
+            tab1, tab2, tab3 = st.tabs(["📊 Laporan Laba Rugi (Income Statement)", "⚖️ Neraca Keuangan (Balance Sheet)", "💸 Arus Kas (Cash Flow)"])
+            
+            with tab1:
+                st.write(f"#### Laporan Laba Rugi Finansial: {pilihan_emiten}")
+                st.dataframe(inc_stmt, use_container_width=True)
+                
+            with tab2:
+                st.write(f"#### Neraca Posisi Keuangan: {pilihan_emiten}")
+                st.dataframe(bal_sheet, use_container_width=True)
+                
+            with tab3:
+                st.write(f"#### Laporan Aliran Arus Kas: {pilihan_emiten}")
+                st.dataframe(cash_flow, use_container_width=True)
+        else:
+            st.warning(f"⚠️ Data finansial detail untuk {pilihan_emiten} sementara tidak tersedia di Yahoo Finance atau melebihi batas batas aman permintaan.")
+
 else:
     st.info("💡 Masukkan kode emiten di kolom sebelah kiri, lalu klik 'TARIK DATA MARKET' untuk memulai sistem.")
