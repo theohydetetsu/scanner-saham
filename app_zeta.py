@@ -93,7 +93,7 @@ def fetch_advanced_financials(ticker_code):
         return None, None, None, None, None
 
 # TAMPILAN HEADER UTAMA (INSTITUTIONAL STYLE)
-st.markdown("<h1 style='margin-bottom:0px;'>📈 AI AUTOMATED STOCK SCANNER</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='margin-bottom:0px;'>📈 AUTOMATED STOCK SCANNER</h1>", unsafe_allow_html=True)
 
 df_ihsg_hist, ihsg_now, ihsg_chg, ihsg_pct = fetch_ihsg_data()
 col_header1, col_header2 = st.columns([2, 1])
@@ -169,7 +169,7 @@ st.markdown("---")
 # ==========================================
 st.sidebar.markdown("""
 <div style="padding: 5px 0px 15px 0px;">
-    <h2 style="color: #00ffcc; font-size: 26px; font-weight: 900; letter-spacing: 0.5px; margin-bottom: 0px;">💎 CYBER PANEL</h2>
+    <h2 style="color: #00ffcc; font-size: 26px; font-weight: 900; letter-spacing: 0.5px; margin-bottom: 0px;">💎 THEO HYDETETSU</h2>
     <p style="color: #6c757d; font-size: 13px; margin-top: 2px; margin-bottom: 0px;">AI Premium Scanner Engine v3.5</p>
 </div>
 """, unsafe_allow_html=True)
@@ -293,7 +293,7 @@ if st.session_state.raw_stocks:
         )
     
     st.markdown("---")
-    st.markdown("<h3 style='margin-bottom:12px; font-size: 26px;'>📊 AI PRO MAX INTELLIGENCE RECOMMENDATION</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='margin-bottom:12px; font-size: 26px;'>📊 PRO MAX INTELLIGENCE RECOMMENDATION</h3>", unsafe_allow_html=True)
     
     skor_buy_target = 70
     if "Agresif" in profil_risiko: skor_buy_target = 60
@@ -357,9 +357,9 @@ if st.session_state.raw_stocks:
         </div>
         """, unsafe_allow_html=True)
 
-    t_buy = sum('🟢' in x for x in df_final['KEPUTUSAN AKHIR'])
-    t_hold = sum('🟡' in x for x in df_final['KEPUTUSAN AKHIR'])
-    t_sell = sum('🔴' in x for x in df_final['KEPUTUSAN AKHIR'])
+    t_buy = sum('🟢' in x for x in df_final['ANALISA AKHIR'])
+    t_hold = sum('🟡' in x for x in df_final['ANALISA AKHIR'])
+    t_sell = sum('🔴' in x for x in df_final['ANALISA AKHIR'])
     
     # --- PERBESARAN EXTREME FONT STRATEGI (HTML CUSTOM) ---
     m_col1, m_col2, m_col3 = st.columns(3)
