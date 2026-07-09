@@ -30,13 +30,13 @@ def fetch_ihsg_data():
     except Exception:
         return None, None, None, None
 
-# Fungsi Memuat Laporan Keuangan Per Saham (Step 3)
-def fetch_financial_statements(ticker_code):
+# Fungsi Memuat Laporan Keuangan Sederhana (Step 3)
+def fetch_simple_financials(ticker_code):
     try:
         ticker = yf.Ticker(ticker_code + ".JK")
-        return ticker.financials, ticker.balance_sheet, ticker.cashflow
+        return ticker.financials, ticker.info
     except Exception:
-        return None, None, None
+        return None, None
 
 # TAMPILAN HEADER UTAMA
 st.title("📈 AI AUTOMATED STOCK SCANNER DASHBOARD (PRO MAX EDITION)")
@@ -62,14 +62,14 @@ with col_header2:
             delta=f"{ihsg_chg:+,.2f} ({ihsg_pct:+.2f}%)".replace(",", "."),
         )
 
-# Grafik Tren IHSG Kompak
+# Grafik Tren IHSG Kompak (Bisa diminimize)
 if df_ihsg_hist is not None:
     with st.expander("📊 Lihat Grafik Pergerakan Tren IHSG (1 Bulan Terakhir)", expanded=False):
         st.line_chart(df_ihsg_hist, color="#00ffcc", height=200)
 
 st.markdown("---")
 
-# 2. PENGATURAN AWAL & 25 SAHAM PILIHAN BEI (TAMBAHAN 5 SAHAM TOP BARU)
+# 2. PENGATURAN AWAL & 25 SAHAM PILIHAN BEI
 default_stocks = "BBCA, BBRI, BMRI, BBNI, TLKM, ASII, UNTR, ICBP, INDF, AMRT, GOTO, PGAS, PTBA, ITMG, KLBF, ADRO, UNVR, BRIS, CPIN, ANTM, BREN, AMMN, TPIA, BRPT, MDKA"
 
 st.sidebar.header("⚙️ Pengaturan Awal")
@@ -253,9 +253,11 @@ if st.session_state.raw_stocks:
     m_col3.metric("🔴 REKOMENDASI SELL", f"{t_sell} Emiten", help="Skor AI < 45")
     
     st.write(" ")
-    st.write("### 📈 Grafik Kekuatan Emiten (Top Skor AI)")
-    df_chart = pd.DataFrame(list(raw_scores_for_chart.items()), columns=['TICKER', 'SKOR AI']).sort_values(by='SKOR AI', ascending=False)
-    st.bar_chart(df_chart.set_index('TICKER'), color="#00af50", height=280)
+    
+    # 📌 UPDATE: Grafik Kekuatan Emiten sekarang bisa di-minimize!
+    with st.expander("📈 Lihat Grafik Kekuatan Emiten (Top Skor AI)", expanded=False):
+        df_chart = pd.DataFrame(list(raw_scores_for_chart.items()), columns=['TICKER', 'SKOR AI']).sort_values(by='SKOR AI', ascending=False)
+        st.bar_chart(df_chart.set_index('TICKER'), color="#00af50", height=280)
     
     # TABEL UTAMA DENGAN SENSOR WARNA INDONESIA
     st.write("### 📋 Detail Tabel Analisis Fundamental & Teknikal")
@@ -293,32 +295,74 @@ if st.session_state.raw_stocks:
     
     st.markdown("---")
     
-    # TAMBAHAN BARU: STEP 3 - AUDIT LAPORAN KEUANGAN (INCOME STATEMENT, BALANCE SHEET, CASH FLOW)
-    st.subheader("📑 STEP 3: Analisis Laporan Keuangan Tahunan Per Emiten")
-    st.markdown("*Pilih salah satu emiten di bawah ini untuk mengaudit Laporan Laba Rugi, Neraca, dan Arus Kas asli.*")
+    # 📌 UPDATE: STEP 3 - Tampilan Laporan Keuangan Simple ala Aplikasi Saham
+    st.subheader("📑 STEP 3: Analisis Ringkas Laporan Keuangan & Dividen")
+    st.markdown("*Pilih emiten untuk melihat ringkasan performa finansial dan riwayat dividen yang disederhanakan.*")
     
     pilihan_emiten = st.selectbox("🎯 Pilih Kode Emiten untuk Cek Financials:", options=df_final["TICKER"].tolist())
     
     if pilihan_emiten:
-        with st.spinner(f"⏳ Mengunduh Laporan Keuangan Kuartal/Tahunan untuk {pilihan_emiten} dari Bursa..."):
-            inc_stmt, bal_sheet, cash_flow = fetch_financial_statements(pilihan_emiten)
+        with st.spinner(f"⏳ Menarik data finansial ringkas untuk {pilihan_emiten}..."):
+            tahunan, info_tambahan = fetch_simple_financials(pilihan_emiten)
             
-        if inc_stmt is not None and not inc_stmt.empty:
-            tab1, tab2, tab3 = st.tabs(["📊 Laporan Laba Rugi (Income Statement)", "⚖️ Neraca Keuangan (Balance Sheet)", "💸 Arus Kas (Cash Flow)"])
+        if info_tambahan:
+            st.write(f"#### 🏦 Ringkasan Kinerja Tahunan: **{pilihan_emiten}**")
             
-            with tab1:
-                st.write(f"#### Laporan Laba Rugi Finansial: {pilihan_emiten}")
-                st.dataframe(inc_stmt, use_container_width=True)
+            # 1. TABEL PENDAPATAN & LABA YANG DISIMPLIFIKASI (Kolom = Tahun)
+            if tahunan is not None and not tahunan.empty:
+                df_display = pd.DataFrame()
                 
-            with tab2:
-                st.write(f"#### Neraca Posisi Keuangan: {pilihan_emiten}")
-                st.dataframe(bal_sheet, use_container_width=True)
+                # Ekstrak metrik penting saja
+                if "Net Income" in tahunan.index:
+                    df_display["Net Income"] = tahunan.loc["Net Income"]
+                if "Total Revenue" in tahunan.index:
+                    df_display["Total Revenue"] = tahunan.loc["Total Revenue"]
+                if "Basic EPS" in tahunan.index:
+                    df_display["EPS (Earning Per Share)"] = tahunan.loc["Basic EPS"]
+                elif "Diluted EPS" in tahunan.index:
+                    df_display["EPS (Earning Per Share)"] = tahunan.loc["Diluted EPS"]
+                    
+                if not df_display.empty:
+                    # Ubah index jadi tahun (YYYY)
+                    df_display.index = [str(idx)[:4] for idx in df_display.index]
+                    df_display = df_display.T # Transpose agar Tahun jadi Kolom di atas (persis seperti foto)
+                    
+                    def format_duit(val):
+                        if pd.isna(val) or val == 0: return "-"
+                        if abs(val) >= 1e12: return f"Rp {val/1e12:,.2f} Triliun".replace(",", "*").replace(".", ",").replace("*", ".")
+                        if abs(val) >= 1e9: return f"Rp {val/1e9:,.2f} Miliar".replace(",", "*").replace(".", ",").replace("*", ".")
+                        return f"Rp {val:,.2f}".replace(",", "*").replace(".", ",").replace("*", ".")
+                    
+                    for row in df_display.index:
+                        if "EPS" in row:
+                            df_display.loc[row] = df_display.loc[row].apply(lambda x: f"Rp {x:,.2f}".replace(",", "*").replace(".", ",").replace("*", ".") if pd.notnull(x) else "-")
+                        else:
+                            df_display.loc[row] = df_display.loc[row].apply(format_duit)
+                    
+                    st.dataframe(df_display, use_container_width=True)
+            else:
+                st.info("Data laporan tahunan terperinci belum di-update oleh bursa.")
                 
-            with tab3:
-                st.write(f"#### Laporan Aliran Arus Kas: {pilihan_emiten}")
-                st.dataframe(cash_flow, use_container_width=True)
+            st.markdown("---")
+            
+            # 2. PANEL METRIK DIVIDEN (Persis seperti bagian bawah di foto)
+            st.write(f"#### 💸 Metrik Dividen & Rasio Payout")
+            
+            div_yield = info_tambahan.get('dividendYield', 0)
+            payout_ratio = info_tambahan.get('payoutRatio', 0)
+            div_rate = info_tambahan.get('dividendRate', 0)
+            
+            div_yield_fmt = f"{div_yield * 100:.2f}%".replace(".", ",") if div_yield else "-"
+            payout_ratio_fmt = f"{payout_ratio * 100:.2f}%".replace(".", ",") if payout_ratio else "-"
+            div_rate_fmt = f"Rp {div_rate:,.2f}".replace(",", "*").replace(".", ",").replace("*", ".") if div_rate else "-"
+            
+            d_col1, d_col2, d_col3 = st.columns(3)
+            d_col1.metric("📈 Dividend Yield", div_yield_fmt)
+            d_col2.metric("📊 Payout Ratio", payout_ratio_fmt)
+            d_col3.metric("💵 Dividend Rate (Tahunan)", div_rate_fmt)
+            
         else:
-            st.warning(f"⚠️ Data finansial detail untuk {pilihan_emiten} sementara tidak tersedia di Yahoo Finance atau melebihi batas batas aman permintaan.")
+            st.warning(f"⚠️ Data finansial untuk {pilihan_emiten} sementara tidak dapat ditarik. Coba lagi nanti.")
 
 else:
     st.info("💡 Masukkan kode emiten di kolom sebelah kiri, lalu klik 'TARIK DATA MARKET' untuk memulai sistem.")
