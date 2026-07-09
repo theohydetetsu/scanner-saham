@@ -3,11 +3,25 @@ import pandas as pd
 import yfinance as yf
 import numpy as np
 import time
+from datetime import datetime  # TAMBAHAN BARU: Untuk mencatat waktu
 
 # 1. KONFIGURASI HALAMAN
 st.set_page_config(page_title="AI Stock Dashboard Pro", page_icon="📈", layout="wide")
 
+# Inisialisasi Memori Aplikasi (Session State)
+if "raw_stocks" not in st.session_state:
+    st.session_state.raw_stocks = []
+if "last_update" not in st.session_state:
+    st.session_state.last_update = None
+
 st.title("📈 AI AUTOMATED STOCK SCANNER DASHBOARD (PRO EDITION)")
+
+# TAMBAHAN BARU: Menampilkan Waktu Update Pro di Bawah Judul Utama
+if st.session_state.last_update:
+    st.markdown(f"🕒 **Terakhir Diperbarui Otomatis:** `{st.session_state.last_update}`")
+else:
+    st.markdown("🕒 **Terakhir Diperbarui Otomatis:** `Belum memuat data`")
+
 st.markdown("*Sistem Interaktif: Dropdown Bandarmologi + Sensor Warna Font + Ringkasan Grafik Pro*")
 st.markdown("---")
 
@@ -16,11 +30,13 @@ default_bluechips = "BBCA, BBRI, BMRI, BBNI, TLKM, ASII, UNTR, ICBP, INDF, AMRT,
 
 st.sidebar.header("⚙️ Pengaturan Awal")
 saham_input = st.sidebar.text_area("Daftar Emiten:", default_bluechips, height=120)
+
+# Parsing data emiten (menghapus spasi kosong dan mengubah ke uppercase)
 daftar_saham = [s.strip().upper() + ".JK" for s in saham_input.split(",") if s.strip()]
 
-muat_data = st.sidebar.button("🔄 1. TARIK DATA MARKET (CACHED)", use_container_width=True)
+muat_data = st.sidebar.button("🔄 TARIK DATA MARKET", use_container_width=True)
 
-# 3. FUNGSI TEKNIKAL & AMBIL DATA (DI-CACHE AGAR ANTI-BLOKIR)
+# 3. FUNGSI TEKNIKAL & AMBIL DATA
 def hitung_rsi(df, periods=14):
     delta = df['Close'].diff()
     gain = (delta.where(delta > 0, 0)).rolling(window=periods).mean()
@@ -84,14 +100,24 @@ def fetch_raw_data(saham_list):
             continue
     return master_data
 
-# 4. ALUR PROSES APLIKASI
-if "raw_stocks" not in st.session_state:
-    st.session_state.raw_stocks = []
+# 4. ALUR PROSES APLIKASI (DENGAN SISTEM PROTEKSI INPUT & ANIMASI LOADING)
+if muat_data:
+    if not daftar_saham:
+        st.sidebar.error("⚠️ Daftar emiten tidak boleh kosong!")
+    else:
+        st.cache_data.clear() # Memaksa sistem hapus cache lama agar memunculkan loading kembali
+        with st.spinner("⏳ Sedang memperbarui data market dari Yahoo Finance..."):
+            st.session_state.raw_stocks = fetch_raw_data(daftar_saham)
+            st.session_state.last_update = datetime.now().strftime("%d %B %Y | %H:%M:%S WIB")
+        st.sidebar.success("✅ Berhasil diperbarui!")
 
-if muat_data or len(st.session_state.raw_stocks) == 0:
-    with st.spinner("⏳ Mengunduh data bursa saham..."):
+# Trigger pertama kali saat aplikasi dibuka (jika input ada isinya)
+if len(st.session_state.raw_stocks) == 0 and daftar_saham:
+    with st.spinner("⏳ Memuat data bursa awal..."):
         st.session_state.raw_stocks = fetch_raw_data(daftar_saham)
+        st.session_state.last_update = datetime.now().strftime("%d %B %Y | %H:%M:%S WIB")
 
+# Tampilkan dashboard jika data berhasil didapatkan
 if st.session_state.raw_stocks:
     df_base = pd.DataFrame(st.session_state.raw_stocks)
     df_base["BANDARMOLOGI"] = "NEUTRAL"
@@ -122,7 +148,7 @@ if st.session_state.raw_stocks:
     st.subheader("📊 STEP 2: Dashboard Hasil Rekomendasi Akhir AI Pro")
     
     hasil_rekomendasi = []
-    raw_scores_for_chart = {} # Memori simpan skor untuk grafik
+    raw_scores_for_chart = {}
     
     for idx, row in df_edited.iterrows():
         ticker = row["TICKER"]
@@ -142,9 +168,8 @@ if st.session_state.raw_stocks:
         else: skor += 5
         
         skor = max(0, min(100, skor))
-        raw_scores_for_chart[ticker] = skor # catat skor asli
+        raw_scores_for_chart[ticker] = skor
         
-        # Penentuan Sinyal Bulatan 3D
         if skor >= 70:
             keputusan = "🟢 CICIL BELI"
             sinyal = "BUY / ACCUMULATE"
@@ -175,7 +200,7 @@ if st.session_state.raw_stocks:
         
     df_final = pd.DataFrame(hasil_rekomendasi)
     
-    # --- TAMBAHAN BARU: METRICS PANEL (RINGKASAN COUNTER) ---
+    # METRICS PANEL
     total_buy = sum('🟢' in x for x in df_final['KEPUTUSAN AKHIR'])
     total_hold = sum('🟡' in x for x in df_final['KEPUTUSAN AKHIR'])
     total_sell = sum('🔴' in x for x in df_final['KEPUTUSAN AKHIR'])
@@ -185,53 +210,46 @@ if st.session_state.raw_stocks:
     m_col2.metric("🟡 REKOMENDASI HOLD", f"{total_hold} Emiten", help="Saham dengan skor AI antara 45 - 69")
     m_col3.metric("🔴 REKOMENDASI SELL", f"{total_sell} Emiten", help="Saham dengan skor AI di bawah 45")
     
-    st.markdown(" ") # Beri jarak spasi sedikit
+    st.markdown(" ")
 
-    # --- TAMBAHAN BARU: PRO STOCK CHART VISUALIZATION ---
+    # PRO STOCK CHART VISUALIZATION
     st.write("### 📈 Grafik Kekuatan Emiten (Top Skor AI)")
-    # Buat DataFrame khusus grafik dan urutkan dari skor tertinggi
     df_chart = pd.DataFrame(list(raw_scores_for_chart.items()), columns=['TICKER', 'SKOR AI'])
     df_chart = df_chart.sort_values(by='SKOR AI', ascending=False).reset_index(drop=True)
     df_chart_indexed = df_chart.set_index('TICKER')
     
-    # Munculkan Grafik Batang Premium Streamlit
     st.bar_chart(df_chart_indexed, color="#00af50", height=280)
     
     st.write("### 📋 Detail Tabel Analisis Fundamental & Teknikal")
     
-    # 5. ENGINE SENSOR WARNA OTOMATIS (FONT HIJAU & MERAH)
+    # ENGINE SENSOR WARNA OTOMATIS
     def sensor_warna_otomatis(df):
         styles = pd.DataFrame('', index=df.index, columns=df.columns)
         for idx, row in df.iterrows():
-            # Sensor PER
             try:
                 per = float(row['PER (x)'])
                 if per < 15.0: styles.at[idx, 'PER (x)'] = 'color: #00af50; font-weight: bold;'
                 elif per > 25.0: styles.at[idx, 'PER (x)'] = 'color: #ff0000; font-weight: bold;'
             except: pass
             
-            # Sensor PBV
             try:
                 pbv = float(row['PBV (x)'])
                 if pbv < 2.0: styles.at[idx, 'PBV (x)'] = 'color: #00af50; font-weight: bold;'
                 elif pbv > 4.0: styles.at[idx, 'PBV (x)'] = 'color: #ff0000; font-weight: bold;'
             except: pass
             
-            # Sensor Dividend Yield
             try:
                 div = float(row['DIV YIELD'].replace('%', ''))
                 if div > 3.0: styles.at[idx, 'DIV YIELD'] = 'color: #00af50; font-weight: bold;'
                 elif div == 0.0: styles.at[idx, 'DIV YIELD'] = 'color: #ff0000; font-weight: bold;'
             except: pass
             
-            # Sensor RSI
             try:
                 rsi = float(row['RSI'])
                 if rsi <= 30.0: styles.at[idx, 'RSI'] = 'color: #00af50; font-weight: bold;'
                 elif rsi >= 70.0: styles.at[idx, 'RSI'] = 'color: #ff0000; font-weight: bold;'
             except: pass
             
-            # Sensor Sinyal & Keputusan Akhir
             kep = row['KEPUTUSAN AKHIR']
             if '🟢' in kep:
                 styles.at[idx, 'KEPUTUSAN AKHIR'] = 'color: #00af50; font-weight: bold;'
@@ -248,6 +266,5 @@ if st.session_state.raw_stocks:
     df_styled = df_final.style.apply(sensor_warna_otomatis, axis=None)
     st.dataframe(df_styled, use_container_width=True, hide_index=True, height=500)
     
-    st.caption("💡 *Info: Grafik batang di atas akan otomatis bergeser naik/turun posisinya secara dinamis setiap kali Anda mengganti opsi Bandarmologi di tabel atas.*")
 else:
-    st.info("Silakan klik tombol di sidebar kiri untuk memuat data saham.")
+    st.info("💡 Masukkan kode emiten di kolom sebelah kiri, lalu klik 'TARIK DATA MARKET' untuk memulai sistem.")
