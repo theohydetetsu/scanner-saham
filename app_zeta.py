@@ -342,7 +342,7 @@ if st.session_state.raw_stocks:
             "BANDARMOLOGI": row["BANDARMOLOGI"],
             "SKOR AI": skor,
             "SINYAL TEKNIKAL": sinyal,
-            "KEPUTUSAN AKHIR": keputusan
+            "ANALISA AKHIR": keputusan
         })
         
     df_final = pd.DataFrame(hasil_rekomendasi)
@@ -397,7 +397,7 @@ if st.session_state.raw_stocks:
                 elif per > 25.0: styles.at[idx, 'PER (x)'] = 'color: #ff1744;'
             except: pass
             
-            kep = row['KEPUTUSAN AKHIR']
+            kep = row['ANALISA AKHIR']
             if '🟢' in kep: styles.iloc[idx, -3:] = 'background-color: #092015; color: #00ffcc; font-weight: bold;'
             elif '🟡' in kep: styles.iloc[idx, -3:] = 'background-color: #1f1b0a; color: #ffb300;'
             elif '🔴' in kep: styles.iloc[idx, -3:] = 'background-color: #240f13; color: #ff1744;'
