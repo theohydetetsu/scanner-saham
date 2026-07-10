@@ -1,4 +1,6 @@
 streamlit
 pandas
 yfinance
-plotly
+numpy
+pytz
+yahooquery
