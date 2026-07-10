@@ -4,17 +4,16 @@ import numpy as np
 from datetime import datetime
 
 # =====================================================================
-# 1. KONFIGURASI HALAMAN, THEME PREMIUM & INITIAL STATE
+# 1. KONFIGURASI HALAMAN & CUSTOM THEME
 # =====================================================================
 st.set_page_config(page_title="ZETA Terminal Pro Max v3.5", layout="wide")
 
-# Custom CSS untuk tampilan Terminal Finansial yang Gelap & Elegan (Cyber Dark Theme)
 st.markdown("""
 <style>
-    /* Styling Main App */
+    /* Styling Dasar App (Dark Theme) */
     .stApp { background-color: #05070a; color: #e2e8f0; }
     
-    /* Panel Ringkasan Intelijen Sistem (Metrik Lingkaran) */
+    /* Panel Metrik Kotak Intelijen */
     .metric-box {
         padding: 20px;
         border-radius: 8px;
@@ -30,24 +29,21 @@ st.markdown("""
     .box-yellow { background-color: #1a190e; border: 1px solid #ffcc00; color: #ffcc00; }
     .box-red { background-color: #220f12; border: 1px solid #ff3344; color: #ff3344; }
     
-    .circle-indicator {
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        display: inline-block;
-    }
+    .circle-indicator { width: 24px; height: 24px; border-radius: 50%; }
     .circle-green { background-color: #00ffcc; box-shadow: 0 0 10px #00ffcc; }
     .circle-yellow { background-color: #ffcc00; box-shadow: 0 0 10px #ffcc00; }
     .circle-red { background-color: #ff3344; box-shadow: 0 0 10px #ff3344; }
     
-    .metric-val { font-size: 28px; font-family: 'Courier New', monospace; }
-    .metric-lbl { font-size: 14px; color: #8a99ad; }
+    .metric-val { font-size: 32px; font-family: 'Courier New', monospace; margin-bottom: -5px;}
+    .metric-lbl { font-size: 13px; color: #8a99ad; }
 </style>
 """, unsafe_allow_html=True)
 
-# Inisialisasi State Utama
+# =====================================================================
+# 2. INISIALISASI STATE & DATA SAHAM
+# =====================================================================
 if "last_sync" not in st.session_state:
-    st.session_state.last_sync = "10 Jul 2026 - 10:28:41 WIB"
+    st.session_state.last_sync = datetime.now().strftime("%d %b %Y - %H:%M:%S WIB")
 if "bandar_state" not in st.session_state:
     st.session_state.bandar_state = {}
 if "eval_page" not in st.session_state:
@@ -55,7 +51,6 @@ if "eval_page" not in st.session_state:
 if "risk_profile" not in st.session_state:
     st.session_state.risk_profile = "Moderat (Standar)"
 
-# Data Mentah Saham Utama (Sesuai Komponen Foto Radar Comprehensive Anda)
 if "raw_stocks" not in st.session_state:
     st.session_state.raw_stocks = [
         {"TICKER": "BBCA", "HARGA": 6175, "PER": 13.10, "PBV": 2.93, "DIV_YIELD": "5.74%", "RSI": 48.81, "SKOR": 70, "TEKNIKAL": "BUY / ACCUMULATE", "AKSI": "🟢 CICIL BELI"},
@@ -71,7 +66,7 @@ if "raw_stocks" not in st.session_state:
     ]
 
 # =====================================================================
-# 2. SIDEBAR (CYBER PANEL)
+# 3. SIDEBAR (CYBER PANEL)
 # =====================================================================
 with st.sidebar:
     st.title("💎 CYBER PANEL")
@@ -82,36 +77,31 @@ with st.sidebar:
         st.markdown(f"• **{stock['TICKER']}** <span style='color:#00ffcc;'>Active</span>", unsafe_allow_html=True)
         
     st.markdown("---")
-    
-    # Dropdown Profil Risiko Tradings
     st.session_state.risk_profile = st.selectbox(
         "🎯 PARAMETER SYSTEM CONFIDENCE:",
         options=["Moderat (Standar)", "Agresif (High Risk)", "Konservatif"],
         index=0
     )
     
-    # Tombol Re-Scan dengan fungsi pembaruan waktu dinamik
     if st.button("🔄 RE-SCAN MARKET DATA", use_container_width=True, type="primary"):
         st.session_state.last_sync = datetime.now().strftime("%d %b %Y - %H:%M:%S WIB")
         st.rerun()
         
     if st.button("🗑️ Reset System Cache", use_container_width=True):
         st.cache_data.clear()
-        st.success("Cache Terhapus!")
         st.rerun()
 
 # =====================================================================
-# 3. KONTEN UTAMA & MARKET INDEX (IHSG WIDGET)
+# 4. KONTEN UTAMA & HEADER
 # =====================================================================
-head_col1, head_col2 = st.columns([3, 1])
+col_h1, col_h2 = st.columns([3, 1])
 
-with head_col1:
+with col_h1:
     st.header("📈 PRO MAX ALGORITHMIC TERMINAL")
     st.markdown(f"⏱️ **Sinkronisasi Terakhir:** `{st.session_state.last_sync}`")
     st.caption("Integrasi Multi-Pilar Terminal: Teknikal Quantum, Analisis Konsensus Fundamental, & Real-Time Bandarmologi")
 
-with head_col2:
-    # Tampilan Indeks Gabungan IHSG Sesuai Foto
+with col_h2:
     st.markdown("""
     <div style="background-color:#0c1017; border: 1px solid #1f2430; padding:10px; border-radius:8px; text-align:right;">
         <span style="font-size:11px; color:#8a99ad; font-weight:bold;">INDEX GABUNGAN (IHSG)</span><br>
@@ -123,59 +113,49 @@ with head_col2:
 st.markdown("---")
 
 # =====================================================================
-# 4. MARKET CHART SIMULATION (CHART GRAFIK PASAR)
+# 5. GRAFIK PASAR REALISTIS (Anti Kotak Biru)
 # =====================================================================
-# Membuat visualisasi data tren pergerakan pasar (IHSG Candle-Simulation)
-chart_data = pd.DataFrame(
-    np.random.randn(20, 1) + [5900],
-    columns=['IHSG Trend Line']
-)
 st.markdown("**📊 REALTIME MARKET COMPREHENSIVE GRAPH CHART**")
-st.area_chart(chart_data, use_container_width=True)
+# Membuat dummy data berupa pergerakan trend agar terlihat seperti chart saham (bukan blok biru)
+np.random.seed(42)
+dates = pd.date_range(start="2026-04-19", periods=60, freq="B")
+# Random walk simulation
+prices = np.round(np.cumsum(np.random.randn(60) * 20) + 6000, 2)
+df_chart = pd.DataFrame({"IHSG Trend": prices}, index=dates)
+
+# Menggunakan Line Chart agar bersih dan estetik
+st.line_chart(df_chart, use_container_width=True, color="#ff3344")
 
 # =====================================================================
-# 5. PROMAX SYSTEM INTELLIGENCE SUMMARY (INDIKATOR LINGKARAN)
+# 6. SYSTEM INTELLIGENCE SUMMARY (Kotak Indikator)
 # =====================================================================
 st.markdown("### 📊 PROMAX SYSTEM INTELLIGENCE SUMMARY")
-st.markdown("<p style='color:#00ffcc; font-size:13px;'>👑 INSTITUTIONAL TOP PICKS: BMRI (85 Pts) • UNTR (85 Pts) • ICBP (85 Pts) • INDF (85 Pts)</p>", unsafe_allow_html=True)
+st.markdown("<p style='color:#00ffcc; font-size:13px; font-weight:bold;'>👑 INSTITUTIONAL TOP PICKS: BMRI (85 Pts) • UNTR (85 Pts) • ICBP (85 Pts) • INDF (85 Pts)</p>", unsafe_allow_html=True)
 
-col_m1, col_m2, col_m3 = st.columns(3)
-
-with col_m1:
+c1, c2, c3 = st.columns(3)
+with c1:
     st.markdown("""
     <div class="metric-box box-green">
         <div class="circle-indicator circle-green"></div>
-        <div>
-            <div class="metric-val">17</div>
-            <div class="metric-lbl">Emiten (BUY / ACCUMULATE)</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+        <div><div class="metric-val">17</div><div class="metric-lbl">Emiten (BUY / ACCUMULATE)</div></div>
+    </div>""", unsafe_allow_html=True)
 
-with col_m2:
+with c2:
     st.markdown("""
     <div class="metric-box box-yellow">
         <div class="circle-indicator circle-yellow"></div>
-        <div>
-            <div class="metric-val">5</div>
-            <div class="metric-lbl">Emiten (WATCHING / NEUTRAL)</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+        <div><div class="metric-val">5</div><div class="metric-lbl">Emiten (WATCHING / NEUTRAL)</div></div>
+    </div>""", unsafe_allow_html=True)
 
-with col_m3:
+with c3:
     st.markdown("""
     <div class="metric-box box-red">
         <div class="circle-indicator circle-red"></div>
-        <div>
-            <div class="metric-val">3</div>
-            <div class="metric-lbl">Emiten (STRONG SELL / REDUCE)</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+        <div><div class="metric-val">3</div><div class="metric-lbl">Emiten (STRONG SELL / REDUCE)</div></div>
+    </div>""", unsafe_allow_html=True)
 
 # =====================================================================
-# 6. RADAR MATRIX COMPREHENSIVE (TABEL UTAMA)
+# 7. RADAR MATRIX COMPREHENSIVE (Tabel Utama Tanpa IndexError)
 # =====================================================================
 st.markdown(" ")
 st.markdown("#### 📋 RADAR MATRIX COMPREHENSIVE")
@@ -183,35 +163,41 @@ st.markdown("#### 📋 RADAR MATRIX COMPREHENSIVE")
 df_radar = pd.DataFrame(st.session_state.raw_stocks).copy()
 df_radar["BANDARMOLOGI"] = df_radar["TICKER"].map(st.session_state.bandar_state).fillna("NEUTRAL")
 
-# Fungsi Elegan untuk mewarnai baris aksi trade secara presisi & aman dari IndexError
-def style_radar_table(row):
-    styles = [''] * len(row)
-    if "CICIL BELI" in str(row["AKSI"]):
-        styles[-1] = 'color: #00ffcc; font-weight: bold; background-color: #081a17;'
-    elif "STRONG SELL" in str(row["AKSI"]):
-        styles[-1] = 'color: #ff3344; font-weight: bold; background-color: #200a0d;'
-    elif "HOLD" in str(row["AKSI"]):
-        styles[-1] = 'color: #ffcc00; font-weight: bold; background-color: #1a1608;'
-    return styles
+# FUNGSI PEWARNAAN BARU (Dijamin AMAN 100% dari IndexError)
+def style_kolom_aksi(val):
+    val_str = str(val).upper()
+    if "CICIL BELI" in val_str:
+        return 'color: #00ffcc; font-weight: bold; background-color: #081a17;'
+    elif "STRONG SELL" in val_str:
+        return 'color: #ff3344; font-weight: bold; background-color: #200a0d;'
+    elif "HOLD" in val_str or "WATCHING" in val_str:
+        return 'color: #ffcc00; font-weight: bold; background-color: #1a1608;'
+    return ''
 
-df_radar_styled = df_radar.style.apply(style_radar_table, axis=1)
+# Hanya mewarnai spesifik kolom 'AKSI'
+df_radar_styled = df_radar.style.map(style_kolom_aksi, subset=['AKSI'])
 st.dataframe(df_radar_styled, use_container_width=True, hide_index=True)
 
 # =====================================================================
-# 7. MATRIX EVALUASI BANDARMOLOGI (INPUT DATA + PAGINATION FIX)
+# 8. MATRIX BANDARMOLOGI (Dropdown & Paginasi Fixed)
 # =====================================================================
-with st.expander("⚙️ BUKA MATRIX EVALUASI BANDARMOLOGI (Input Data Dropdown)", expanded=False):
-    st.markdown("<p style='color:#00d4ff; font-size:13px;'>💡 TIPS: Pilih status bandarmologi emiten pada kolom dropdown, sistem akan menyinkronkan status ke tabel radar utama secara realtime.</p>", unsafe_allow_html=True)
+with st.expander("⚙️ BUKA MATRIX EVALUASI BANDARMOLOGI (Input Data)", expanded=False):
+    st.markdown("<p style='color:#00d4ff; font-size:13px;'>💡 <b>Petunjuk:</b> Ubah status bandarmologi emiten pada kolom dropdown di bawah untuk mengupdate kalkulasi radar utama.</p>", unsafe_allow_html=True)
     
     df_base = pd.DataFrame(st.session_state.raw_stocks)[["TICKER", "HARGA", "PER", "PBV", "DIV_YIELD", "RSI"]]
-    df_base["INTEGRASI BANDARMOLOGI"] = df_base["TICKER"].map(st.session_state.bandar_state).fillna("-")
+    df_base["INTEGRASI BANDARMOLOGI"] = df_base["TICKER"].map(st.session_state.bandar_state).fillna("NEUTRAL")
     
-    # Sistem Navigasi Paginasi yang Presisi
+    # Logika Paginasi yang Presisi
     items_per_page = 5
     total_eval_pages = max(1, (len(df_base) - 1) // items_per_page + 1)
+    
+    # Boundary Guard (mencegah error jika data mengecil)
+    if st.session_state.eval_page >= total_eval_pages:
+        st.session_state.eval_page = total_eval_pages - 1
+        
     start_eval = st.session_state.eval_page * items_per_page
     
-    # RESET INDEX: Menghindari IndexError saat data dimodifikasi di halaman berikutnya
+    # RESET INDEX: Ini kunci anti-IndexError saat ganti halaman
     df_eval_display = df_base.iloc[start_eval:start_eval + items_per_page].reset_index(drop=True)
     
     edited_df = st.data_editor(
@@ -219,18 +205,19 @@ with st.expander("⚙️ BUKA MATRIX EVALUASI BANDARMOLOGI (Input Data Dropdown)
         column_config={
             "INTEGRASI BANDARMOLOGI": st.column_config.SelectboxColumn(
                 "INTEGRASI BANDARMOLOGI",
-                help="Klik kotak kolom untuk mengubah status bandar",
-                options=["-", "AKUMULASI", "NEUTRAL", "DISTRIBUSI"],
+                help="Klik untuk ubah status",
+                options=["AKUMULASI", "NEUTRAL", "DISTRIBUSI"],
                 required=True,
                 width="medium"
             )
         },
         disabled=["TICKER", "HARGA", "PER", "PBV", "DIV_YIELD", "RSI"],
         key="bandar_data_editor",
-        use_container_width=True
+        use_container_width=True,
+        hide_index=True
     )
     
-    # Deteksi perubahan dan simpan ke session_state menggunakan mapping Ticker asli
+    # Simpan Perubahan Dropdown
     if st.session_state.get("bandar_data_editor"):
         changes = st.session_state.bandar_data_editor.get("edited_rows", {})
         for idx, change in changes.items():
@@ -239,7 +226,7 @@ with st.expander("⚙️ BUKA MATRIX EVALUASI BANDARMOLOGI (Input Data Dropdown)
                 st.session_state.bandar_state[ticker_terkait] = change["INTEGRASI BANDARMOLOGI"]
         st.rerun()
 
-    # Navigasi Kontrol Tombol Pagination
+    # Tombol Paginasi
     col_p1, col_p2, col_p3 = st.columns([1, 2, 1])
     with col_p1:
         if st.button("⬅️ Previous", disabled=st.session_state.eval_page == 0, use_container_width=True):
@@ -253,18 +240,19 @@ with st.expander("⚙️ BUKA MATRIX EVALUASI BANDARMOLOGI (Input Data Dropdown)
             st.rerun()
 
 # =====================================================================
-# 8. ANALISIS KINERJA FINANSIAL & PARAMETER DIVIDEN (FORMAT REPLIKA FOTO)
+# 9. ANALISIS KINERJA FINANSIAL & DIVIDEN
 # =====================================================================
 st.markdown("---")
-st.subheader("📑 Analisis Kinerja Finansial & Parameter Dividen")
+st.markdown("### 📑 Analisis Kinerja Finansial & Parameter Dividen")
 
 pilihan_emiten = st.selectbox("📌 Pilih Kode Emiten untuk Evaluasi Mendalam:", options=[s['TICKER'] for s in st.session_state.raw_stocks])
 
 if pilihan_emiten:
-    # Seleksi Filter Metrik Menggunakan Mode Pills Tab yang Elegan
+    st.info(f"Modul finansial lanjutan untuk **{pilihan_emiten}** aktif (Data Kuartalan & TTM).")
+    
+    # Navigasi Metrik
     metric_tab = st.radio("Metrik Finansial:", ["Net Income", "EPS", "Revenue"], horizontal=True)
     
-    # 1. Penyusunan Data Finansial Terstruktur Periodik (Q1 - TTM) Sesuai Gambar Pendukung Anda
     if metric_tab == "Net Income":
         data_matrix = {
             "Period": ["Q1", "Q2", "Q3", "Q4", "Annualised", "TTM (Q1)"],
@@ -279,7 +267,7 @@ if pilihan_emiten:
             "2025": ["115.00", "118.00", "113.00", "112.00", "458.00", "458.00"],
             "2024": ["102.00", "109.00", "110.00", "105.00", "426.00", "426.00"]
         }
-    else: # Revenue
+    else: 
         data_matrix = {
             "Period": ["Q1", "Q2", "Q3", "Q4", "Annualised", "TTM (Q1)"],
             "2026": ["42,150 B", "-", "-", "-", "168,600 B", "165,200 B"],
@@ -287,31 +275,16 @@ if pilihan_emiten:
             "2024": ["38,100 B", "39,300 B", "39,500 B", "38,900 B", "155,800 B", "155,800 B"]
         }
         
-    df_financial_matrix = pd.DataFrame(data_matrix)
-    
-    # Tampilkan Tabel Finansial Utama
-    st.table(df_financial_matrix.set_index("Period"))
+    st.table(pd.DataFrame(data_matrix).set_index("Period"))
     
     st.markdown(" ")
-    
-    # 2. Penyusunan Bagian Bawah Tabel: Parameter Dividen Historis Sesuai Gambar 
     dividen_matrix = {
         "Data Parameter": ["Dividend (TTM)", "Payout Ratio", "Dividend Yield"],
         "2026": ["301.00", "63.17%", "4.85%"],
         "2025": ["336.00", "71.99%", "5.01%"],
         "2024": ["300.00", "67.44%", "3.58%"]
     }
-    df_dividen_matrix = pd.DataFrame(dividen_matrix)
-    
-    st.table(df_dividen_matrix.set_index("Data Parameter"))
+    st.table(pd.DataFrame(dividen_matrix).set_index("Data Parameter"))
 
-# =====================================================================
-# 9. FOOTER SYSTEM TERMINAL SECURITY
-# =====================================================================
 st.markdown("---")
-st.markdown(
-    "<p style='text-align: center; color: #57657a; font-size: 11px;'>"
-    "⚡ ZETA Terminal Pro Max Engine • Terproteksi Enkripsi Algoritma Quantum Multi-Pilar v3.5 • All Rights Reserved 2026"
-    "</p>", 
-    unsafe_allow_html=True
-)
+st.markdown("<p style='text-align: center; color: #57657a; font-size: 11px;'>⚡ ZETA Terminal Pro Max Engine • Terproteksi Enkripsi Algoritma Multi-Pilar v3.5 • All Rights Reserved 2026</p>", unsafe_allow_html=True)
