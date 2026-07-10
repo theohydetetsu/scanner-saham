@@ -320,9 +320,25 @@ if st.session_state.raw_stocks:
     with m3: st.markdown(f"<div class='premium-card'><div class='strat-label' style='color:#fb7185;'>🔴 STRATEGI SELL</div><div class='strat-num' style='color:#f8fafc;'>{sum('🔴' in x for x in df_final['REKOMENDASI'])}</div></div>", unsafe_allow_html=True)
     
     st.write(" ")
+    
+    # 🌟 Fungsi styling yang sudah diperbarui 🌟
     def style_tabel(row):
-        bg = 'background-color: rgba(16, 185, 129, 0.1); color: #34d399;' if '🟢' in row['REKOMENDASI'] else ('background-color: rgba(245, 158, 11, 0.1); color: #fbbf24;' if '🟡' in row['REKOMENDASI'] else 'background-color: rgba(244, 63, 94, 0.1); color: #fb7185;')
-        return [bg if c in ['BANDARMOLOGI', 'SKOR', 'SINYAL', 'REKOMENDASI'] else '' for c in row.index]
+        styles = []
+        if '🟢' in row['REKOMENDASI']: 
+            bg = 'background-color: rgba(16, 185, 129, 0.1); color: #34d399;'
+        elif '🟡' in row['REKOMENDASI']: 
+            bg = 'background-color: rgba(245, 158, 11, 0.1); color: #fbbf24;'
+        else: 
+            bg = 'background-color: rgba(244, 63, 94, 0.1); color: #fb7185;'
+            
+        for c in row.index:
+            if c == 'TICKER':
+                styles.append('font-weight: 900; font-size: 16px; color: #00f2fe;')
+            elif c in ['BANDARMOLOGI', 'SKOR', 'SINYAL', 'REKOMENDASI']:
+                styles.append(bg)
+            else:
+                styles.append('')
+        return styles
 
     st.markdown("📄 **Market Radar Matrix**")
     st.dataframe(df_final.style.apply(style_tabel, axis=1), use_container_width=True, hide_index=True)
