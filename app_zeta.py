@@ -22,7 +22,7 @@ except ImportError:
 # ==========================================
 # 1. KONFIGURASI HALAMAN UTAMA & UI STYLE
 # ==========================================
-st.set_page_config(page_title="AI Stock Dashboard Pro Max v5.0", page_icon="💎", layout="wide")
+st.set_page_config(page_title="AI Stock Dashboard Pro Max v5.2", page_icon="💎", layout="wide")
 
 st.markdown("""
 <style>
@@ -42,7 +42,6 @@ st.markdown("""
     .strat-num { font-size: 2.5rem; font-weight: 900; margin: 5px 0; line-height: 1; text-align: center; }
     .strat-label { font-size: 0.8rem; font-weight: 600; text-align: center; letter-spacing: 1px; }
     
-    /* Tabel Styling Custom */
     .stDataFrame { border-radius: 10px; overflow: hidden; }
     
     div.stButton > button:first-child { background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%) !important; color: #020617 !important; font-weight: 800 !important; font-size: 1rem !important; border-radius: 8px !important; border: none !important; padding: 10px !important; transition: all 0.3s ease; }
@@ -139,7 +138,6 @@ def fetch_raw_data(saham_list):
         except: continue
     return master_data
 
-# Fungsi Format Uang
 def format_miliar(val):
     if pd.isna(val) or val == 0: return "-"
     return f"{val / 1_000_000_000:,.2f} B"
@@ -154,21 +152,16 @@ def format_rupiah(val):
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_financial_statement(ticker_symbol, metric_type):
     tkr = yf.Ticker(ticker_symbol + ".JK")
-    
-    # Menyiapkan kerangka tabel kosong
     df_fin = pd.DataFrame(index=["Q1", "Q2", "Q3", "Q4", "Annualised", "TTM"], columns=list_tahun).fillna("-")
     
     try:
-        # Ambil Laporan
         inc_q = tkr.quarterly_income_statement
         inc_a = tkr.income_statement
         
-        # Penentuan Label Metrik berdasarkan pilihan UI
         if metric_type == "Net Income": target_row = "Net Income"
         elif metric_type == "Revenue": target_row = "Total Revenue"
         else: target_row = "Basic EPS"
         
-        # Map Kuartalan
         if inc_q is not None and target_row in inc_q.index:
             for date_col in inc_q.columns:
                 thn = str(date_col.year)
@@ -181,7 +174,6 @@ def fetch_financial_statement(ticker_symbol, metric_type):
                     elif bln <= 9: df_fin.at["Q3", thn] = format_miliar(val) if metric_type != "EPS" else format_rupiah(val)
                     else: df_fin.at["Q4", thn] = format_miliar(val) if metric_type != "EPS" else format_rupiah(val)
                     
-        # Map Tahunan (Annualised & TTM proksi)
         if inc_a is not None and target_row in inc_a.index:
             for date_col in inc_a.columns:
                 thn = str(date_col.year)
@@ -189,11 +181,9 @@ def fetch_financial_statement(ticker_symbol, metric_type):
                 if thn in list_tahun:
                     formatted_val = format_miliar(val) if metric_type != "EPS" else format_rupiah(val)
                     df_fin.at["Annualised", thn] = formatted_val
-                    df_fin.at["TTM", thn] = formatted_val # Simplifikasi TTM
+                    df_fin.at["TTM", thn] = formatted_val
                     
-    except Exception as e:
-        pass # Biarkan berisi "-" jika gagal ditarik
-        
+    except: pass
     return df_fin
 
 @st.cache_data(ttl=3600, show_spinner=False)
@@ -202,7 +192,6 @@ def fetch_dividend_history(ticker_symbol):
     df_div = pd.DataFrame(index=["Dividend Per Share", "EPS (Earning Per Share)", "Payout Ratio (%)", "Dividend Yield (%)"], columns=list_tahun).fillna("-")
     
     try:
-        # Ambil data dividen & grup per tahun
         divs = tkr.dividends
         if divs is not None and not divs.empty:
             divs_by_year = divs.groupby(divs.index.year).sum()
@@ -211,7 +200,6 @@ def fetch_dividend_history(ticker_symbol):
                 if thn in list_tahun:
                     df_div.at["Dividend Per Share", thn] = format_rupiah(val)
                     
-        # Tarik EPS Tahunan untuk ngitung Payout Ratio
         inc_a = tkr.income_statement
         if inc_a is not None and "Basic EPS" in inc_a.index:
             for date_col in inc_a.columns:
@@ -220,35 +208,26 @@ def fetch_dividend_history(ticker_symbol):
                 if thn in list_tahun:
                     df_div.at["EPS (Earning Per Share)", thn] = format_rupiah(val_eps)
                     
-                    # Kalkulasi Payout Ratio & Yield Kasar (Berdasarkan rasio saat ini)
                     div_val = str(df_div.at["Dividend Per Share", thn]).replace("Rp ", "").replace(".", "")
                     if div_val != "-" and val_eps > 0:
                         try:
                             payout = (float(div_val) / float(val_eps)) * 100
                             df_div.at["Payout Ratio (%)", thn] = f"{payout:,.2f}%"
                         except: pass
-
-    except Exception:
-        pass
-        
+    except: pass
     return df_div
-
 
 # ==========================================
 # 2. SIDEBAR (CYBER PANEL)
 # ==========================================
 with st.sidebar:
-    st.markdown("""
-    <div style="padding: 5px 0px 15px 0px; text-align: center;">
-        <h2 style="color: #00f2fe; font-size: 1.5rem; font-weight: 900; margin-bottom: 0px;">💎 ZETA CORE v5</h2>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("<h2 style='color: #00f2fe; font-size: 1.5rem; font-weight: 900; margin-bottom: 5px;'>💎 ZETA CORE v5</h2>", unsafe_allow_html=True)
     
-    st.markdown("<span style='color:#cbd5e1; font-size:0.8rem; font-weight:600;'>🎯 PROFIL RISIKO:</span>", unsafe_allow_html=True)
-    profil_risiko = st.selectbox("", ["Moderat", "Agresif", "Konservatif"], label_visibility="collapsed")
+    # Perbaikan Aksesibilitas: Menambahkan label teks yang jelas
+    profil_risiko = st.selectbox("🎯 Kategori Profil Risiko:", ["Moderat", "Agresif", "Konservatif"], label_visibility="visible")
     
     daftar_saham = [s.strip().upper() + ".JK" for s in roster_20_saham]
-    if st.button("🔄 SCAN MARKET", use_container_width=True):
+    if st.button("🔄 SCAN MARKET", width='stretch'):
         st.cache_data.clear()
         with st.spinner("⏳ Menganalisis Market..."):
             st.session_state.raw_stocks = fetch_raw_data(daftar_saham)
@@ -321,7 +300,6 @@ if st.session_state.raw_stocks:
     
     st.write(" ")
     
-    # 🌟 Fungsi styling yang sudah diperbarui 🌟
     def style_tabel(row):
         styles = []
         if '🟢' in row['REKOMENDASI']: 
@@ -341,8 +319,7 @@ if st.session_state.raw_stocks:
         return styles
 
     st.markdown("📄 **Market Radar Matrix**")
-    st.dataframe(df_final.style.apply(style_tabel, axis=1), use_container_width=True, hide_index=True)
-
+    st.dataframe(df_final.style.apply(style_tabel, axis=1), width='stretch', hide_index=True)
 
     # ==========================================
     # MODUL BARU: ANALISIS LAPORAN KEUANGAN
@@ -352,27 +329,25 @@ if st.session_state.raw_stocks:
     
     f_col1, f_col2 = st.columns([1, 2])
     with f_col1:
-        st.markdown("<p style='font-size:0.9rem; font-weight:600; color:#cbd5e1; margin-bottom:5px;'>🎯 Pilih Kode Emiten untuk Cek Financials:</p>", unsafe_allow_html=True)
-        emiten_pilihan = st.selectbox("", roster_20_saham, label_visibility="collapsed")
+        # Perbaikan Aksesibilitas: Menambahkan label teks yang jelas
+        emiten_pilihan = st.selectbox("🎯 Target Emiten:", roster_20_saham, label_visibility="visible")
         
     with f_col2:
-        st.markdown("<p style='font-size:0.9rem; font-weight:600; color:#cbd5e1; margin-bottom:5px;'>Pilih Kategori Tampilan Metrik Keuangan:</p>", unsafe_allow_html=True)
-        metrik_pilihan = st.radio("", ["Net Income", "EPS", "Revenue"], horizontal=True, label_visibility="collapsed")
+        # Perbaikan Aksesibilitas: Menambahkan label teks yang jelas
+        metrik_pilihan = st.radio("📊 Tipe Rasio Finansial:", ["Net Income", "EPS", "Revenue"], horizontal=True, label_visibility="visible")
     
     st.write(" ")
     
     with st.spinner(f"Menarik Laporan Keuangan {emiten_pilihan} dari Server..."):
-        # 1. Tarik & Tampilkan Data Laporan Keuangan
         st.markdown(f"<h5 style='color: #34d399; margin-bottom: 10px;'>Period / {metrik_pilihan}</h5>", unsafe_allow_html=True)
         df_financials = fetch_financial_statement(emiten_pilihan, metrik_pilihan)
-        st.dataframe(df_financials, use_container_width=True)
+        st.dataframe(df_financials, width='stretch')
         
         st.write(" ")
         
-        # 2. Tarik & Tampilkan Riwayat Dividen
         st.markdown(f"<h5 style='color: #34d399; margin-bottom: 10px;'>💸 Riwayat Dividen & Yield (4 Tahun Terakhir)</h5>", unsafe_allow_html=True)
         df_dividends = fetch_dividend_history(emiten_pilihan)
-        st.dataframe(df_dividends, use_container_width=True)
+        st.dataframe(df_dividends, width='stretch')
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ ZETA CORE ENGINE • SECURE ALGORITHMIC TERMINAL v5.0</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ ZETA CORE ENGINE • SECURE ALGORITHMIC TERMINAL v5.2</p>", unsafe_allow_html=True)
