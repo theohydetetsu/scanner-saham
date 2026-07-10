@@ -389,10 +389,14 @@ if st.session_state.raw_stocks:
 
     st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
 
-    # ==========================================
+# ==========================================
     # 8. MATRIX EVALUASI (POSISI BAWAH + EXPANDER + PAGINATION)
     # ==========================================
-    with st.expander("⚙️ BUKA MATRIX EVALUASI BANDARMOLOGI (Input Data)", expanded=False):
+    with st.expander("⚙️ BUKA MATRIX EVALUASI BANDARMOLOGI (Input Data)", expanded=True):
+        
+        # Tambahan instruksi visual agar lebih user-friendly
+        st.markdown("<p style='color:#00d4ff; font-size:13px; font-weight:bold; margin-bottom:10px;'>💡 TIPS: Klik sel pada kolom Integrasi Bandarmologi untuk memunculkan opsi Dropdown 🔽</p>", unsafe_allow_html=True)
+        
         df_base = pd.DataFrame(st.session_state.raw_stocks)[["TICKER", "HARGA", "PER", "PBV", "DIV_YIELD", "RSI"]]
         df_base["INTEGRASI BANDARMOLOGI"] = df_base["TICKER"].map(st.session_state.bandar_state)
         
@@ -401,15 +405,27 @@ if st.session_state.raw_stocks:
         end_eval = start_eval + items_per_page
         df_eval_display = df_base.iloc[start_eval:end_eval]
         
+        # Konfigurasi Data Editor yang lebih presisi untuk Dropdown manual
         edited_df = st.data_editor(
             df_eval_display,
             column_config={
-                "INTEGRASI BANDARMOLOGI": st.column_config.SelectboxColumn("INTEGRASI BANDARMOLOGI", options=["AKUMULASI", "NEUTRAL", "DISTRIBUSI"], required=True),
-                "TICKER": st.column_config.Column(disabled=True), "HARGA": st.column_config.Column(disabled=True),
-                "PER": st.column_config.Column(disabled=True), "PBV": st.column_config.Column(disabled=True),
-                "DIV_YIELD": st.column_config.Column(disabled=True), "RSI": st.column_config.Column(disabled=True),
+                "INTEGRASI BANDARMOLOGI": st.column_config.SelectboxColumn(
+                    "🔽 INTEGRASI BANDARMOLOGI", # Modifikasi nama kolom agar ada indikator segitiga
+                    help="Klik untuk memilih: AKUMULASI, NEUTRAL, atau DISTRIBUSI",
+                    options=["AKUMULASI", "NEUTRAL", "DISTRIBUSI"],
+                    required=True,
+                    width="medium"
+                ),
+                "TICKER": st.column_config.Column(disabled=True), 
+                "HARGA": st.column_config.Column(disabled=True),
+                "PER": st.column_config.Column(disabled=True), 
+                "PBV": st.column_config.Column(disabled=True),
+                "DIV_YIELD": st.column_config.Column(disabled=True), 
+                "RSI": st.column_config.Column(disabled=True),
             },
-            hide_index=True, use_container_width=True, key=f"editor_eval_{st.session_state.eval_page}"
+            hide_index=True, 
+            use_container_width=True, 
+            key=f"editor_eval_{st.session_state.eval_page}"
         )
         
         # Pengecekan Perubahan State
@@ -423,21 +439,6 @@ if st.session_state.raw_stocks:
                 
         if state_changed:
             st.rerun()
-
-        # Tombol Navigasi Evaluasi
-        e_col1, e_col2, e_col3 = st.columns([1, 8, 1])
-        with e_col1:
-            if st.button("⬅️ Previous", key="prev_eval", use_container_width=True, disabled=st.session_state.eval_page == 0):
-                st.session_state.eval_page -= 1
-                st.rerun()
-        with e_col2:
-            st.markdown(f"<div style='text-align: center; color: #8a90a6; margin-top: 5px;'>Page {st.session_state.eval_page + 1} of {total_eval_pages}</div>", unsafe_allow_html=True)
-        with e_col3:
-            if st.button("Next ➡️", key="next_eval", use_container_width=True, disabled=st.session_state.eval_page >= total_eval_pages - 1):
-                st.session_state.eval_page += 1
-                st.rerun()
-
-    st.markdown("---")
     
     # ==========================================
     # 9. ANALISIS KINERJA & HISTORIS DEVIDEND
