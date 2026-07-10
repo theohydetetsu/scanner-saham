@@ -132,7 +132,6 @@ if df_ihsg_hist is not None:
             low=df_ihsg_hist['Low'], close=df_ihsg_hist['Close'],
             increasing_line_color='#00ffcc', decreasing_line_color='#ff3366', name="IHSG"
         )])
-        # PERBAIKAN TANGGAL CHART (Hilangkan gap weekend & rapikan label X-Axis)
         fig.update_xaxes(
             rangebreaks=[dict(bounds=["sat", "mon"])],
             tickformat="%d %b\n%Y",
@@ -173,6 +172,8 @@ for s in daftar_saham:
         st.session_state.bandar_state[ticker_name] = "NEUTRAL"
 
 st.sidebar.write(" ")
+
+# PERBAIKAN UTAMA: Tombol Re-Scan membersihkan cache secara paksa agar memicu animasi loading spinner
 muat_data = st.sidebar.button("🔄 RE-SCAN MARKET DATA", use_container_width=True, type="primary")
 st.sidebar.markdown("<br/>", unsafe_allow_html=True)
 
@@ -234,14 +235,21 @@ def fetch_raw_data(saham_list):
         except: continue
     return master_data
 
-if muat_data or len(st.session_state.raw_stocks) == 0:
-    if daftar_saham:
-        with st.spinner("⏳ Mengkalibrasi Data Pasar..."):
-            st.session_state.raw_stocks = fetch_raw_data(daftar_saham)
-            st.session_state.last_update = datetime.now().strftime("%d %b %Y - %H:%M:%S WIB")
-            st.session_state.radar_page = 0
-            st.session_state.eval_page = 0
-            st.rerun()
+# Eksekusi pembersihan cache & reload data bursa secara riil jika tombol ditekan
+if muat_data:
+    st.cache_data.clear()  # Bersihkan memori cache agar yfinance dipaksa mendownload ulang
+    with st.spinner("⏳ Mengkalibrasi Ulang Data Pasar..."):
+        st.session_state.raw_stocks = fetch_raw_data(daftar_saham)
+        st.session_state.last_update = datetime.now().strftime("%d %b %Y - %H:%M:%S WIB")
+        st.session_state.radar_page = 0
+        st.session_state.eval_page = 0
+    st.rerun()
+
+# Otomatis meload data pertama kali jika session state kosong
+if len(st.session_state.raw_stocks) == 0 and daftar_saham:
+    with st.spinner("⏳ Menginisialisasi Data Pasar Awal..."):
+        st.session_state.raw_stocks = fetch_raw_data(daftar_saham)
+        st.session_state.last_update = datetime.now().strftime("%d %b %Y - %H:%M:%S WIB")
 
 # ==========================================
 # 5. INTEGRASI ALGORITMA SKORING SYSTEM
@@ -279,7 +287,6 @@ if st.session_state.raw_stocks:
         else:
             keputusan, sinyal = "🔴 STRONG SELL", "TAKE PROFIT / SELL"
             
-        # PERBAIKAN BUG FORMAL VALUE (Safe casting Float ke Int untuk menghindari ValueError)
         try:
             harga_bersih = int(float(raw_info['HARGA']))
             harga_format = f"Rp {harga_bersih:,}".replace(",", ".")
@@ -293,10 +300,10 @@ if st.session_state.raw_stocks:
             "PBV (x)": f"{float(raw_info['PBV']):.2f}" if raw_info['PBV'] > 0 else "-",
             "DIV YIELD": f"{float(raw_info['DIV_YIELD']):.2f}%",
             "RSI": f"{float(raw_info['RSI']):.2f}",
-            "INTEGRASI BANDARMOLOGI": status_bandar,
-            "SKOR SYSTEM": skor,
+            "BANDARMOLOGI": status_bandar,
+            "SKOR AI": skor,
             "SINYAL TEKNIKAL": sinyal,
-            "AKSI TRADE": keputusan
+            "KEPUTUSAN AKHIR": keputusan
         })
         
     df_final = pd.DataFrame(hasil_rekomendasi)
@@ -316,11 +323,10 @@ if st.session_state.raw_stocks:
         </div>
         """, unsafe_allow_html=True)
 
-    t_buy = sum('🟢' in x for x in df_final['AKSI TRADE'])
-    t_hold = sum('🟡' in x for x in df_final['AKSI TRADE'])
-    t_sell = sum('🔴' in x for x in df_final['AKSI TRADE'])
+    t_buy = sum('🟢' in x for x in df_final['KEPUTUSAN AKHIR'])
+    t_hold = sum('🟡' in x for x in df_final['KEPUTUSAN AKHIR'])
+    t_sell = sum('🔴' in x for x in df_final['KEPUTUSAN AKHIR'])
     
-    # KOTAK METRIC MODIFIKASI RAMPING SISI KANAN-KIRI (MOBILE RESPONSIVE)
     m_col1, m_col2, m_col3 = st.columns(3)
     with m_col1:
         st.markdown(f"""
@@ -330,7 +336,7 @@ if st.session_state.raw_stocks:
                 <span style='color:#ffffff; font-size:32px; font-weight:900;'>{t_buy}</span>
             </div>
             <div style="text-align:right;">
-                <span style='color:#00e676; font-size:11px; font-weight:bold;'>BUY</span><br/>
+                <span style='color:#00e676; font-size:11px; font-weight:bold;'>STRATEGI BUY ACCUMULATE</span><br/>
                 <span style='font-size:11px; color:#8a90a6;'>Emiten</span>
             </div>
         </div>
@@ -343,7 +349,7 @@ if st.session_state.raw_stocks:
                 <span style='color:#ffffff; font-size:32px; font-weight:900;'>{t_hold}</span>
             </div>
             <div style="text-align:right;">
-                <span style='color:#ffb300; font-size:11px; font-weight:bold;'>HOLD</span><br/>
+                <span style='color:#ffb300; font-size:11px; font-weight:bold;'>STRATEGI WATCHING / HOLD</span><br/>
                 <span style='font-size:11px; color:#8a90a6;'>Emiten</span>
             </div>
         </div>
@@ -356,7 +362,7 @@ if st.session_state.raw_stocks:
                 <span style='color:#ffffff; font-size:32px; font-weight:900;'>{t_sell}</span>
             </div>
             <div style="text-align:right;">
-                <span style='color:#ff1744; font-size:11px; font-weight:bold;'>SELL</span><br/>
+                <span style='color:#ff1744; font-size:11px; font-weight:bold;'>STRATEGI LIQUIDATE / SELL</span><br/>
                 <span style='font-size:11px; color:#8a90a6;'>Emiten</span>
             </div>
         </div>
@@ -365,11 +371,11 @@ if st.session_state.raw_stocks:
     st.markdown("<div style='margin-bottom: 15px;'></div>", unsafe_allow_html=True)
 
     # ==========================================
-    # 9. RADAR MATRIX COMPREHENSIVE (TABEL UTAMA DENGAN STYLING PREMIUM)
+    # 7. RADAR MATRIX COMPREHENSIVE (TABEL UTAMA)
     # ==========================================
-    st.markdown(f"<h4 style='font-size: 15px; color:#8a90a6; margin-bottom:5px;'>📋 RADAR MATRIX COMPREHENSIVE</h4>", unsafe_allow_html=True)
+    st.markdown(f"<h4 style='font-size: 15px; color:#8a90a6; margin-bottom:5px;'>📋 Comprehensive Radar Matrix Table</h4>", unsafe_allow_html=True)
     
-    # PERBAIKAN SELEKSI KONDISIONAL STYLER (Anti-IndexError Menggunakan .loc Bukan .iloc)
+    # PERBAIKAN TOTAL MUTLAK: Menggunakan penanda .loc berbasis nama kolom & indeks asli (Anti IndexError)
     def style_tabel_premium(df):
         styles = pd.DataFrame('', index=df.index, columns=df.columns)
         for idx, row in df.iterrows():
@@ -379,16 +385,16 @@ if st.session_state.raw_stocks:
                     styles.loc[idx, 'PER (x)'] = 'color: #00ffcc; font-weight: bold;'
             except: pass
             
-            kep = str(row['AKSI TRADE'])
-            target_cols = ['SKOR SYSTEM', 'SINYAL TEKNIKAL', 'AKSI TRADE']
+            kep = str(row.get('KEPUTUSAN AKHIR', ''))
+            target_cols = ['SKOR AI', 'SINYAL TEKNIKAL', 'KEPUTUSAN AKHIR']
             valid_cols = [c for c in target_cols if c in df.columns]
             
             if '🟢' in kep: 
                 styles.loc[idx, valid_cols] = 'background-color: #0b1a13; color: #00ffcc; font-weight: bold;'
             elif '🟡' in kep: 
-                styles.loc[idx, valid_cols] = 'background-color: #1a160b; color: #ffb300;'
+                styles.loc[idx, valid_cols] = 'background-color: #1a160b; color: #ffb300; font-weight: bold;'
             elif '🔴' in kep: 
-                styles.loc[idx, valid_cols] = 'background-color: #1f0b0d; color: #ff1744;'
+                styles.loc[idx, valid_cols] = 'background-color: #1f0b0d; color: #ff1744; font-weight: bold;'
         return styles
 
     items_per_page = 10
@@ -410,7 +416,7 @@ if st.session_state.raw_stocks:
             st.session_state.radar_page += 1; st.rerun()
 
     # ==========================================
-    # 8. MATRIX EVALUASI BANDARMOLOGI (INPUT DROPDOWN & STATE SYNC)
+    # 8. MATRIX EVALUASI BANDARMOLOGI (INPUT DATA)
     # ==========================================
     with st.expander("⚙️ BUKA MATRIX EVALUASI BANDARMOLOGI (Input Data)", expanded=False):
         st.markdown("<p style='color:#00d4ff; font-size:12px; font-weight:bold;'>💡 Petunjuk: Ubah status bandarmologi emiten pada kolom dropdown di bawah untuk mengupdate kalkulasi radar utama.</p>", unsafe_allow_html=True)
@@ -422,7 +428,7 @@ if st.session_state.raw_stocks:
         start_eval = st.session_state.eval_page * items_per_page
         df_eval_display = df_base.iloc[start_eval:start_eval + items_per_page].copy()
         
-        # Data Editor dengan Selectbox DROPDOWN Segitiga yang Terpaku Presisi
+        # Data Editor dengan konfigurasi Dropdown manual berbentuk segitiga presisi
         edited_df = st.data_editor(
             df_eval_display,
             column_config={
@@ -436,10 +442,10 @@ if st.session_state.raw_stocks:
                 "PER": st.column_config.Column(disabled=True), "PBV": st.column_config.Column(disabled=True),
                 "DIV_YIELD": st.column_config.Column(disabled=True), "RSI": st.column_config.Column(disabled=True),
             },
-            hide_index=True, use_container_width=True, key=f"editor_eval_v35_{st.session_state.eval_page}"
+            hide_index=True, use_container_width=True, key=f"editor_eval_v36_{st.session_state.eval_page}"
         )
         
-        # LOGIKA SINKRONISASI AMAN (Hanya rerun saat perubahan data valid / Terhindar dari Loop Infinite)
+        # Logika Sinkronisasi anti-infinite loop
         state_changed = False
         if edited_df is not None:
             for _, row in edited_df.iterrows():
@@ -465,7 +471,7 @@ if st.session_state.raw_stocks:
     st.markdown("---")
     
     # ==========================================
-    # 10. ANALISIS KINERJA FINANSIAL & DIVIDEN
+    # 9. ANALISIS KINERJA FINANSIAL & DIVIDEN
     # ==========================================
     st.markdown("<h3 style='margin-bottom:10px;'>📑 Analisis Kinerja Finansial & Parameter Dividen</h3>", unsafe_allow_html=True)
     pilihan_emiten = st.selectbox("🎯 Pilih Kode Emiten untuk Evaluasi Mendalam:", options=df_final["TICKER"].tolist())
