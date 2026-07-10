@@ -345,16 +345,24 @@ if st.session_state.raw_stocks:
     
     def style_tabel_premium(df):
         styles = pd.DataFrame('', index=df.index, columns=df.columns)
-        for idx, row in df.iterrows():
+        # Perbaikan: Menggunakan posisi integer (i) agar tidak error saat pagination
+        for i in range(len(df)):
+            row = df.iloc[i]
+            
+            # Pewarnaan kolom PER
             try:
                 per = float(row['PER (x)'])
-                if per < 15.0: styles.at[idx, 'PER (x)'] = 'color: #00ffcc; font-weight: bold;'
-                elif per > 25.0: styles.at[idx, 'PER (x)'] = 'color: #ff1744;'
+                col_idx_per = df.columns.get_loc('PER (x)')
+                if per < 15.0: styles.iloc[i, col_idx_per] = 'color: #00ffcc; font-weight: bold;'
+                elif per > 25.0: styles.iloc[i, col_idx_per] = 'color: #ff1744;'
             except: pass
+            
+            # Pewarnaan 3 kolom terakhir berdasarkan AKSI TRADE
             kep = row['AKSI TRADE']
-            if '🟢' in kep: styles.iloc[idx, -3:] = 'background-color: #0b1a13; color: #00ffcc; font-weight: bold;'
-            elif '🟡' in kep: styles.iloc[idx, -3:] = 'background-color: #1a160b; color: #ffb300;'
-            elif '🔴' in kep: styles.iloc[idx, -3:] = 'background-color: #1f0b0d; color: #ff1744;'
+            if '🟢' in kep: styles.iloc[i, -3:] = 'background-color: #0b1a13; color: #00ffcc; font-weight: bold;'
+            elif '🟡' in kep: styles.iloc[i, -3:] = 'background-color: #1a160b; color: #ffb300;'
+            elif '🔴' in kep: styles.iloc[i, -3:] = 'background-color: #1f0b0d; color: #ff1744;'
+            
         return styles
 
     # Pagination Logic Radar Matrix
@@ -437,9 +445,70 @@ if st.session_state.raw_stocks:
     st.markdown("<h3 style='margin-bottom:10px;'>📑 Analisis Kinerja Finansial & Parameter Dividen</h3>", unsafe_allow_html=True)
     pilihan_emiten = st.selectbox("🎯 Pilih Kode Emiten untuk Evaluasi Mendalam:", options=df_final["TICKER"].tolist())
     
-    # [Logika finansial dan fundamental lainnya tetap utuh seperti versi sebelumnya]
-    # (Kode disingkat untuk keterbacaan, silakan pertahankan blok "9. Analisis Kinerja" milik Anda yang sudah berfungsi dengan baik)
     if pilihan_emiten:
-        st.info(f"Modul finansial lanjutan untuk {pilihan_emiten} aktif (Gunakan skrip fundamental Anda di bagian ini).")
+        with st.spinner(f"⏳ Mengunduh data fundamental & dividen untuk {pilihan_emiten}..."):
+            fin_annual, fin_quarter, info_emiten, dividen, hist_5y = fetch_advanced_financials(pilihan_emiten)
+            
+            if fin_annual is not None and not fin_annual.empty:
+                # Membuat Tab untuk merapikan tampilan
+                tab1, tab2, tab3 = st.tabs(["💰 Laporan Keuangan (Tahunan)", "📊 Valuasi & Profitabilitas", "💸 Historis Dividen"])
+                
+                with tab1:
+                    st.markdown(f"**Data Laporan Keuangan {pilihan_emiten}**")
+                    # Transpose data agar tahun berada di atas sebagai kolom
+                    df_fin = fin_annual.fillna(0).astype(int)
+                    st.dataframe(df_fin, use_container_width=True)
+                    
+                with tab2:
+                    st.markdown(f"**Key Metrics & Rasio {pilihan_emiten}**")
+                    col_v1, col_v2, col_v3 = st.columns(3)
+                    with col_v1:
+                        st.metric("P/E Ratio", f"{info_emiten.get('trailingPE', 0):.2f}x")
+                        st.metric("Price to Book (PBV)", f"{info_emiten.get('priceToBook', 0):.2f}x")
+                    with col_v2:
+                        roe = info_emiten.get('returnOnEquity', 0) * 100 if info_emiten.get('returnOnEquity') else 0
+                        roa = info_emiten.get('returnOnAssets', 0) * 100 if info_emiten.get('returnOnAssets') else 0
+                        st.metric("Return on Equity (ROE)", f"{roe:.2f}%")
+                        st.metric("Return on Assets (ROA)", f"{roa:.2f}%")
+                    with col_v3:
+                        op_margin = info_emiten.get('operatingMargins', 0) * 100 if info_emiten.get('operatingMargins') else 0
+                        net_margin = info_emiten.get('profitMargins', 0) * 100 if info_emiten.get('profitMargins') else 0
+                        st.metric("Operating Margin", f"{op_margin:.2f}%")
+                        st.metric("Net Income Margin", f"{net_margin:.2f}%")
+                        
+                with tab3:
+                    if dividen is not None and not dividen.empty:
+                        # Ambil data dividen terbaru
+                        div_recent = dividen.tail(15)
+                        
+                        d_col1, d_col2 = st.columns([2, 1])
+                        with d_col1:
+                            st.markdown("**Grafik Historis Pembayaran Dividen**")
+                            if HAS_PLOTLY:
+                                import plotly.graph_objects as go
+                                fig_div = go.Figure([go.Bar(
+                                    x=div_recent.index, 
+                                    y=div_recent.values, 
+                                    marker_color='#00d4ff',
+                                    text=div_recent.values,
+                                    textposition='auto'
+                                )])
+                                fig_div.update_layout(
+                                    template="plotly_dark", 
+                                    paper_bgcolor='rgba(0,0,0,0)', 
+                                    plot_bgcolor='rgba(0,0,0,0)',
+                                    margin=dict(l=10, r=10, t=30, b=10),
+                                    height=300
+                                )
+                                st.plotly_chart(fig_div, use_container_width=True)
+                            else:
+                                st.bar_chart(div_recent, color="#00d4ff")
+                        with d_col2:
+                            st.markdown("**Rincian Dividen (Per Lembar)**")
+                            st.dataframe(div_recent.sort_index(ascending=False), use_container_width=True)
+                    else:
+                        st.info(f"Tidak ada catatan pembagian dividen yang ditemukan untuk {pilihan_emiten} di database.")
+            else:
+                st.warning(f"⚠️ Data fundamental untuk {pilihan_emiten} sedang tidak tersedia dari server Yahoo Finance.")
 else:
     st.info("💡 Klik tombol 'RE-SCAN MARKET DATA' pada Cyber Panel untuk memuat dashboard utama.")
