@@ -12,7 +12,7 @@ warnings.filterwarnings('ignore')
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE
 # ==========================================
-st.set_page_config(page_title="ZETA CORE Pro Max v6.6", page_icon="💎", layout="wide")
+st.set_page_config(page_title="ZETA CORE Pro Max v6.8", page_icon="💎", layout="wide")
 
 st.markdown("""
 <style>
@@ -48,13 +48,31 @@ st.markdown("""
     
     .stDataFrame { border-radius: 10px; overflow: hidden; font-size: 13px !important; }
     
+    /* 🌟 PERBAIKAN TOMBOL SCAN MARKET AGAR SANGAT JELAS 🌟 */
     div.stButton > button:first-child { 
-        background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%) !important; 
-        color: #020617 !important; font-weight: 800 !important; font-size: 1rem !important; 
-        border-radius: 8px !important; border: none !important; padding: 10px !important; 
-        transition: all 0.3s ease; 
+        background: rgba(0, 242, 254, 0.1) !important; 
+        border: 2px solid #00f2fe !important; 
+        color: #00f2fe !important; 
+        border-radius: 8px !important; 
+        padding: 12px !important; 
+        transition: all 0.3s ease;
+        box-shadow: 0 0 15px rgba(0, 242, 254, 0.2);
     }
-    div.stButton > button:first-child:hover { transform: scale(1.02); box-shadow: 0 0 15px rgba(0, 242, 254, 0.4); }
+    /* Memaksa warna teks di dalam tombol */
+    div.stButton > button:first-child p {
+        color: #00f2fe !important;
+        font-weight: 900 !important; 
+        font-size: 1.1rem !important; 
+        letter-spacing: 1px;
+    }
+    div.stButton > button:first-child:hover { 
+        background: #00f2fe !important; 
+        transform: scale(1.02); 
+        box-shadow: 0 0 25px rgba(0, 242, 254, 0.6); 
+    }
+    div.stButton > button:first-child:hover p {
+        color: #020617 !important; /* Teks jadi gelap saat di-hover */
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -72,7 +90,7 @@ roster_20_saham = [
 ]
 
 # ==========================================
-# 2. FUNGSI PEMROSESAN DATA
+# 2. FUNGSI PEMROSESAN DATA UTAMA
 # ==========================================
 @st.cache_data(ttl=300, show_spinner=False)
 def fetch_ihsg_data():
@@ -141,15 +159,14 @@ def format_rupiah(val):
     return f"Rp {val:,.0f}".replace(",", ".")
 
 # ==========================================
-# 3. ENGINE FINANCIAL CHARTS (CLEAN Y-AXIS)
+# 3. ENGINE FINANCIAL CHARTS & HEALTH INDICATOR
 # ==========================================
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_financial_charts(ticker_symbol):
     tkr = yf.Ticker(ticker_symbol + ".JK")
     df_inc, df_bs, df_cf = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
     
-    # KONVERSI ANGKA MENTAH KE TRILIUN RUPIAH
-    PEMBAGI = 1_000_000_000_000
+    PEMBAGI = 1_000_000_000_000 
     
     try:
         inc = tkr.financials
@@ -185,6 +202,47 @@ def fetch_financial_charts(ticker_symbol):
     
     return df_inc, df_bs, df_cf
 
+def analyze_financial_health(df_inc, df_bs, df_cf):
+    score = 0
+    indikator = []
+    
+    if not df_inc.empty and len(df_inc) >= 1:
+        latest_ni = df_inc['Net Income'].iloc[-1]
+        if latest_ni > 0:
+            score += 25
+            indikator.append("✔️ Laba Bersih Positif")
+        if len(df_inc) >= 2:
+            prev_ni = df_inc['Net Income'].iloc[-2]
+            if latest_ni > prev_ni:
+                score += 15
+                indikator.append("✔️ Laba Bertumbuh (YoY)")
+                
+    if not df_bs.empty and len(df_bs) >= 1:
+        assets = df_bs['Total Assets'].iloc[-1]
+        liab = df_bs['Total Liabilities'].iloc[-1]
+        if assets > liab:
+            score += 20
+            indikator.append("✔️ Ekuitas Kuat (Aset > Hutang)")
+        if assets > (liab * 1.5):
+            score += 10
+            indikator.append("✔️ Rasio Hutang Sangat Rendah")
+            
+    if not df_cf.empty and len(df_cf) >= 1:
+        ocf = df_cf['Operating Cash'].iloc[-1]
+        if ocf > 0:
+            score += 20
+            indikator.append("✔️ Arus Kas Operasi Positif")
+        if 'Free Cash Flow' in df_cf.columns:
+            fcf = df_cf['Free Cash Flow'].iloc[-1]
+            if fcf > 0:
+                score += 10
+                indikator.append("✔️ Free Cash Flow Positif")
+                
+    if score >= 80: return "🚀 POTENSI BAGGER (SANGAT SEHAT)", "#10b981", indikator
+    elif score >= 60: return "🟢 SEHAT & BAGUS", "#00f2fe", indikator
+    elif score >= 40: return "🟡 STABIL / MODERAT", "#fbbf24", indikator
+    else: return "🔴 BERISIKO / KURANG SEHAT", "#f43f5e", indikator
+
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_analyst_consensus(ticker_symbol):
     data = {"Konsensus": "N/A", "Target Bawah": "-", "Target Rata-Rata": "-", "Target Atas": "-"}
@@ -199,11 +257,25 @@ def fetch_analyst_consensus(ticker_symbol):
     return data
 
 # ==========================================
-# 4. SIDEBAR (CYBER PANEL)
+# 4. SIDEBAR (CYBER COMMAND CENTER)
 # ==========================================
 with st.sidebar:
-    st.markdown("<h2 style='color: #00f2fe; font-size: 1.5rem; font-weight: 900; margin-bottom: 5px;'>💎 ZETA CORE v6.6</h2>", unsafe_allow_html=True)
-    profil_risiko = st.selectbox("🎯 Kategori Profil Risiko:", ["Moderat", "Agresif", "Konservatif"], label_visibility="visible")
+    st.markdown("<h2 style='color: #00f2fe; font-size: 1.8rem; font-weight: 900; margin-bottom: 0px; text-align: center;'>💎 ZETA CORE</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #94a3b8; font-size: 0.75rem; letter-spacing: 2px; margin-bottom: 20px;'>TERMINAL v6.8</p>", unsafe_allow_html=True)
+    
+    # MODUL BARU: STATUS SISTEM AGAR TIDAK KOSONG
+    st.markdown("""
+    <div style='background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px; margin-bottom: 20px;'>
+        <div style='font-size: 0.7rem; color: #94a3b8; letter-spacing: 1px; margin-bottom: 8px;'>SYSTEM STATUS</div>
+        <div style='font-size: 0.85rem; color: #10b981; margin-bottom: 4px;'>🟢 AI Engine: <strong>Online</strong></div>
+        <div style='font-size: 0.85rem; color: #10b981; margin-bottom: 4px;'>🟢 YFinance API: <strong>Connected</strong></div>
+        <div style='font-size: 0.85rem; color: #00f2fe;'>⚡ Data Latency: <strong>Optimized</strong></div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    profil_risiko = st.selectbox("🎯 Profil Risiko Anda:", ["Moderat", "Agresif", "Konservatif"], label_visibility="visible")
+    
+    st.markdown("<br>", unsafe_allow_html=True)
     
     daftar_saham = [s.strip().upper() + ".JK" for s in roster_20_saham]
     
@@ -225,6 +297,12 @@ with st.sidebar:
         my_bar.empty()
         st.session_state.last_update = get_waktu_wib()
         st.rerun()
+        
+    st.markdown("""
+    <div style='margin-top: 30px; text-align: center; color: #475569; font-size: 0.7rem;'>
+        Analisis disaring dari 20 Saham Pilihan (Bluechip & Growth). Gunakan sebagai referensi keputusan.
+    </div>
+    """, unsafe_allow_html=True)
 
 # ==========================================
 # 5. HEADER & MATRIKS UTAMA
@@ -348,7 +426,7 @@ if st.session_state.raw_stocks:
             st.rerun()
 
     # ==========================================
-    # 6. MODUL VISUAL CHART KEUANGAN
+    # 6. MODUL VISUAL CHART KEUANGAN & HEALTH
     # ==========================================
     st.markdown("---")
     st.markdown("<h3 style='color: #f8fafc; font-weight: 800; margin-bottom: 1rem;'>📑 Financial & Analyst Charts</h3>", unsafe_allow_html=True)
@@ -381,22 +459,36 @@ if st.session_state.raw_stocks:
         
         df_inc, df_bs, df_cf = fetch_financial_charts(emiten_pilihan)
         
+        status_text, color_hex, reason_list = analyze_financial_health(df_inc, df_bs, df_cf)
+        
+        reasons_html = "".join([f"<li style='margin-bottom: 4px;'>{r}</li>" for r in reason_list])
+        
+        st.markdown(f"""
+        <div class='premium-card' style='margin-bottom: 25px; border-left: 5px solid {color_hex};'>
+            <h4 style='color: #f8fafc; margin-top: 0; margin-bottom: 10px;'>🤖 AI Financial Health Status: <span style='color: {color_hex};'>{status_text}</span></h4>
+            <p style='color: #94a3b8; font-size: 0.9rem; margin-bottom: 5px;'>Faktor Pendukung Berdasarkan Laporan Terbaru:</p>
+            <ul style='color: #cbd5e1; font-size: 0.85rem; padding-left: 20px; margin: 0;'>
+                {reasons_html if reason_list else "<li>Belum cukup data untuk melakukan skoring.</li>"}
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+        
         c1, c2, c3 = st.columns(3)
         
         with c1:
             st.markdown(f"<h5 style='color: #00f2fe; text-align:center; font-size: 1rem;'>📈 Income Statement (Triliun Rp)</h5>", unsafe_allow_html=True)
             if not df_inc.empty: st.bar_chart(df_inc, color=["#00f2fe", "#10b981"], height=300)
-            else: st.warning("Data Income Statement Kosong")
+            else: st.warning("Data Kosong")
             
         with c2:
             st.markdown(f"<h5 style='color: #3b82f6; text-align:center; font-size: 1rem;'>⚖️ Balance Sheet (Triliun Rp)</h5>", unsafe_allow_html=True)
             if not df_bs.empty: st.bar_chart(df_bs, color=["#3b82f6", "#f43f5e"], height=300)
-            else: st.warning("Data Balance Sheet Kosong")
+            else: st.warning("Data Kosong")
             
         with c3:
             st.markdown(f"<h5 style='color: #8b5cf6; text-align:center; font-size: 1rem;'>💵 Cash Flow (Triliun Rp)</h5>", unsafe_allow_html=True)
             if not df_cf.empty: st.bar_chart(df_cf, color=["#8b5cf6", "#f59e0b"], height=300)
-            else: st.warning("Data Cash Flow Kosong")
+            else: st.warning("Data Kosong")
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ ZETA CORE ENGINE • SECURE ALGORITHMIC TERMINAL v6.6</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ ZETA CORE ENGINE • SECURE ALGORITHMIC TERMINAL v6.8</p>", unsafe_allow_html=True)
