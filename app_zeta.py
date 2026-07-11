@@ -12,7 +12,7 @@ warnings.filterwarnings('ignore')
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE
 # ==========================================
-st.set_page_config(page_title="ZETA CORE Pro Max v6.5", page_icon="💎", layout="wide")
+st.set_page_config(page_title="ZETA CORE Pro Max v6.6", page_icon="💎", layout="wide")
 
 st.markdown("""
 <style>
@@ -124,7 +124,6 @@ def fetch_single_stock(emiten):
         per = info.get('trailingPE', 0.0)
         pbv = info.get('priceToBook', 1.0)
         
-        # PERBAIKAN BUG DIVIDEND YIELD (Hitung Manual Akurat 100%)
         div_rate = info.get('trailingAnnualDividendRate', 0)
         div_yield = (div_rate / harga_skg * 100) if (div_rate and harga_skg > 0) else 0.0
             
@@ -142,18 +141,21 @@ def format_rupiah(val):
     return f"Rp {val:,.0f}".replace(",", ".")
 
 # ==========================================
-# 3. ENGINE FINANCIAL CHARTS (VISUAL ONLY)
+# 3. ENGINE FINANCIAL CHARTS (CLEAN Y-AXIS)
 # ==========================================
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_financial_charts(ticker_symbol):
     tkr = yf.Ticker(ticker_symbol + ".JK")
     df_inc, df_bs, df_cf = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
     
+    # KONVERSI ANGKA MENTAH KE TRILIUN RUPIAH
+    PEMBAGI = 1_000_000_000_000
+    
     try:
         inc = tkr.financials
         if not inc.empty:
-            df_inc['Revenue'] = inc.loc['Total Revenue'] if 'Total Revenue' in inc.index else 0
-            df_inc['Net Income'] = inc.loc['Net Income'] if 'Net Income' in inc.index else 0
+            df_inc['Revenue'] = (inc.loc['Total Revenue'] / PEMBAGI) if 'Total Revenue' in inc.index else 0
+            df_inc['Net Income'] = (inc.loc['Net Income'] / PEMBAGI) if 'Net Income' in inc.index else 0
             df_inc.index = df_inc.index.year
             df_inc = df_inc.sort_index()
     except: pass
@@ -161,11 +163,11 @@ def fetch_financial_charts(ticker_symbol):
     try:
         bs = tkr.balance_sheet
         if not bs.empty:
-            df_bs['Total Assets'] = bs.loc['Total Assets'] if 'Total Assets' in bs.index else 0
+            df_bs['Total Assets'] = (bs.loc['Total Assets'] / PEMBAGI) if 'Total Assets' in bs.index else 0
             if 'Total Liabilities Net Minority Interest' in bs.index:
-                df_bs['Total Liabilities'] = bs.loc['Total Liabilities Net Minority Interest']
+                df_bs['Total Liabilities'] = (bs.loc['Total Liabilities Net Minority Interest'] / PEMBAGI)
             elif 'Total Liabilities' in bs.index:
-                df_bs['Total Liabilities'] = bs.loc['Total Liabilities']
+                df_bs['Total Liabilities'] = (bs.loc['Total Liabilities'] / PEMBAGI)
             else:
                 df_bs['Total Liabilities'] = 0
             df_bs.index = df_bs.index.year
@@ -175,8 +177,8 @@ def fetch_financial_charts(ticker_symbol):
     try:
         cf = tkr.cashflow
         if not cf.empty:
-            df_cf['Operating Cash'] = cf.loc['Operating Cash Flow'] if 'Operating Cash Flow' in cf.index else 0
-            df_cf['Free Cash Flow'] = cf.loc['Free Cash Flow'] if 'Free Cash Flow' in cf.index else 0
+            df_cf['Operating Cash'] = (cf.loc['Operating Cash Flow'] / PEMBAGI) if 'Operating Cash Flow' in cf.index else 0
+            df_cf['Free Cash Flow'] = (cf.loc['Free Cash Flow'] / PEMBAGI) if 'Free Cash Flow' in cf.index else 0
             df_cf.index = df_cf.index.year
             df_cf = df_cf.sort_index()
     except: pass
@@ -200,7 +202,7 @@ def fetch_analyst_consensus(ticker_symbol):
 # 4. SIDEBAR (CYBER PANEL)
 # ==========================================
 with st.sidebar:
-    st.markdown("<h2 style='color: #00f2fe; font-size: 1.5rem; font-weight: 900; margin-bottom: 5px;'>💎 ZETA CORE v6.5</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color: #00f2fe; font-size: 1.5rem; font-weight: 900; margin-bottom: 5px;'>💎 ZETA CORE v6.6</h2>", unsafe_allow_html=True)
     profil_risiko = st.selectbox("🎯 Kategori Profil Risiko:", ["Moderat", "Agresif", "Konservatif"], label_visibility="visible")
     
     daftar_saham = [s.strip().upper() + ".JK" for s in roster_20_saham]
@@ -346,7 +348,7 @@ if st.session_state.raw_stocks:
             st.rerun()
 
     # ==========================================
-    # 6. MODUL VISUAL CHART KEUANGAN (NEW)
+    # 6. MODUL VISUAL CHART KEUANGAN
     # ==========================================
     st.markdown("---")
     st.markdown("<h3 style='color: #f8fafc; font-weight: 800; margin-bottom: 1rem;'>📑 Financial & Analyst Charts</h3>", unsafe_allow_html=True)
@@ -355,7 +357,6 @@ if st.session_state.raw_stocks:
     
     with st.spinner(f"Menarik Visualisasi Finansial {emiten_pilihan} dari Server..."):
         
-        # PERBAIKAN BUG TARGET ANALIS: Menggunakan Flexbox Card yang ramah ukuran HP
         analyst_data = fetch_analyst_consensus(emiten_pilihan)
         st.markdown(f"""
         <div style='display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom: 20px;'>
@@ -378,25 +379,24 @@ if st.session_state.raw_stocks:
         </div>
         """, unsafe_allow_html=True)
         
-        # PERBAIKAN TABEL MENJADI FULL CHART
         df_inc, df_bs, df_cf = fetch_financial_charts(emiten_pilihan)
         
         c1, c2, c3 = st.columns(3)
         
         with c1:
-            st.markdown(f"<h5 style='color: #00f2fe; text-align:center; font-size: 1rem;'>📈 Income Statement</h5>", unsafe_allow_html=True)
+            st.markdown(f"<h5 style='color: #00f2fe; text-align:center; font-size: 1rem;'>📈 Income Statement (Triliun Rp)</h5>", unsafe_allow_html=True)
             if not df_inc.empty: st.bar_chart(df_inc, color=["#00f2fe", "#10b981"], height=300)
             else: st.warning("Data Income Statement Kosong")
             
         with c2:
-            st.markdown(f"<h5 style='color: #3b82f6; text-align:center; font-size: 1rem;'>⚖️ Balance Sheet</h5>", unsafe_allow_html=True)
+            st.markdown(f"<h5 style='color: #3b82f6; text-align:center; font-size: 1rem;'>⚖️ Balance Sheet (Triliun Rp)</h5>", unsafe_allow_html=True)
             if not df_bs.empty: st.bar_chart(df_bs, color=["#3b82f6", "#f43f5e"], height=300)
             else: st.warning("Data Balance Sheet Kosong")
             
         with c3:
-            st.markdown(f"<h5 style='color: #8b5cf6; text-align:center; font-size: 1rem;'>💵 Cash Flow</h5>", unsafe_allow_html=True)
+            st.markdown(f"<h5 style='color: #8b5cf6; text-align:center; font-size: 1rem;'>💵 Cash Flow (Triliun Rp)</h5>", unsafe_allow_html=True)
             if not df_cf.empty: st.bar_chart(df_cf, color=["#8b5cf6", "#f59e0b"], height=300)
             else: st.warning("Data Cash Flow Kosong")
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ ZETA CORE ENGINE • SECURE ALGORITHMIC TERMINAL v6.5</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ ZETA CORE ENGINE • SECURE ALGORITHMIC TERMINAL v6.6</p>", unsafe_allow_html=True)
