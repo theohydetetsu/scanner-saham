@@ -5,7 +5,6 @@ import numpy as np
 from datetime import datetime
 import pytz
 import warnings
-from yahooquery import Ticker
 
 warnings.filterwarnings('ignore')
 
@@ -22,7 +21,7 @@ except ImportError:
 # ==========================================
 # 1. KONFIGURASI HALAMAN UTAMA & UI STYLE
 # ==========================================
-st.set_page_config(page_title="AI Stock Dashboard Pro Max v6.2", page_icon="💎", layout="wide")
+st.set_page_config(page_title="AI Stock Dashboard Pro Max v6.3", page_icon="💎", layout="wide")
 
 st.markdown("""
 <style>
@@ -66,7 +65,7 @@ tahun_sekarang = datetime.now().year
 list_tahun = [str(tahun_sekarang), str(tahun_sekarang-1), str(tahun_sekarang-2), str(tahun_sekarang-3)]
 
 # ==========================================
-# FUNGSI PEMROSESAN DATA UTAMA
+# FUNGSI PEMROSESAN DATA UTAMA (MEMORY OPTIMIZED)
 # ==========================================
 @st.cache_data(ttl=300, show_spinner=False)
 def fetch_ihsg_data():
@@ -94,17 +93,19 @@ def hitung_rsi_akurat(df, periods=14):
 @st.cache_data(ttl=600, show_spinner=False)
 def fetch_raw_data(saham_list):
     master_data = []
-    try: yq_fundamentals = Ticker(saham_list).summary_detail
-    except: yq_fundamentals = {}
-
+    
+    # 🌟 MURNI MENGGUNAKAN YFINANCE (Mencegah Segfault & Hemat Memori) 🌟
     for emiten in saham_list:
         try:
             kode = emiten.replace(".JK", "")
+            
+            # Tarik Harga Historis
             df = yf.download(emiten, period="6mo", progress=False)
             if df.empty: continue
             if isinstance(df.columns, pd.MultiIndex): df.columns = [col[0] for col in df.columns]
             df = df.ffill() 
             
+            # Kalkulasi Teknikal
             df['EMA20'] = df['Close'].ewm(span=20, adjust=False).mean()
             df['EMA12'] = df['Close'].ewm(span=12, adjust=False).mean()
             df['EMA26'] = df['Close'].ewm(span=26, adjust=False).mean()
@@ -118,18 +119,19 @@ def fetch_raw_data(saham_list):
             vol_skg = float(df['Volume'].iloc[-1])
             vol_sma20 = float(df['Vol_SMA20'].iloc[-1])
             
+            # Logika Bandarmologi
             if vol_skg > (vol_sma20 * 1.2) and harga_skg > ema20_skg: status_bandar = "AKUMULASI"
             elif vol_skg > (vol_sma20 * 1.2) and harga_skg < ema20_skg: status_bandar = "DISTRIBUSI"
             else: status_bandar = "NEUTRAL"
             
-            per, pbv, div_yield = 0.0, 0.0, 0.0
-            if isinstance(yq_fundamentals, dict) and emiten in yq_fundamentals:
-                info = yq_fundamentals[emiten]
-                if isinstance(info, dict):
-                    per = info.get('trailingPE', 0.0)
-                    pbv = info.get('priceToBook', 1.0)
-                    dy = info.get('dividendYield', 0.0)
-                    if dy and dy > 0: div_yield = dy * 100 if dy < 1.0 else dy
+            # Tarik Fundamental Tunggal (Lebih aman dari Crash)
+            tkr = yf.Ticker(emiten)
+            info = tkr.info if tkr.info else {}
+            
+            per = info.get('trailingPE', 0.0)
+            pbv = info.get('priceToBook', 1.0)
+            dy = info.get('dividendYield', 0.0)
+            div_yield = (dy * 100) if (dy and dy > 0) else 0.0
                 
             master_data.append({
                 "TICKER": kode, "HARGA": harga_skg, "PER": round(per, 2), "PBV": round(pbv, 2), 
@@ -137,7 +139,9 @@ def fetch_raw_data(saham_list):
                 "UP_EMA20": harga_skg > ema20_skg, "MACD_GOLDEN": float(df['MACD'].iloc[-1]) > float(df['Signal'].iloc[-1]),
                 "STATUS_BANDAR": status_bandar
             })
-        except: continue
+        except Exception as e:
+            continue
+            
     return master_data
 
 def format_miliar(val):
@@ -245,7 +249,7 @@ def fetch_dividend_history(ticker_symbol):
 # 2. SIDEBAR (CYBER PANEL)
 # ==========================================
 with st.sidebar:
-    st.markdown("<h2 style='color: #00f2fe; font-size: 1.5rem; font-weight: 900; margin-bottom: 5px;'>💎 ZETA CORE v6.2</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color: #00f2fe; font-size: 1.5rem; font-weight: 900; margin-bottom: 5px;'>💎 ZETA CORE v6.3</h2>", unsafe_allow_html=True)
     profil_risiko = st.selectbox("🎯 Kategori Profil Risiko:", ["Moderat", "Agresif", "Konservatif"], label_visibility="visible")
     
     daftar_saham = [s.strip().upper() + ".JK" for s in roster_20_saham]
@@ -280,7 +284,7 @@ with col_h2:
         """, unsafe_allow_html=True)
 
 if len(st.session_state.raw_stocks) == 0:
-    with st.spinner("Menghidupkan Engine Pertama Kali..."):
+    with st.spinner("Menghidupkan Engine Pertama Kali... (Mengambil Data Langsung dari Bursa)"):
         st.session_state.raw_stocks = fetch_raw_data(daftar_saham)
         st.session_state.last_update = get_waktu_wib()
         st.rerun()
@@ -326,7 +330,6 @@ if st.session_state.raw_stocks:
     
     st.write(" ")
     
-    # 🌟 PEROMBAKAN FUNGSI STYLE TABEL (V6.2) 🌟
     def style_tabel(row):
         styles = []
         if '🟢' in row['REKOMENDASI']: bg_rek = 'background-color: rgba(16, 185, 129, 0.1); color: #34d399;'
@@ -426,4 +429,4 @@ if st.session_state.raw_stocks:
         st.dataframe(df_financials, width='stretch')
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ ZETA CORE ENGINE • SECURE ALGORITHMIC TERMINAL v6.2</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ ZETA CORE ENGINE • SECURE ALGORITHMIC TERMINAL v6.3</p>", unsafe_allow_html=True)
