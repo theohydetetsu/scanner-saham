@@ -10,9 +10,9 @@ import gc
 warnings.filterwarnings('ignore')
 
 # ==========================================
-# 1. KONFIGURASI HALAMAN & UI STYLE (SUPER MEWAH)
+# 1. KONFIGURASI HALAMAN & UI STYLE
 # ==========================================
-st.set_page_config(page_title="ZETA CORE Pro Max v6.4", page_icon="💎", layout="wide")
+st.set_page_config(page_title="ZETA CORE Pro Max v6.5", page_icon="💎", layout="wide")
 
 st.markdown("""
 <style>
@@ -26,10 +26,9 @@ st.markdown("""
     h1 { color: #f8fafc; font-weight: 900; letter-spacing: -1px; font-size: 2.2rem !important; margin-bottom: 0; }
     p { color: #94a3b8; font-weight: 300; }
     
-    /* Sidebar Transparan */
     [data-testid="stSidebar"] { background-color: rgba(15, 18, 25, 0.75) !important; backdrop-filter: blur(15px); border-right: 1px solid rgba(255, 255, 255, 0.05); }
     
-    /* Glassmorphism Cards (Transparan Mewah) */
+    /* Glassmorphism Cards */
     .premium-card { 
         background: rgba(30, 41, 59, 0.3); 
         backdrop-filter: blur(16px); 
@@ -63,21 +62,17 @@ def get_waktu_wib():
     tz = pytz.timezone('Asia/Jakarta')
     return datetime.now(tz).strftime("%d %b %Y - %H:%M:%S WIB")
 
-# Inisialisasi Session State
 if "raw_stocks" not in st.session_state: st.session_state.raw_stocks = []
 if "last_update" not in st.session_state: st.session_state.last_update = None
 if "page_matrix" not in st.session_state: st.session_state.page_matrix = 0
 
-# Roster Saham (Bisa dikurangi jika server masih berat)
 roster_20_saham = [
     "BBCA", "BBRI", "BMRI", "BBNI", "TLKM", "ASII", "UNTR", "ICBP", "INDF", "AMRT",
     "GOTO", "PGAS", "PTBA", "ITMG", "KLBF", "ADRO", "UNVR", "BRIS", "CPIN", "ANTM"
 ]
-tahun_sekarang = datetime.now().year
-list_tahun = [str(tahun_sekarang), str(tahun_sekarang-1), str(tahun_sekarang-2), str(tahun_sekarang-3)]
 
 # ==========================================
-# 2. FUNGSI PEMROSESAN DATA (ANTI-CRASH)
+# 2. FUNGSI PEMROSESAN DATA
 # ==========================================
 @st.cache_data(ttl=300, show_spinner=False)
 def fetch_ihsg_data():
@@ -100,7 +95,6 @@ def hitung_rsi_akurat(df, periods=14):
     rs = gain / loss
     return 100 - (100 / (1 + rs))
 
-# FUNGSI SATUAN UNTUK MENCEGAH SEGFAULT
 def fetch_single_stock(emiten):
     try:
         kode = emiten.replace(".JK", "")
@@ -122,21 +116,17 @@ def fetch_single_stock(emiten):
         vol_skg = float(df['Volume'].iloc[-1])
         vol_sma20 = float(df['Vol_SMA20'].iloc[-1])
         
-        if vol_skg > (vol_sma20 * 1.2) and harga_skg > ema20_skg: status_bandar = "AKUMULASI"
-        elif vol_skg > (vol_sma20 * 1.2) and harga_skg < ema20_skg: status_bandar = "DISTRIBUSI"
-        else: status_bandar = "NEUTRAL"
+        status_bandar = "AKUMULASI" if (vol_skg > (vol_sma20 * 1.2) and harga_skg > ema20_skg) else ("DISTRIBUSI" if (vol_skg > (vol_sma20 * 1.2) and harga_skg < ema20_skg) else "NEUTRAL")
         
-        # Tarik Fundamental & Perbaikan Dividend Yield
         tkr = yf.Ticker(emiten)
         info = tkr.info if tkr.info else {}
         
         per = info.get('trailingPE', 0.0)
         pbv = info.get('priceToBook', 1.0)
         
-        # Logika Fix Dividend Yield
-        dy = info.get('dividendYield')
-        if not dy: dy = info.get('trailingAnnualDividendYield', 0.0)
-        div_yield = (dy * 100) if dy else 0.0
+        # PERBAIKAN BUG DIVIDEND YIELD (Hitung Manual Akurat 100%)
+        div_rate = info.get('trailingAnnualDividendRate', 0)
+        div_yield = (div_rate / harga_skg * 100) if (div_rate and harga_skg > 0) else 0.0
             
         return {
             "TICKER": kode, "HARGA": harga_skg, "PER": round(per, 2), "PBV": round(pbv, 2), 
@@ -147,31 +137,51 @@ def fetch_single_stock(emiten):
     except Exception as e:
         return None
 
-def format_miliar(val):
-    if pd.isna(val) or val == 0: return "-"
-    return f"{val / 1_000_000_000:,.2f} B"
-
 def format_rupiah(val):
     if pd.isna(val) or val == 0: return "-"
-    return f"Rp {val:,.2f}".replace(",", ".")
+    return f"Rp {val:,.0f}".replace(",", ".")
 
 # ==========================================
-# LAPORAN KEUANGAN & CHART & ANALYST
+# 3. ENGINE FINANCIAL CHARTS (VISUAL ONLY)
 # ==========================================
 @st.cache_data(ttl=3600, show_spinner=False)
-def fetch_chart_data(ticker_symbol):
+def fetch_financial_charts(ticker_symbol):
     tkr = yf.Ticker(ticker_symbol + ".JK")
-    chart_df = pd.DataFrame(index=list_tahun[::-1], columns=["Revenue", "Net Income"]).fillna(0.0)
+    df_inc, df_bs, df_cf = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+    
     try:
-        inc_a = tkr.income_statement
-        if inc_a is not None:
-            for date_col in inc_a.columns:
-                thn = str(date_col.year)
-                if thn in chart_df.index:
-                    if "Total Revenue" in inc_a.index: chart_df.at[thn, "Revenue"] = float(inc_a.loc["Total Revenue", date_col] or 0)
-                    if "Net Income" in inc_a.index: chart_df.at[thn, "Net Income"] = float(inc_a.loc["Net Income", date_col] or 0)
+        inc = tkr.financials
+        if not inc.empty:
+            df_inc['Revenue'] = inc.loc['Total Revenue'] if 'Total Revenue' in inc.index else 0
+            df_inc['Net Income'] = inc.loc['Net Income'] if 'Net Income' in inc.index else 0
+            df_inc.index = df_inc.index.year
+            df_inc = df_inc.sort_index()
     except: pass
-    return chart_df
+    
+    try:
+        bs = tkr.balance_sheet
+        if not bs.empty:
+            df_bs['Total Assets'] = bs.loc['Total Assets'] if 'Total Assets' in bs.index else 0
+            if 'Total Liabilities Net Minority Interest' in bs.index:
+                df_bs['Total Liabilities'] = bs.loc['Total Liabilities Net Minority Interest']
+            elif 'Total Liabilities' in bs.index:
+                df_bs['Total Liabilities'] = bs.loc['Total Liabilities']
+            else:
+                df_bs['Total Liabilities'] = 0
+            df_bs.index = df_bs.index.year
+            df_bs = df_bs.sort_index()
+    except: pass
+    
+    try:
+        cf = tkr.cashflow
+        if not cf.empty:
+            df_cf['Operating Cash'] = cf.loc['Operating Cash Flow'] if 'Operating Cash Flow' in cf.index else 0
+            df_cf['Free Cash Flow'] = cf.loc['Free Cash Flow'] if 'Free Cash Flow' in cf.index else 0
+            df_cf.index = df_cf.index.year
+            df_cf = df_cf.sort_index()
+    except: pass
+    
+    return df_inc, df_bs, df_cf
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_analyst_consensus(ticker_symbol):
@@ -186,73 +196,11 @@ def fetch_analyst_consensus(ticker_symbol):
     except: pass
     return data
 
-@st.cache_data(ttl=3600, show_spinner=False)
-def fetch_financial_statement(ticker_symbol, metric_type):
-    tkr = yf.Ticker(ticker_symbol + ".JK")
-    df_fin = pd.DataFrame(index=["Q1", "Q2", "Q3", "Q4", "Annualised", "TTM"], columns=list_tahun).fillna("-")
-    try:
-        inc_q = tkr.quarterly_income_statement
-        inc_a = tkr.income_statement
-        
-        if metric_type == "Net Income": target_row = "Net Income"
-        elif metric_type == "Revenue": target_row = "Total Revenue"
-        else: target_row = "Basic EPS"
-        
-        if inc_q is not None and target_row in inc_q.index:
-            for date_col in inc_q.columns:
-                thn = str(date_col.year)
-                bln = date_col.month
-                val = inc_q.loc[target_row, date_col]
-                if thn in list_tahun:
-                    if bln <= 3: df_fin.at["Q1", thn] = format_miliar(val) if metric_type != "EPS" else format_rupiah(val)
-                    elif bln <= 6: df_fin.at["Q2", thn] = format_miliar(val) if metric_type != "EPS" else format_rupiah(val)
-                    elif bln <= 9: df_fin.at["Q3", thn] = format_miliar(val) if metric_type != "EPS" else format_rupiah(val)
-                    else: df_fin.at["Q4", thn] = format_miliar(val) if metric_type != "EPS" else format_rupiah(val)
-                    
-        if inc_a is not None and target_row in inc_a.index:
-            for date_col in inc_a.columns:
-                thn = str(date_col.year)
-                val = inc_a.loc[target_row, date_col]
-                if thn in list_tahun:
-                    formatted_val = format_miliar(val) if metric_type != "EPS" else format_rupiah(val)
-                    df_fin.at["Annualised", thn] = formatted_val
-                    df_fin.at["TTM", thn] = formatted_val
-    except: pass
-    return df_fin
-
-@st.cache_data(ttl=3600, show_spinner=False)
-def fetch_dividend_history(ticker_symbol):
-    tkr = yf.Ticker(ticker_symbol + ".JK")
-    df_div = pd.DataFrame(index=["Dividend Per Share", "EPS (Earning Per Share)", "Payout Ratio (%)", "Dividend Yield (%)"], columns=list_tahun).fillna("-")
-    try:
-        divs = tkr.dividends
-        if divs is not None and not divs.empty:
-            divs_by_year = divs.groupby(divs.index.year).sum()
-            for thn_int, val in divs_by_year.items():
-                thn = str(thn_int)
-                if thn in list_tahun: df_div.at["Dividend Per Share", thn] = format_rupiah(val)
-                    
-        inc_a = tkr.income_statement
-        if inc_a is not None and "Basic EPS" in inc_a.index:
-            for date_col in inc_a.columns:
-                thn = str(date_col.year)
-                val_eps = inc_a.loc["Basic EPS", date_col]
-                if thn in list_tahun:
-                    df_div.at["EPS (Earning Per Share)", thn] = format_rupiah(val_eps)
-                    div_val = str(df_div.at["Dividend Per Share", thn]).replace("Rp ", "").replace(".", "")
-                    if div_val != "-" and val_eps > 0:
-                        try:
-                            payout = (float(div_val) / float(val_eps)) * 100
-                            df_div.at["Payout Ratio (%)", thn] = f"{payout:,.2f}%"
-                        except: pass
-    except: pass
-    return df_div
-
 # ==========================================
-# 3. SIDEBAR (CYBER PANEL)
+# 4. SIDEBAR (CYBER PANEL)
 # ==========================================
 with st.sidebar:
-    st.markdown("<h2 style='color: #00f2fe; font-size: 1.5rem; font-weight: 900; margin-bottom: 5px;'>💎 ZETA CORE v6.4</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color: #00f2fe; font-size: 1.5rem; font-weight: 900; margin-bottom: 5px;'>💎 ZETA CORE v6.5</h2>", unsafe_allow_html=True)
     profil_risiko = st.selectbox("🎯 Kategori Profil Risiko:", ["Moderat", "Agresif", "Konservatif"], label_visibility="visible")
     
     daftar_saham = [s.strip().upper() + ".JK" for s in roster_20_saham]
@@ -262,7 +210,6 @@ with st.sidebar:
         st.session_state.page_matrix = 0 
         st.session_state.raw_stocks = []
         
-        # PROSES SEKUENSIAL ANTI SEGFAULT
         progress_text = "Menjalankan Algoritma Scan..."
         my_bar = st.progress(0, text=progress_text)
         
@@ -271,14 +218,14 @@ with st.sidebar:
             data = fetch_single_stock(t)
             if data:
                 st.session_state.raw_stocks.append(data)
-            gc.collect() # Bersihkan RAM
+            gc.collect() 
             
         my_bar.empty()
         st.session_state.last_update = get_waktu_wib()
         st.rerun()
 
 # ==========================================
-# 4. HEADER & MATRIKS UTAMA
+# 5. HEADER & MATRIKS UTAMA
 # ==========================================
 st.markdown("<h1>📈 Algorithmic Market Intelligence</h1>", unsafe_allow_html=True)
 
@@ -347,10 +294,8 @@ if st.session_state.raw_stocks:
         else: bg_rek = 'background-color: rgba(244, 63, 94, 0.1); color: #fb7185;'
         
         for c, val in row.items():
-            if c == 'TICKER': 
-                styles.append('font-weight: 900; font-size: 16px; color: #00f2fe;')
-            elif c in ['BANDARMOLOGI', 'SKOR', 'SINYAL', 'REKOMENDASI']: 
-                styles.append(bg_rek)
+            if c == 'TICKER': styles.append('font-weight: 900; font-size: 16px; color: #00f2fe;')
+            elif c in ['BANDARMOLOGI', 'SKOR', 'SINYAL', 'REKOMENDASI']: styles.append(bg_rek)
             elif c == 'RSI':
                 try:
                     rsi_val = float(val)
@@ -372,8 +317,7 @@ if st.session_state.raw_stocks:
                     elif 0 < pbv_val < 1: styles.append('color: #10b981;') 
                     else: styles.append('')
                 except: styles.append('')
-            else: 
-                styles.append('')
+            else: styles.append('')
         return styles
 
     st.markdown("📄 **Market Radar Matrix (Auto-Paged & Color Coded)**")
@@ -402,47 +346,57 @@ if st.session_state.raw_stocks:
             st.rerun()
 
     # ==========================================
-    # 5. MODUL ANALISIS LAPORAN KEUANGAN
+    # 6. MODUL VISUAL CHART KEUANGAN (NEW)
     # ==========================================
     st.markdown("---")
-    st.markdown("<h3 style='color: #f8fafc; font-weight: 800; margin-bottom: 1rem;'>📑 Financials & Analyst Consensus</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #f8fafc; font-weight: 800; margin-bottom: 1rem;'>📑 Financial & Analyst Charts</h3>", unsafe_allow_html=True)
     
-    f_col1, f_col2 = st.columns([1, 2])
-    with f_col1:
-        emiten_pilihan = st.selectbox("🎯 Target Emiten:", roster_20_saham, label_visibility="visible")
-    with f_col2:
-        metrik_pilihan = st.radio("📊 Tipe Rasio Finansial Tabel:", ["Net Income", "EPS", "Revenue"], horizontal=True, label_visibility="visible")
+    emiten_pilihan = st.selectbox("🎯 Target Emiten untuk Dibedah:", roster_20_saham, label_visibility="visible")
     
-    st.write(" ")
-    
-    with st.spinner(f"Menarik Data Lengkap {emiten_pilihan} dari Server..."):
+    with st.spinner(f"Menarik Visualisasi Finansial {emiten_pilihan} dari Server..."):
         
+        # PERBAIKAN BUG TARGET ANALIS: Menggunakan Flexbox Card yang ramah ukuran HP
         analyst_data = fetch_analyst_consensus(emiten_pilihan)
-        ac1, ac2, ac3, ac4 = st.columns(4)
-        ac1.metric("💡 Rating Analis", analyst_data["Konsensus"])
-        ac2.metric("📉 Target Bawah", analyst_data["Target Bawah"])
-        ac3.metric("🎯 Target Rata-Rata", analyst_data["Target Rata-Rata"])
-        ac4.metric("📈 Target Atas", analyst_data["Target Atas"])
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown(f"""
+        <div style='display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom: 20px;'>
+            <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px;'>
+                <div style='font-size:0.75rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>💡 Rating Analis</div>
+                <div style='font-size:1.1rem; font-weight:800; color:#00f2fe; margin-top:5px;'>{analyst_data["Konsensus"]}</div>
+            </div>
+            <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px;'>
+                <div style='font-size:0.75rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>📉 Target Bawah</div>
+                <div style='font-size:1.1rem; font-weight:800; color:#f43f5e; margin-top:5px;'>{analyst_data["Target Bawah"]}</div>
+            </div>
+            <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px;'>
+                <div style='font-size:0.75rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>🎯 Target Rata-Rata</div>
+                <div style='font-size:1.1rem; font-weight:800; color:#f8fafc; margin-top:5px;'>{analyst_data["Target Rata-Rata"]}</div>
+            </div>
+            <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px;'>
+                <div style='font-size:0.75rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>📈 Target Atas</div>
+                <div style='font-size:1.1rem; font-weight:800; color:#10b981; margin-top:5px;'>{analyst_data["Target Atas"]}</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
         
-        c_col1, c_col2 = st.columns([1.5, 1])
-        with c_col1:
-            st.markdown(f"<h5 style='color: #00f2fe; margin-bottom: 5px;'>📊 Financials Trend (Annual)</h5>", unsafe_allow_html=True)
-            chart_data = fetch_chart_data(emiten_pilihan)
-            st.bar_chart(chart_data, color=["#10b981", "#00f2fe"], height=250)
+        # PERBAIKAN TABEL MENJADI FULL CHART
+        df_inc, df_bs, df_cf = fetch_financial_charts(emiten_pilihan)
+        
+        c1, c2, c3 = st.columns(3)
+        
+        with c1:
+            st.markdown(f"<h5 style='color: #00f2fe; text-align:center; font-size: 1rem;'>📈 Income Statement</h5>", unsafe_allow_html=True)
+            if not df_inc.empty: st.bar_chart(df_inc, color=["#00f2fe", "#10b981"], height=300)
+            else: st.warning("Data Income Statement Kosong")
             
-        with c_col2:
-            st.markdown(f"<h5 style='color: #00f2fe; margin-bottom: 5px;'>💸 Riwayat Dividen & Yield</h5>", unsafe_allow_html=True)
-            df_dividends = fetch_dividend_history(emiten_pilihan)
-            st.markdown('<div class="premium-card">', unsafe_allow_html=True)
-            st.dataframe(df_dividends, width='stretch', height=250)
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        st.markdown(f"<h5 style='color: #00f2fe; margin-bottom: 10px; margin-top: 20px;'>📋 Period Statement / {metrik_pilihan}</h5>", unsafe_allow_html=True)
-        df_financials = fetch_financial_statement(emiten_pilihan, metrik_pilihan)
-        st.markdown('<div class="premium-card">', unsafe_allow_html=True)
-        st.dataframe(df_financials, width='stretch')
-        st.markdown('</div>', unsafe_allow_html=True)
+        with c2:
+            st.markdown(f"<h5 style='color: #3b82f6; text-align:center; font-size: 1rem;'>⚖️ Balance Sheet</h5>", unsafe_allow_html=True)
+            if not df_bs.empty: st.bar_chart(df_bs, color=["#3b82f6", "#f43f5e"], height=300)
+            else: st.warning("Data Balance Sheet Kosong")
+            
+        with c3:
+            st.markdown(f"<h5 style='color: #8b5cf6; text-align:center; font-size: 1rem;'>💵 Cash Flow</h5>", unsafe_allow_html=True)
+            if not df_cf.empty: st.bar_chart(df_cf, color=["#8b5cf6", "#f59e0b"], height=300)
+            else: st.warning("Data Cash Flow Kosong")
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ ZETA CORE ENGINE • SECURE ALGORITHMIC TERMINAL v6.4</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ ZETA CORE ENGINE • SECURE ALGORITHMIC TERMINAL v6.5</p>", unsafe_allow_html=True)
