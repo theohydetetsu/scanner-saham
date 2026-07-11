@@ -12,14 +12,13 @@ warnings.filterwarnings('ignore')
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE
 # ==========================================
-st.set_page_config(page_title="ZETA CORE Pro Max v6.8", page_icon="💎", layout="wide")
+st.set_page_config(page_title="JIHAN_GHINA", page_icon="💎", layout="wide")
 
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800;900&display=swap');
     html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
     
-    /* Background Cyber Radial Gradient */
     .stApp { background: radial-gradient(circle at 50% -20%, #1a1e29, #0f1219); color: #f8fafc; }
     .block-container { padding-top: 1.5rem; padding-bottom: 2rem; max-width: 98%; }
     
@@ -28,11 +27,9 @@ st.markdown("""
     
     [data-testid="stSidebar"] { background-color: rgba(15, 18, 25, 0.75) !important; backdrop-filter: blur(15px); border-right: 1px solid rgba(255, 255, 255, 0.05); }
     
-    /* Glassmorphism Cards */
     .premium-card { 
         background: rgba(30, 41, 59, 0.3); 
         backdrop-filter: blur(16px); 
-        -webkit-backdrop-filter: blur(16px);
         border: 1px solid rgba(255, 255, 255, 0.08); 
         border-radius: 12px; 
         padding: 20px; 
@@ -48,7 +45,6 @@ st.markdown("""
     
     .stDataFrame { border-radius: 10px; overflow: hidden; font-size: 13px !important; }
     
-    /* 🌟 PERBAIKAN TOMBOL SCAN MARKET AGAR SANGAT JELAS 🌟 */
     div.stButton > button:first-child { 
         background: rgba(0, 242, 254, 0.1) !important; 
         border: 2px solid #00f2fe !important; 
@@ -58,7 +54,6 @@ st.markdown("""
         transition: all 0.3s ease;
         box-shadow: 0 0 15px rgba(0, 242, 254, 0.2);
     }
-    /* Memaksa warna teks di dalam tombol */
     div.stButton > button:first-child p {
         color: #00f2fe !important;
         font-weight: 900 !important; 
@@ -70,12 +65,38 @@ st.markdown("""
         transform: scale(1.02); 
         box-shadow: 0 0 25px rgba(0, 242, 254, 0.6); 
     }
-    div.stButton > button:first-child:hover p {
-        color: #020617 !important; /* Teks jadi gelap saat di-hover */
-    }
+    div.stButton > button:first-child:hover p { color: #020617 !important; }
 </style>
 """, unsafe_allow_html=True)
 
+# ==========================================
+# 1.5. SISTEM KEAMANAN (LOGIN GATE)
+# ==========================================
+PASSWORD_RAHASIA = "CuanMax2026"
+
+if "akses_diberikan" not in st.session_state:
+    st.session_state.akses_diberikan = False
+
+if not st.session_state.akses_diberikan:
+    st.markdown("<h2 style='text-align: center; color: #00f2fe; margin-top: 100px;'>🔒 ZETA CORE TERMINAL TERKUNCI</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #94a3b8;'>Sistem intelijen ini bersifat privat. Silakan hubungi Theo Hydetetsu untuk mendapatkan kunci akses.</p>", unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown("<div class='premium-card'>", unsafe_allow_html=True)
+        pwd_input = st.text_input("🔑 Masukkan Kunci Akses:", type="password")
+        if st.button("VERIFIKASI AKSES", width='stretch'):
+            if pwd_input == PASSWORD_RAHASIA:
+                st.session_state.akses_diberikan = True
+                st.rerun()
+            else:
+                st.error("Akses Ditolak! Kunci tidak valid.")
+        st.markdown("</div>", unsafe_allow_html=True)
+    st.stop()
+
+# ==========================================
+# 2. FUNGSI PEMROSESAN DATA UTAMA
+# ==========================================
 def get_waktu_wib():
     tz = pytz.timezone('Asia/Jakarta')
     return datetime.now(tz).strftime("%d %b %Y - %H:%M:%S WIB")
@@ -84,14 +105,15 @@ if "raw_stocks" not in st.session_state: st.session_state.raw_stocks = []
 if "last_update" not in st.session_state: st.session_state.last_update = None
 if "page_matrix" not in st.session_state: st.session_state.page_matrix = 0
 
-roster_20_saham = [
+# 🌟 PENAMBAHAN 10 SAHAM MULTIBAGGER / HIGH GROWTH (Total 30 Saham) 🌟
+roster_30_saham = [
+    # 20 Bluechip & Medium Cap
     "BBCA", "BBRI", "BMRI", "BBNI", "TLKM", "ASII", "UNTR", "ICBP", "INDF", "AMRT",
-    "GOTO", "PGAS", "PTBA", "ITMG", "KLBF", "ADRO", "UNVR", "BRIS", "CPIN", "ANTM"
+    "GOTO", "PGAS", "PTBA", "ITMG", "KLBF", "ADRO", "UNVR", "BRIS", "CPIN", "ANTM",
+    # 10 Multibagger / High Growth / Agresif
+    "AMMN", "BREN", "CUAN", "PANI", "BRPT", "MDKA", "MEDC", "ARTO", "SIDO", "MYOR"
 ]
 
-# ==========================================
-# 2. FUNGSI PEMROSESAN DATA UTAMA
-# ==========================================
 @st.cache_data(ttl=300, show_spinner=False)
 def fetch_ihsg_data():
     try:
@@ -134,6 +156,9 @@ def fetch_single_stock(emiten):
         vol_skg = float(df['Volume'].iloc[-1])
         vol_sma20 = float(df['Vol_SMA20'].iloc[-1])
         
+        high_1mo = float(df['High'].tail(20).max())
+        low_1mo = float(df['Low'].tail(20).min())
+        
         status_bandar = "AKUMULASI" if (vol_skg > (vol_sma20 * 1.2) and harga_skg > ema20_skg) else ("DISTRIBUSI" if (vol_skg > (vol_sma20 * 1.2) and harga_skg < ema20_skg) else "NEUTRAL")
         
         tkr = yf.Ticker(emiten)
@@ -141,7 +166,6 @@ def fetch_single_stock(emiten):
         
         per = info.get('trailingPE', 0.0)
         pbv = info.get('priceToBook', 1.0)
-        
         div_rate = info.get('trailingAnnualDividendRate', 0)
         div_yield = (div_rate / harga_skg * 100) if (div_rate and harga_skg > 0) else 0.0
             
@@ -149,7 +173,8 @@ def fetch_single_stock(emiten):
             "TICKER": kode, "HARGA": harga_skg, "PER": round(per, 2), "PBV": round(pbv, 2), 
             "DIV_YIELD": round(div_yield, 2), "RSI": round(float(df['RSI'].iloc[-1]), 2), 
             "UP_EMA20": harga_skg > ema20_skg, "MACD_GOLDEN": float(df['MACD'].iloc[-1]) > float(df['Signal'].iloc[-1]),
-            "STATUS_BANDAR": status_bandar
+            "STATUS_BANDAR": status_bandar,
+            "EMA20_VAL": ema20_skg, "RESISTANCE": high_1mo, "SUPPORT": low_1mo
         }
     except Exception as e:
         return None
@@ -165,7 +190,6 @@ def format_rupiah(val):
 def fetch_financial_charts(ticker_symbol):
     tkr = yf.Ticker(ticker_symbol + ".JK")
     df_inc, df_bs, df_cf = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
-    
     PEMBAGI = 1_000_000_000_000 
     
     try:
@@ -261,15 +285,14 @@ def fetch_analyst_consensus(ticker_symbol):
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #00f2fe; font-size: 1.8rem; font-weight: 900; margin-bottom: 0px; text-align: center;'>💎 ZETA CORE</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #94a3b8; font-size: 0.75rem; letter-spacing: 2px; margin-bottom: 20px;'>TERMINAL v6.8</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #94a3b8; font-size: 0.75rem; letter-spacing: 2px; margin-bottom: 20px;'>TERMINAL v7.0</p>", unsafe_allow_html=True)
     
-    # MODUL BARU: STATUS SISTEM AGAR TIDAK KOSONG
     st.markdown("""
     <div style='background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px; margin-bottom: 20px;'>
         <div style='font-size: 0.7rem; color: #94a3b8; letter-spacing: 1px; margin-bottom: 8px;'>SYSTEM STATUS</div>
         <div style='font-size: 0.85rem; color: #10b981; margin-bottom: 4px;'>🟢 AI Engine: <strong>Online</strong></div>
-        <div style='font-size: 0.85rem; color: #10b981; margin-bottom: 4px;'>🟢 YFinance API: <strong>Connected</strong></div>
-        <div style='font-size: 0.85rem; color: #00f2fe;'>⚡ Data Latency: <strong>Optimized</strong></div>
+        <div style='font-size: 0.85rem; color: #10b981; margin-bottom: 4px;'>🟢 Data Link: <strong>Secured</strong></div>
+        <div style='font-size: 0.85rem; color: #00f2fe;'>⚡ Latency: <strong>Optimized</strong></div>
     </div>
     """, unsafe_allow_html=True)
     
@@ -277,14 +300,14 @@ with st.sidebar:
     
     st.markdown("<br>", unsafe_allow_html=True)
     
-    daftar_saham = [s.strip().upper() + ".JK" for s in roster_20_saham]
+    daftar_saham = [s.strip().upper() + ".JK" for s in roster_30_saham]
     
     if st.button("🔄 SCAN MARKET", width='stretch'):
         st.cache_data.clear()
         st.session_state.page_matrix = 0 
         st.session_state.raw_stocks = []
         
-        progress_text = "Menjalankan Algoritma Scan..."
+        progress_text = "Menjalankan Algoritma Scan 30 Emiten..."
         my_bar = st.progress(0, text=progress_text)
         
         for i, t in enumerate(daftar_saham):
@@ -300,7 +323,7 @@ with st.sidebar:
         
     st.markdown("""
     <div style='margin-top: 30px; text-align: center; color: #475569; font-size: 0.7rem;'>
-        Analisis disaring dari 20 Saham Pilihan (Bluechip & Growth). Gunakan sebagai referensi keputusan.
+        Analisis disaring dari 30 Saham Pilihan (Bluechip & Multibagger). Gunakan sebagai referensi keputusan.
     </div>
     """, unsafe_allow_html=True)
 
@@ -328,7 +351,7 @@ with col_h2:
 
 if st.session_state.raw_stocks:
     st.markdown("---")
-    st.markdown("<h3>🧠 AI Pro Max Recommendation Engine</h3>", unsafe_allow_html=True)
+    st.markdown("<h3>🧠 Recommendation Engine</h3>", unsafe_allow_html=True)
     
     hasil_rekomendasi = []
     for raw in st.session_state.raw_stocks:
@@ -346,16 +369,27 @@ if st.session_state.raw_stocks:
         if raw["DIV_YIELD"] > 3: skor += 5
         
         skor = max(0, min(100, skor))
-        target = 60 if profil_risiko == "Agresif" else (75 if profil_risiko == "Konservatif" else 70)
+        target_skor = 60 if profil_risiko == "Agresif" else (75 if profil_risiko == "Konservatif" else 70)
         
-        if skor >= target: kep, sin = "🟢 ACCUMULATE", "BUY"
-        elif skor >= 45: kep, sin = "🟡 HOLD", "NEUTRAL"
-        else: kep, sin = "🔴 LIQUIDATE", "SELL"
+        if skor >= target_skor: kep = "🟢 ACCUMULATE"
+        elif skor >= 45: kep = "🟡 HOLD"
+        else: kep = "🔴 LIQUIDATE"
             
+        harga_saat_ini = raw["HARGA"]
+        ema20 = raw["EMA20_VAL"]
+        resis = raw["RESISTANCE"]
+        supp = raw["SUPPORT"]
+        
+        entry_ideal = ema20 if harga_saat_ini > ema20 else supp
+        target_tp = harga_saat_ini * 1.05 if resis <= harga_saat_ini else resis
+        stop_ls = harga_saat_ini * 0.97 if supp >= harga_saat_ini else supp
+        
         hasil_rekomendasi.append({
-            "TICKER": raw["TICKER"], "HARGA": f"Rp {int(raw['HARGA']):,}".replace(",", "."),
-            "PER (x)": f"{raw['PER']:.2f}", "PBV (x)": f"{raw['PBV']:.2f}", "DIV YIELD": f"{raw['DIV_YIELD']:.2f}%",
-            "RSI": f"{raw['RSI']:.2f}", "BANDARMOLOGI": raw["STATUS_BANDAR"], "SKOR": skor, "SINYAL": sin, "REKOMENDASI": kep
+            "TICKER": raw["TICKER"], "HARGA": f"{int(harga_saat_ini):,}".replace(",", "."),
+            "AREA BELI": f"{int(entry_ideal):,}".replace(",", "."),
+            "TARGET (TP)": f"{int(target_tp):,}".replace(",", "."),
+            "STOP LOSS": f"{int(stop_ls):,}".replace(",", "."),
+            "RSI": f"{raw['RSI']:.2f}", "BANDARMOLOGI": raw["STATUS_BANDAR"], "REKOMENDASI": kep
         })
         
     df_final = pd.DataFrame(hasil_rekomendasi)
@@ -375,26 +409,15 @@ if st.session_state.raw_stocks:
         
         for c, val in row.items():
             if c == 'TICKER': styles.append('font-weight: 900; font-size: 16px; color: #00f2fe;')
-            elif c in ['BANDARMOLOGI', 'SKOR', 'SINYAL', 'REKOMENDASI']: styles.append(bg_rek)
+            elif c == 'TARGET (TP)': styles.append('color: #10b981; font-weight: 800;') 
+            elif c == 'STOP LOSS': styles.append('color: #f43f5e; font-weight: 800;')  
+            elif c == 'AREA BELI': styles.append('color: #38bdf8; font-weight: 800;')  
+            elif c in ['BANDARMOLOGI', 'REKOMENDASI']: styles.append(bg_rek)
             elif c == 'RSI':
                 try:
                     rsi_val = float(val)
                     if rsi_val > 70: styles.append('color: #f43f5e; font-weight: 800;') 
                     elif rsi_val < 30: styles.append('color: #10b981; font-weight: 800;') 
-                    else: styles.append('')
-                except: styles.append('')
-            elif c == 'PER (x)':
-                try:
-                    per_val = float(val)
-                    if per_val > 15 or per_val < 0: styles.append('color: #f43f5e;') 
-                    elif 0 < per_val < 10: styles.append('color: #10b981;') 
-                    else: styles.append('')
-                except: styles.append('')
-            elif c == 'PBV (x)':
-                try:
-                    pbv_val = float(val)
-                    if pbv_val > 2: styles.append('color: #f43f5e;') 
-                    elif 0 < pbv_val < 1: styles.append('color: #10b981;') 
                     else: styles.append('')
                 except: styles.append('')
             else: styles.append('')
@@ -431,7 +454,7 @@ if st.session_state.raw_stocks:
     st.markdown("---")
     st.markdown("<h3 style='color: #f8fafc; font-weight: 800; margin-bottom: 1rem;'>📑 Financial & Analyst Charts</h3>", unsafe_allow_html=True)
     
-    emiten_pilihan = st.selectbox("🎯 Target Emiten untuk Dibedah:", roster_20_saham, label_visibility="visible")
+    emiten_pilihan = st.selectbox("🎯 Target Emiten untuk Dibedah:", roster_30_saham, label_visibility="visible")
     
     with st.spinner(f"Menarik Visualisasi Finansial {emiten_pilihan} dari Server..."):
         
@@ -460,7 +483,6 @@ if st.session_state.raw_stocks:
         df_inc, df_bs, df_cf = fetch_financial_charts(emiten_pilihan)
         
         status_text, color_hex, reason_list = analyze_financial_health(df_inc, df_bs, df_cf)
-        
         reasons_html = "".join([f"<li style='margin-bottom: 4px;'>{r}</li>" for r in reason_list])
         
         st.markdown(f"""
@@ -491,4 +513,5 @@ if st.session_state.raw_stocks:
             else: st.warning("Data Kosong")
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ ZETA CORE ENGINE • SECURE ALGORITHMIC TERMINAL v6.8</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ ZETA CORE ENGINE • SECURE ALGORITHMIC TERMINAL v7.0</p>", unsafe_allow_html=True)
+
