@@ -89,12 +89,12 @@ if not st.session_state.akses_diberikan:
         pwd_input = st.text_input("🔑 Password:", type="password")
         
         if st.button("VERIFIKASI AKSES", use_container_width=True):
-            if user_input == USERNAME_RAHASIA and pwd_input == PASSWORD_RAHASIA:
-                # .strip() membuang spasi gaib, .lower() mengatasi huruf kapital (Theo/theo)
-                if user_input.strip().lower() == USERNAME_RAHASIA.lower() and pwd_input.strip() == PASSWORD_RAHASIA:
+            if user_input.strip().lower() == USERNAME_RAHASIA.lower() and pwd_input.strip() == PASSWORD_RAHASIA:
                 st.session_state.akses_diberikan = True
-                if hasattr(st, 'rerun'): st.rerun()
-                else: st.experimental_rerun()
+                if hasattr(st, 'rerun'): 
+                    st.rerun()
+                else: 
+                    st.experimental_rerun()
             else:
                 st.error("Akses Ditolak! Username atau Password tidak valid.")
         st.markdown("</div>", unsafe_allow_html=True)
