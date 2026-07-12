@@ -12,7 +12,7 @@ warnings.filterwarnings('ignore')
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE
 # ==========================================
-st.set_page_config(page_title="ZETA CORE Pro Max v7.0", page_icon="💎", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Pro Max v7.3", page_icon="💻", layout="wide")
 
 st.markdown("""
 <style>
@@ -70,27 +70,31 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 1.5. SISTEM KEAMANAN (LOGIN GATE)
+# 1.5. SISTEM KEAMANAN (LOGIN GATE 2.0)
 # ==========================================
-PASSWORD_RAHASIA = "CuanMax2026"
+USERNAME_RAHASIA = "theo"
+PASSWORD_RAHASIA = "216455"
 
 if "akses_diberikan" not in st.session_state:
     st.session_state.akses_diberikan = False
 
 if not st.session_state.akses_diberikan:
-    st.markdown("<h2 style='text-align: center; color: #00f2fe; margin-top: 100px;'>🔒 ZETA CORE TERMINAL TERKUNCI</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; color: #00f2fe; margin-top: 100px;'>🔒 JIHAN-GHINA TERMINAL TERKUNCI</h2>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: #94a3b8;'>Sistem intelijen ini bersifat privat. Silakan hubungi Theo Hydetetsu untuk mendapatkan kunci akses.</p>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.markdown("<div class='premium-card'>", unsafe_allow_html=True)
-        pwd_input = st.text_input("🔑 Masukkan Kunci Akses:", type="password")
-        if st.button("VERIFIKASI AKSES", width='stretch'):
-            if pwd_input == PASSWORD_RAHASIA:
+        user_input = st.text_input("👤 Username:")
+        pwd_input = st.text_input("🔑 Password:", type="password")
+        
+        if st.button("VERIFIKASI AKSES", use_container_width=True):
+            if user_input == USERNAME_RAHASIA and pwd_input == PASSWORD_RAHASIA:
                 st.session_state.akses_diberikan = True
-                st.rerun()
+                if hasattr(st, 'rerun'): st.rerun()
+                else: st.experimental_rerun()
             else:
-                st.error("Akses Ditolak! Kunci tidak valid.")
+                st.error("Akses Ditolak! Username atau Password tidak valid.")
         st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
@@ -105,12 +109,9 @@ if "raw_stocks" not in st.session_state: st.session_state.raw_stocks = []
 if "last_update" not in st.session_state: st.session_state.last_update = None
 if "page_matrix" not in st.session_state: st.session_state.page_matrix = 0
 
-# 🌟 PENAMBAHAN 10 SAHAM MULTIBAGGER / HIGH GROWTH (Total 30 Saham) 🌟
 roster_30_saham = [
-    # 20 Bluechip & Medium Cap
     "BBCA", "BBRI", "BMRI", "BBNI", "TLKM", "ASII", "UNTR", "ICBP", "INDF", "AMRT",
     "GOTO", "PGAS", "PTBA", "ITMG", "KLBF", "ADRO", "UNVR", "BRIS", "CPIN", "ANTM",
-    # 10 Multibagger / High Growth / Agresif
     "AMMN", "BREN", "CUAN", "PANI", "BRPT", "MDKA", "MEDC", "ARTO", "SIDO", "MYOR"
 ]
 
@@ -284,13 +285,13 @@ def fetch_analyst_consensus(ticker_symbol):
 # 4. SIDEBAR (CYBER COMMAND CENTER)
 # ==========================================
 with st.sidebar:
-    st.markdown("<h2 style='color: #00f2fe; font-size: 1.8rem; font-weight: 900; margin-bottom: 0px; text-align: center;'>💎 ZETA CORE</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #94a3b8; font-size: 0.75rem; letter-spacing: 2px; margin-bottom: 20px;'>TERMINAL v7.0</p>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color: #00f2fe; font-size: 1.8rem; font-weight: 900; margin-bottom: 0px; text-align: center;'>👨‍💻 JIHAN-GHINA</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #94a3b8; font-size: 0.75rem; letter-spacing: 2px; margin-bottom: 20px;'>TERMINAL v7.3</p>", unsafe_allow_html=True)
     
     st.markdown("""
     <div style='background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px; margin-bottom: 20px;'>
         <div style='font-size: 0.7rem; color: #94a3b8; letter-spacing: 1px; margin-bottom: 8px;'>SYSTEM STATUS</div>
-        <div style='font-size: 0.85rem; color: #10b981; margin-bottom: 4px;'>🟢 AI Engine: <strong>Online</strong></div>
+        <div style='font-size: 0.85rem; color: #10b981; margin-bottom: 4px;'>🟢 Core Engine: <strong>Online</strong></div>
         <div style='font-size: 0.85rem; color: #10b981; margin-bottom: 4px;'>🟢 Data Link: <strong>Secured</strong></div>
         <div style='font-size: 0.85rem; color: #00f2fe;'>⚡ Latency: <strong>Optimized</strong></div>
     </div>
@@ -302,7 +303,7 @@ with st.sidebar:
     
     daftar_saham = [s.strip().upper() + ".JK" for s in roster_30_saham]
     
-    if st.button("🔄 SCAN MARKET", width='stretch'):
+    if st.button("🔄 SCAN MARKET", use_container_width=True):
         st.cache_data.clear()
         st.session_state.page_matrix = 0 
         st.session_state.raw_stocks = []
@@ -319,7 +320,9 @@ with st.sidebar:
             
         my_bar.empty()
         st.session_state.last_update = get_waktu_wib()
-        st.rerun()
+        
+        if hasattr(st, 'rerun'): st.rerun()
+        else: st.experimental_rerun()
         
     st.markdown("""
     <div style='margin-top: 30px; text-align: center; color: #475569; font-size: 0.7rem;'>
@@ -330,7 +333,7 @@ with st.sidebar:
 # ==========================================
 # 5. HEADER & MATRIKS UTAMA
 # ==========================================
-st.markdown("<h1>📈 Algorithmic Market Intelligence</h1>", unsafe_allow_html=True)
+st.markdown("<h1>🌐 Algorithmic Market Intelligence</h1>", unsafe_allow_html=True)
 
 col_h1, col_h2 = st.columns([3.5, 1.5])
 with col_h1:
@@ -351,7 +354,7 @@ with col_h2:
 
 if st.session_state.raw_stocks:
     st.markdown("---")
-    st.markdown("<h3>🧠 AI Pro Max Recommendation Engine</h3>", unsafe_allow_html=True)
+    st.markdown("<h3>🛰️ Pro Max Recommendation Engine</h3>", unsafe_allow_html=True)
     
     hasil_rekomendasi = []
     for raw in st.session_state.raw_stocks:
@@ -437,22 +440,27 @@ if st.session_state.raw_stocks:
     st.markdown('</div>', unsafe_allow_html=True)
     
     col_p1, col_p2, col_p3 = st.columns([1, 8, 1])
+    
     with col_p1:
-        if st.button("⬅️ Prev", width='stretch', disabled=(st.session_state.page_matrix == 0)):
+        if st.button("⬅️ Prev", use_container_width=True, disabled=(st.session_state.page_matrix == 0)):
             st.session_state.page_matrix -= 1
-            st.rerun()
+            if hasattr(st, 'rerun'): st.rerun()
+            else: st.experimental_rerun()
+            
     with col_p2:
         st.markdown(f"<p style='text-align: center; font-size:0.8rem; color:#94a3b8; margin-top:10px;'>Halaman {st.session_state.page_matrix + 1} dari {total_pages}</p>", unsafe_allow_html=True)
+        
     with col_p3:
-        if st.button("Next ➡️", width='stretch', disabled=(st.session_state.page_matrix >= total_pages - 1)):
+        if st.button("Next ➡️", use_container_width=True, disabled=(st.session_state.page_matrix >= total_pages - 1)):
             st.session_state.page_matrix += 1
-            st.rerun()
+            if hasattr(st, 'rerun'): st.rerun()
+            else: st.experimental_rerun()
 
     # ==========================================
     # 6. MODUL VISUAL CHART KEUANGAN & HEALTH
     # ==========================================
     st.markdown("---")
-    st.markdown("<h3 style='color: #f8fafc; font-weight: 800; margin-bottom: 1rem;'>📑 Financial & Analyst Charts</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #f8fafc; font-weight: 800; margin-bottom: 1rem;'>📊 Financial & Analyst Charts</h3>", unsafe_allow_html=True)
     
     emiten_pilihan = st.selectbox("🎯 Target Emiten untuk Dibedah:", roster_30_saham, label_visibility="visible")
     
@@ -487,7 +495,7 @@ if st.session_state.raw_stocks:
         
         st.markdown(f"""
         <div class='premium-card' style='margin-bottom: 25px; border-left: 5px solid {color_hex};'>
-            <h4 style='color: #f8fafc; margin-top: 0; margin-bottom: 10px;'>🤖 AI Financial Health Status: <span style='color: {color_hex};'>{status_text}</span></h4>
+            <h4 style='color: #f8fafc; margin-top: 0; margin-bottom: 10px;'>💠 Financial Health Status: <span style='color: {color_hex};'>{status_text}</span></h4>
             <p style='color: #94a3b8; font-size: 0.9rem; margin-bottom: 5px;'>Faktor Pendukung Berdasarkan Laporan Terbaru:</p>
             <ul style='color: #cbd5e1; font-size: 0.85rem; padding-left: 20px; margin: 0;'>
                 {reasons_html if reason_list else "<li>Belum cukup data untuk melakukan skoring.</li>"}
@@ -513,4 +521,4 @@ if st.session_state.raw_stocks:
             else: st.warning("Data Kosong")
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ ZETA CORE ENGINE • SECURE ALGORITHMIC TERMINAL v7.0</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ JIHAN-GHINA ENGINE • SECURE ALGORITHMIC TERMINAL v7.3</p>", unsafe_allow_html=True)
