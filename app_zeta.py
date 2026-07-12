@@ -12,7 +12,7 @@ warnings.filterwarnings('ignore')
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Pro Max v7.9", page_icon="💻", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Pro Max v8.0", page_icon="💻", layout="wide")
 
 st.markdown("""
 <style>
@@ -33,11 +33,9 @@ st.markdown("""
     h1 { color: #f8fafc; font-weight: 900; letter-spacing: -1px; font-size: 2.2rem !important; margin-bottom: 0; }
     p { color: #94a3b8; font-weight: 300; }
     
-    /* Sidebar Dipersempit Ekstra */
+    /* Sidebar Styling: Menggunakan max-width agar fungsi minimize bawaan Streamlit bekerja */
     section[data-testid="stSidebar"] { 
-        width: 210px !important; 
-        min-width: 210px !important; 
-        max-width: 210px !important; 
+        max-width: 220px !important; 
         background-color: rgba(15, 18, 25, 0.75) !important; 
         backdrop-filter: blur(15px); 
         border-right: 1px solid rgba(255, 255, 255, 0.05); 
@@ -77,6 +75,9 @@ st.markdown("""
     
     .strat-num { font-size: 2.2rem; font-weight: 900; margin: 2px 0; line-height: 1; text-align: center; }
     .strat-label { font-size: 0.75rem; font-weight: 600; text-align: center; letter-spacing: 1px; }
+    
+    /* Perbaikan Tabel: Menghapus overflow:hidden yang merusak scroll header di HP */
+    .stDataFrame { font-size: 13px !important; }
     
     /* Tombol Global Diperhalus & Diperkecil */
     div.stButton > button:first-child, div[data-testid="stFormSubmitButton"] > button { 
@@ -156,7 +157,6 @@ if not st.session_state.akses_diberikan:
     
     col1, col2, col3 = st.columns([1, 4, 1])
     with col2:
-        # Menggunakan st.form agar bisa menekan ENTER dari keyboard HP/PC langsung terproses
         with st.form(key="login_form"):
             user_input = st.text_input("👤 Username:")
             pwd_input = st.text_input("🔑 Password:", type="password")
@@ -360,9 +360,8 @@ def fetch_analyst_consensus(ticker_symbol):
 # 4. SIDEBAR (CYBER COMMAND CENTER)
 # ==========================================
 with st.sidebar:
-    # Memperbaiki margin, ukuran font, white-space dan rata kiri agar tidak terpotong jadi 2 baris
     st.markdown("<h2 style='color: #00f2fe; font-size: 1.35rem; font-weight: 900; margin-bottom: 0px; text-align: left; margin-left: -5px; white-space: nowrap;'>👨‍💻 JIHAN-GHINA</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: left; margin-left: 20px; color: #94a3b8; font-size: 0.7rem; letter-spacing: 2px; margin-bottom: 15px;'>TERMINAL v7.9</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: left; margin-left: 20px; color: #94a3b8; font-size: 0.7rem; letter-spacing: 2px; margin-bottom: 15px;'>TERMINAL v8.0</p>", unsafe_allow_html=True)
     
     st.markdown("""
     <div style='background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 10px; margin-bottom: 20px; border-left: 3px solid #10b981;'>
@@ -406,6 +405,14 @@ with st.sidebar:
         Analisis 30 Saham (Bluechip & Multibagger)
     </div>
     """, unsafe_allow_html=True)
+
+    # FITUR BARU: TOMBOL LOGOUT DI SIDEBAR
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    if st.button("🚪 LOGOUT", use_container_width=True):
+        st.session_state.akses_diberikan = False
+        st.session_state.scan_clicked = False
+        if hasattr(st, 'rerun'): st.rerun()
+        else: st.experimental_rerun()
 
 # ==========================================
 # 5. HEADER & MATRIKS UTAMA
@@ -600,4 +607,4 @@ else:
             else: st.warning("Data Kosong")
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ JIHAN-GHINA ENGINE • SECURE ALGORITHMIC TERMINAL v7.9</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ JIHAN-GHINA ENGINE • SECURE ALGORITHMIC TERMINAL v8.0</p>", unsafe_allow_html=True)
