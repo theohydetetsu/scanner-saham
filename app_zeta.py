@@ -12,60 +12,91 @@ warnings.filterwarnings('ignore')
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Pro Max v7.3", page_icon="💻", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Pro Max v7.5", page_icon="💻", layout="wide")
 
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800;900&display=swap');
     html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
     
-    .stApp { background: radial-gradient(circle at 50% -20%, #1a1e29, #0f1219); color: #f8fafc; }
+    /* Paksa Background Gelap ke Container Utama Streamlit */
+    [data-testid="stAppViewContainer"] { background: radial-gradient(circle at 50% -20%, #1a1e29, #0f1219) !important; color: #f8fafc !important; }
+    [data-testid="stHeader"] { background: transparent !important; }
+    
     .block-container { padding-top: 1.5rem; padding-bottom: 2rem; max-width: 98%; }
     
     h1 { color: #f8fafc; font-weight: 900; letter-spacing: -1px; font-size: 2.2rem !important; margin-bottom: 0; }
     p { color: #94a3b8; font-weight: 300; }
     
-    [data-testid="stSidebar"] { background-color: rgba(15, 18, 25, 0.75) !important; backdrop-filter: blur(15px); border-right: 1px solid rgba(255, 255, 255, 0.05); }
+    /* Sidebar Dipersempit & Transparan */
+    section[data-testid="stSidebar"] { 
+        width: 250px !important; 
+        min-width: 250px !important; 
+        max-width: 250px !important; 
+        background-color: rgba(15, 18, 25, 0.75) !important; 
+        backdrop-filter: blur(15px); 
+        border-right: 1px solid rgba(255, 255, 255, 0.05); 
+    }
     
+    /* Kartu Premium dengan Efek Melayang (Hover Effect) */
     .premium-card { 
         background: rgba(30, 41, 59, 0.3); 
         backdrop-filter: blur(16px); 
         border: 1px solid rgba(255, 255, 255, 0.08); 
-        border-radius: 12px; 
-        padding: 20px; 
-        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5); 
+        border-radius: 10px; 
+        padding: 15px; 
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); 
+        transition: all 0.3s ease-in-out;
+    }
+    .premium-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 25px -5px rgba(0, 242, 254, 0.3);
+        border-color: rgba(0, 242, 254, 0.4);
     }
     
-    .ihsg-box { text-align: right; display: flex; flex-direction: column; justify-content: center; height: 100%; padding: 12px 20px !important; }
-    .ihsg-title { color: #94a3b8; font-size: 0.7rem; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; }
-    .ihsg-score { color: #00f2fe; font-size: 1.8rem; font-weight: 900; line-height: 1.1; margin: 3px 0; }
+    /* Kotak IHSG Diperkecil */
+    .ihsg-box { text-align: right; display: flex; flex-direction: column; justify-content: center; height: 100%; padding: 10px 15px !important; }
+    .ihsg-title { color: #94a3b8; font-size: 0.65rem; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; }
+    .ihsg-score { color: #00f2fe; font-size: 1.5rem; font-weight: 900; line-height: 1.1; margin: 2px 0; }
     
-    .strat-num { font-size: 2.5rem; font-weight: 900; margin: 5px 0; line-height: 1; text-align: center; }
-    .strat-label { font-size: 0.8rem; font-weight: 600; text-align: center; letter-spacing: 1px; }
+    .strat-num { font-size: 2.2rem; font-weight: 900; margin: 2px 0; line-height: 1; text-align: center; }
+    .strat-label { font-size: 0.75rem; font-weight: 600; text-align: center; letter-spacing: 1px; }
     
     .stDataFrame { border-radius: 10px; overflow: hidden; font-size: 13px !important; }
     
+    /* Tombol Global Diperhalus & Diperkecil */
     div.stButton > button:first-child { 
         background: rgba(0, 242, 254, 0.1) !important; 
-        border: 2px solid #00f2fe !important; 
+        border: 1px solid rgba(0, 242, 254, 0.5) !important; 
         color: #00f2fe !important; 
-        border-radius: 8px !important; 
-        padding: 12px !important; 
+        border-radius: 6px !important; 
+        padding: 8px 12px !important; 
         transition: all 0.3s ease;
-        box-shadow: 0 0 15px rgba(0, 242, 254, 0.2);
     }
     div.stButton > button:first-child p {
         color: #00f2fe !important;
-        font-weight: 900 !important; 
-        font-size: 1.1rem !important; 
-        letter-spacing: 1px;
+        font-weight: 800 !important; 
+        font-size: 0.95rem !important; 
+        letter-spacing: 0.5px;
+        margin: 0;
     }
     div.stButton > button:first-child:hover { 
         background: #00f2fe !important; 
         transform: scale(1.02); 
-        box-shadow: 0 0 25px rgba(0, 242, 254, 0.6); 
+        box-shadow: 0 0 15px rgba(0, 242, 254, 0.5); 
     }
     div.stButton > button:first-child:hover p { color: #020617 !important; }
+
+    /* ========================================== */
+    /* RESPONSIVE MOBILE FIX (TAMPILAN HP)        */
+    /* ========================================== */
+    @media (max-width: 768px) {
+        h1 { font-size: 1.4rem !important; }
+        .ihsg-score { font-size: 1.3rem !important; }
+        .strat-num { font-size: 1.5rem !important; }
+        .strat-label { font-size: 0.65rem; }
+        .premium-card { padding: 10px !important; }
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -77,24 +108,24 @@ PASSWORD_RAHASIA = "216455"
 
 if "akses_diberikan" not in st.session_state:
     st.session_state.akses_diberikan = False
+if "scan_clicked" not in st.session_state:
+    st.session_state.scan_clicked = False
 
 if not st.session_state.akses_diberikan:
     st.markdown("<h2 style='text-align: center; color: #00f2fe; margin-top: 100px;'>🔒 JIHAN-GHINA TERMINAL TERKUNCI</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #94a3b8;'>Sistem intelijen ini bersifat privat. Silakan hubungi Theo Hydetetsu untuk mendapatkan kunci akses.</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #94a3b8; font-size: 0.9rem;'>Sistem intelijen ini bersifat privat. Silakan hubungi admin untuk akses.</p>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        st.markdown("<div class='premium-card'>", unsafe_allow_html=True)
+        st.markdown("<div class='premium-card' style='border-left: 5px solid #00f2fe;'>", unsafe_allow_html=True)
         user_input = st.text_input("👤 Username:")
         pwd_input = st.text_input("🔑 Password:", type="password")
         
         if st.button("VERIFIKASI AKSES", use_container_width=True):
             if user_input.strip().lower() == USERNAME_RAHASIA.lower() and pwd_input.strip() == PASSWORD_RAHASIA:
                 st.session_state.akses_diberikan = True
-                if hasattr(st, 'rerun'): 
-                    st.rerun()
-                else: 
-                    st.error("Akses Ditolak")
+                if hasattr(st, 'rerun'): st.rerun()
+                else: st.experimental_rerun()
             else:
                 st.error("Akses Ditolak! Username atau Password tidak valid.")
         st.markdown("</div>", unsafe_allow_html=True)
@@ -287,30 +318,31 @@ def fetch_analyst_consensus(ticker_symbol):
 # 4. SIDEBAR (CYBER COMMAND CENTER)
 # ==========================================
 with st.sidebar:
-    st.markdown("<h2 style='color: #00f2fe; font-size: 1.8rem; font-weight: 900; margin-bottom: 0px; text-align: center;'>👨‍💻 JIHAN-GHINA</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #94a3b8; font-size: 0.75rem; letter-spacing: 2px; margin-bottom: 20px;'>TERMINAL v7.3</p>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color: #00f2fe; font-size: 1.6rem; font-weight: 900; margin-bottom: 0px; text-align: center;'>👨‍💻 JIHAN-GHINA</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #94a3b8; font-size: 0.7rem; letter-spacing: 2px; margin-bottom: 15px;'>TERMINAL v7.5</p>", unsafe_allow_html=True)
     
     st.markdown("""
-    <div style='background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px; margin-bottom: 20px;'>
-        <div style='font-size: 0.7rem; color: #94a3b8; letter-spacing: 1px; margin-bottom: 8px;'>SYSTEM STATUS</div>
-        <div style='font-size: 0.85rem; color: #10b981; margin-bottom: 4px;'>🟢 Core Engine: <strong>Online</strong></div>
-        <div style='font-size: 0.85rem; color: #10b981; margin-bottom: 4px;'>🟢 Data Link: <strong>Secured</strong></div>
-        <div style='font-size: 0.85rem; color: #00f2fe;'>⚡ Latency: <strong>Optimized</strong></div>
+    <div style='background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 10px; margin-bottom: 20px; border-left: 3px solid #10b981;'>
+        <div style='font-size: 0.65rem; color: #94a3b8; letter-spacing: 1px; margin-bottom: 5px;'>SYSTEM STATUS</div>
+        <div style='font-size: 0.8rem; color: #10b981; margin-bottom: 2px;'>🟢 Core Engine: <strong>Online</strong></div>
+        <div style='font-size: 0.8rem; color: #10b981; margin-bottom: 2px;'>🟢 Data Link: <strong>Secured</strong></div>
+        <div style='font-size: 0.8rem; color: #00f2fe;'>⚡ Latency: <strong>Optimized</strong></div>
     </div>
     """, unsafe_allow_html=True)
     
-    profil_risiko = st.selectbox("🎯 Profil Risiko Anda:", ["Moderat", "Agresif", "Konservatif"], label_visibility="visible")
+    profil_risiko = st.selectbox("🎯 Profil Risiko:", ["Moderat", "Agresif", "Konservatif"], label_visibility="visible")
     
     st.markdown("<br>", unsafe_allow_html=True)
     
     daftar_saham = [s.strip().upper() + ".JK" for s in roster_30_saham]
     
     if st.button("🔄 SCAN MARKET", use_container_width=True):
+        st.session_state.scan_clicked = True
         st.cache_data.clear()
         st.session_state.page_matrix = 0 
         st.session_state.raw_stocks = []
         
-        progress_text = "Menjalankan Algoritma Scan 30 Emiten..."
+        progress_text = "Memindai Market..."
         my_bar = st.progress(0, text=progress_text)
         
         for i, t in enumerate(daftar_saham):
@@ -327,8 +359,8 @@ with st.sidebar:
         else: st.experimental_rerun()
         
     st.markdown("""
-    <div style='margin-top: 30px; text-align: center; color: #475569; font-size: 0.7rem;'>
-        Analisis disaring dari 30 Saham Pilihan (Bluechip & Multibagger). Gunakan sebagai referensi keputusan.
+    <div style='margin-top: 20px; text-align: center; color: #475569; font-size: 0.65rem;'>
+        Analisis 30 Saham (Bluechip & Multibagger)
     </div>
     """, unsafe_allow_html=True)
 
@@ -339,23 +371,27 @@ st.markdown("<h1>🌐 Algorithmic Market Intelligence</h1>", unsafe_allow_html=T
 
 col_h1, col_h2 = st.columns([3.5, 1.5])
 with col_h1:
-    upd_time = st.session_state.last_update if st.session_state.last_update else "Menekan Tombol Scan di Sidebar..."
-    st.markdown(f"<p>🕒 Terakhir Diperbarui: <span style='color:#00f2fe;'>{upd_time}</span><br>Multi-Pilar Integrasi Terminal: Teknikal, Fundamental & Bandarmologi.</p>", unsafe_allow_html=True)
+    upd_time = st.session_state.last_update if st.session_state.last_update else "Menunggu inisiasi radar..."
+    st.markdown(f"<p style='font-size: 0.9rem;'>🕒 Terakhir Diperbarui: <span style='color:#00f2fe;'>{upd_time}</span><br>Multi-Pilar Integrasi Terminal: Teknikal, Fundamental & Bandarmologi.</p>", unsafe_allow_html=True)
 
 df_ihsg_hist, ihsg_now, ihsg_chg, ihsg_pct = fetch_ihsg_data()
 with col_h2:
     if ihsg_now:
         warna_panah = "▲" if ihsg_chg >= 0 else "▼"
+        warna_garis = '#10b981' if ihsg_chg >= 0 else '#f43f5e'
         st.markdown(f"""
-        <div class="premium-card ihsg-box">
+        <div class="premium-card ihsg-box" style="border-left: 5px solid {warna_garis};">
             <span class="ihsg-title">IHSG GABUNGAN</span>
             <span class="ihsg-score">{ihsg_now:,.2f}</span>
-            <span style="color: {'#10b981' if ihsg_chg >= 0 else '#f43f5e'}; font-weight: 800; font-size: 1rem;">{warna_panah} {ihsg_chg:+,.2f} ({ihsg_pct:+.2f}%)</span>
+            <span style="color: {warna_garis}; font-weight: 800; font-size: 0.9rem;">{warna_panah} {ihsg_chg:+,.2f} ({ihsg_pct:+.2f}%)</span>
         </div>
         """, unsafe_allow_html=True)
 
-if st.session_state.raw_stocks:
-    st.markdown("---")
+st.markdown("---")
+
+if not st.session_state.scan_clicked or not st.session_state.raw_stocks:
+    st.info("👈 Sistem aman dan *standby*. Silakan tekan tombol '🔄 SCAN MARKET' di sidebar untuk memulai analisis radar.")
+else:
     st.markdown("<h3>🛰️ Pro Max Recommendation Engine</h3>", unsafe_allow_html=True)
     
     hasil_rekomendasi = []
@@ -400,9 +436,9 @@ if st.session_state.raw_stocks:
     df_final = pd.DataFrame(hasil_rekomendasi)
     
     m1, m2, m3 = st.columns(3)
-    with m1: st.markdown(f"<div class='premium-card'><div class='strat-label' style='color:#34d399;'>🟢 STRATEGI BUY</div><div class='strat-num' style='color:#f8fafc;'>{sum('🟢' in x for x in df_final['REKOMENDASI'])}</div></div>", unsafe_allow_html=True)
-    with m2: st.markdown(f"<div class='premium-card'><div class='strat-label' style='color:#fbbf24;'>🟡 STRATEGI HOLD</div><div class='strat-num' style='color:#f8fafc;'>{sum('🟡' in x for x in df_final['REKOMENDASI'])}</div></div>", unsafe_allow_html=True)
-    with m3: st.markdown(f"<div class='premium-card'><div class='strat-label' style='color:#fb7185;'>🔴 STRATEGI SELL</div><div class='strat-num' style='color:#f8fafc;'>{sum('🔴' in x for x in df_final['REKOMENDASI'])}</div></div>", unsafe_allow_html=True)
+    with m1: st.markdown(f"<div class='premium-card' style='border-left: 5px solid #10b981;'><div class='strat-label' style='color:#34d399;'>🟢 BUY STRATEGY</div><div class='strat-num' style='color:#f8fafc;'>{sum('🟢' in x for x in df_final['REKOMENDASI'])}</div></div>", unsafe_allow_html=True)
+    with m2: st.markdown(f"<div class='premium-card' style='border-left: 5px solid #fbbf24;'><div class='strat-label' style='color:#fbbf24;'>🟡 HOLD STRATEGY</div><div class='strat-num' style='color:#f8fafc;'>{sum('🟡' in x for x in df_final['REKOMENDASI'])}</div></div>", unsafe_allow_html=True)
+    with m3: st.markdown(f"<div class='premium-card' style='border-left: 5px solid #fb7185;'><div class='strat-label' style='color:#fb7185;'>🔴 SELL STRATEGY</div><div class='strat-num' style='color:#f8fafc;'>{sum('🔴' in x for x in df_final['REKOMENDASI'])}</div></div>", unsafe_allow_html=True)
     
     st.write(" ")
     
@@ -413,7 +449,7 @@ if st.session_state.raw_stocks:
         else: bg_rek = 'background-color: rgba(244, 63, 94, 0.1); color: #fb7185;'
         
         for c, val in row.items():
-            if c == 'TICKER': styles.append('font-weight: 900; font-size: 16px; color: #00f2fe;')
+            if c == 'TICKER': styles.append('font-weight: 900; font-size: 15px; color: #00f2fe;')
             elif c == 'TARGET (TP)': styles.append('color: #10b981; font-weight: 800;') 
             elif c == 'STOP LOSS': styles.append('color: #f43f5e; font-weight: 800;')  
             elif c == 'AREA BELI': styles.append('color: #38bdf8; font-weight: 800;')  
@@ -441,7 +477,8 @@ if st.session_state.raw_stocks:
     st.dataframe(df_tampil.style.apply(style_tabel, axis=1), width='stretch', hide_index=True)
     st.markdown('</div>', unsafe_allow_html=True)
     
-    col_p1, col_p2, col_p3 = st.columns([1, 8, 1])
+    # Proporsi kolom Next/Prev dirapatkan agar tombol mengecil
+    col_p1, col_p2, col_p3 = st.columns([1.5, 7, 1.5])
     
     with col_p1:
         if st.button("⬅️ Prev", use_container_width=True, disabled=(st.session_state.page_matrix == 0)):
@@ -450,7 +487,7 @@ if st.session_state.raw_stocks:
             else: st.experimental_rerun()
             
     with col_p2:
-        st.markdown(f"<p style='text-align: center; font-size:0.8rem; color:#94a3b8; margin-top:10px;'>Halaman {st.session_state.page_matrix + 1} dari {total_pages}</p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: center; font-size:0.75rem; color:#94a3b8; margin-top:8px;'>Halaman {st.session_state.page_matrix + 1} dari {total_pages}</p>", unsafe_allow_html=True)
         
     with col_p3:
         if st.button("Next ➡️", use_container_width=True, disabled=(st.session_state.page_matrix >= total_pages - 1)):
@@ -471,21 +508,21 @@ if st.session_state.raw_stocks:
         analyst_data = fetch_analyst_consensus(emiten_pilihan)
         st.markdown(f"""
         <div style='display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom: 20px;'>
-            <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px;'>
-                <div style='font-size:0.75rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>💡 Rating Analis</div>
-                <div style='font-size:1.1rem; font-weight:800; color:#00f2fe; margin-top:5px;'>{analyst_data["Konsensus"]}</div>
+            <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px; border-left: 5px solid #00f2fe;'>
+                <div style='font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>💡 Rating Analis</div>
+                <div style='font-size:1.05rem; font-weight:800; color:#00f2fe; margin-top:5px;'>{analyst_data["Konsensus"]}</div>
             </div>
-            <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px;'>
-                <div style='font-size:0.75rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>📉 Target Bawah</div>
-                <div style='font-size:1.1rem; font-weight:800; color:#f43f5e; margin-top:5px;'>{analyst_data["Target Bawah"]}</div>
+            <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px; border-left: 5px solid #f43f5e;'>
+                <div style='font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>📉 Target Bawah</div>
+                <div style='font-size:1.05rem; font-weight:800; color:#f43f5e; margin-top:5px;'>{analyst_data["Target Bawah"]}</div>
             </div>
-            <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px;'>
-                <div style='font-size:0.75rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>🎯 Target Rata-Rata</div>
-                <div style='font-size:1.1rem; font-weight:800; color:#f8fafc; margin-top:5px;'>{analyst_data["Target Rata-Rata"]}</div>
+            <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px; border-left: 5px solid #f8fafc;'>
+                <div style='font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>🎯 Target Rata-Rata</div>
+                <div style='font-size:1.05rem; font-weight:800; color:#f8fafc; margin-top:5px;'>{analyst_data["Target Rata-Rata"]}</div>
             </div>
-            <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px;'>
-                <div style='font-size:0.75rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>📈 Target Atas</div>
-                <div style='font-size:1.1rem; font-weight:800; color:#10b981; margin-top:5px;'>{analyst_data["Target Atas"]}</div>
+            <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px; border-left: 5px solid #10b981;'>
+                <div style='font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>📈 Target Atas</div>
+                <div style='font-size:1.05rem; font-weight:800; color:#10b981; margin-top:5px;'>{analyst_data["Target Atas"]}</div>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -497,9 +534,9 @@ if st.session_state.raw_stocks:
         
         st.markdown(f"""
         <div class='premium-card' style='margin-bottom: 25px; border-left: 5px solid {color_hex};'>
-            <h4 style='color: #f8fafc; margin-top: 0; margin-bottom: 10px;'>💠 Financial Health Status: <span style='color: {color_hex};'>{status_text}</span></h4>
-            <p style='color: #94a3b8; font-size: 0.9rem; margin-bottom: 5px;'>Faktor Pendukung Berdasarkan Laporan Terbaru:</p>
-            <ul style='color: #cbd5e1; font-size: 0.85rem; padding-left: 20px; margin: 0;'>
+            <h4 style='color: #f8fafc; margin-top: 0; margin-bottom: 10px; font-size: 1.1rem;'>💠 Financial Health Status: <span style='color: {color_hex};'>{status_text}</span></h4>
+            <p style='color: #94a3b8; font-size: 0.85rem; margin-bottom: 5px;'>Faktor Pendukung Berdasarkan Laporan Terbaru:</p>
+            <ul style='color: #cbd5e1; font-size: 0.8rem; padding-left: 20px; margin: 0;'>
                 {reasons_html if reason_list else "<li>Belum cukup data untuk melakukan skoring.</li>"}
             </ul>
         </div>
@@ -508,19 +545,20 @@ if st.session_state.raw_stocks:
         c1, c2, c3 = st.columns(3)
         
         with c1:
-            st.markdown(f"<h5 style='color: #00f2fe; text-align:center; font-size: 1rem;'>📈 Income Statement (Triliun Rp)</h5>", unsafe_allow_html=True)
+            st.markdown(f"<h5 style='color: #00f2fe; text-align:center; font-size: 0.95rem;'>📈 Income Statement (Triliun Rp)</h5>", unsafe_allow_html=True)
             if not df_inc.empty: st.bar_chart(df_inc, color=["#00f2fe", "#10b981"], height=300)
             else: st.warning("Data Kosong")
             
         with c2:
-            st.markdown(f"<h5 style='color: #3b82f6; text-align:center; font-size: 1rem;'>⚖️ Balance Sheet (Triliun Rp)</h5>", unsafe_allow_html=True)
+            st.markdown(f"<h5 style='color: #3b82f6; text-align:center; font-size: 0.95rem;'>⚖️ Balance Sheet (Triliun Rp)</h5>", unsafe_allow_html=True)
             if not df_bs.empty: st.bar_chart(df_bs, color=["#3b82f6", "#f43f5e"], height=300)
             else: st.warning("Data Kosong")
             
         with c3:
-            st.markdown(f"<h5 style='color: #8b5cf6; text-align:center; font-size: 1rem;'>💵 Cash Flow (Triliun Rp)</h5>", unsafe_allow_html=True)
+            st.markdown(f"<h5 style='color: #8b5cf6; text-align:center; font-size: 0.95rem;'>💵 Cash Flow (Triliun Rp)</h5>", unsafe_allow_html=True)
             if not df_cf.empty: st.bar_chart(df_cf, color=["#8b5cf6", "#f59e0b"], height=300)
             else: st.warning("Data Kosong")
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ JIHAN-GHINA ENGINE • SECURE ALGORITHMIC TERMINAL v7.3</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ JIHAN-GHINA ENGINE • SECURE ALGORITHMIC TERMINAL v7.5</p>", unsafe_allow_html=True)
+
