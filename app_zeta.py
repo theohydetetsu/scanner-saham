@@ -23,16 +23,22 @@ st.markdown("""
     [data-testid="stAppViewContainer"] { background: radial-gradient(circle at 50% -20%, #1a1e29, #0f1219) !important; color: #f8fafc !important; }
     [data-testid="stHeader"] { background: transparent !important; }
     
-    .block-container { padding-top: 1.5rem; padding-bottom: 2rem; max-width: 98%; }
+    /* Kunci Layar Utama agar tidak melebar saat Sidebar ditutup */
+    .block-container { 
+        padding-top: 1.5rem; 
+        padding-bottom: 2rem; 
+        max-width: 1150px !important; 
+        margin: 0 auto !important; 
+    }
     
     h1 { color: #f8fafc; font-weight: 900; letter-spacing: -1px; font-size: 2.2rem !important; margin-bottom: 0; }
     p { color: #94a3b8; font-weight: 300; }
     
-    /* Sidebar Dipersempit & Transparan */
+    /* Sidebar Dipersempit Ekstra */
     section[data-testid="stSidebar"] { 
-        width: 250px !important; 
-        min-width: 250px !important; 
-        max-width: 250px !important; 
+        width: 210px !important; 
+        min-width: 210px !important; 
+        max-width: 210px !important; 
         background-color: rgba(15, 18, 25, 0.75) !important; 
         backdrop-filter: blur(15px); 
         border-right: 1px solid rgba(255, 255, 255, 0.05); 
@@ -53,6 +59,16 @@ st.markdown("""
         box-shadow: 0 12px 25px -5px rgba(0, 242, 254, 0.3);
         border-color: rgba(0, 242, 254, 0.4);
     }
+
+    /* Varian Slim Card untuk Grafik */
+    .slim-card {
+        padding: 10px !important;
+        border-radius: 8px !important;
+    }
+    .slim-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 15px -5px rgba(0, 242, 254, 0.2);
+    }
     
     /* Kotak IHSG Diperkecil */
     .ihsg-box { text-align: right; display: flex; flex-direction: column; justify-content: center; height: 100%; padding: 10px 15px !important; }
@@ -62,7 +78,7 @@ st.markdown("""
     .strat-num { font-size: 2.2rem; font-weight: 900; margin: 2px 0; line-height: 1; text-align: center; }
     .strat-label { font-size: 0.75rem; font-weight: 600; text-align: center; letter-spacing: 1px; }
     
-    .stDataFrame { border-radius: 10px; overflow: hidden; font-size: 13px !important; }
+    .stDataFrame { border-radius: 8px; overflow: hidden; font-size: 13px !important; border: 1px solid rgba(255,255,255,0.05); }
     
     /* Tombol Global Diperhalus & Diperkecil */
     div.stButton > button:first-child { 
@@ -87,7 +103,7 @@ st.markdown("""
     }
     div.stButton > button:first-child:hover p { color: #020617 !important; }
     
-    /* Styling Header Login agar tidak butuh spasi paksa (margin) */
+    /* Styling Header Login */
     .login-header {
         text-align: center; 
         color: #00f2fe; 
@@ -121,7 +137,7 @@ st.markdown("""
         label { font-size: 0.8rem !important; }
         input { font-size: 0.85rem !important; padding: 6px !important; height: 35px !important; }
         
-        .stDataFrame { font-size: 11px !important; }
+        .stDataFrame { font-size: 12px !important; }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -500,7 +516,7 @@ else:
     end_idx = start_idx + ITEMS_PER_PAGE
     df_tampil = df_final.iloc[start_idx:end_idx]
     
-    # KOTAK HANTU TELAH DIHAPUS, LANGSUNG MENCETAK TABEL
+    # HTML siluman dihapus, kita render st.dataframe dengan ukuran penuh agar elegan di scroll di HP
     st.dataframe(df_tampil.style.apply(style_tabel, axis=1), use_container_width=True, hide_index=True)
     
     col_p1, col_p2, col_p3 = st.columns([1.5, 7, 1.5])
@@ -533,19 +549,19 @@ else:
         analyst_data = fetch_analyst_consensus(emiten_pilihan)
         st.markdown(f"""
         <div style='display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom: 20px;'>
-            <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px; border-left: 5px solid #00f2fe;'>
+            <div class='premium-card slim-card' style='flex:1; min-width:140px; text-align:center; border-left: 5px solid #00f2fe;'>
                 <div style='font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>💡 Rating Analis</div>
                 <div style='font-size:1.05rem; font-weight:800; color:#00f2fe; margin-top:5px;'>{analyst_data["Konsensus"]}</div>
             </div>
-            <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px; border-left: 5px solid #f43f5e;'>
+            <div class='premium-card slim-card' style='flex:1; min-width:140px; text-align:center; border-left: 5px solid #f43f5e;'>
                 <div style='font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>📉 Target Bawah</div>
                 <div style='font-size:1.05rem; font-weight:800; color:#f43f5e; margin-top:5px;'>{analyst_data["Target Bawah"]}</div>
             </div>
-            <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px; border-left: 5px solid #f8fafc;'>
+            <div class='premium-card slim-card' style='flex:1; min-width:140px; text-align:center; border-left: 5px solid #f8fafc;'>
                 <div style='font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>🎯 Target Rata-Rata</div>
                 <div style='font-size:1.05rem; font-weight:800; color:#f8fafc; margin-top:5px;'>{analyst_data["Target Rata-Rata"]}</div>
             </div>
-            <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px; border-left: 5px solid #10b981;'>
+            <div class='premium-card slim-card' style='flex:1; min-width:140px; text-align:center; border-left: 5px solid #10b981;'>
                 <div style='font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>📈 Target Atas</div>
                 <div style='font-size:1.05rem; font-weight:800; color:#10b981; margin-top:5px;'>{analyst_data["Target Atas"]}</div>
             </div>
@@ -570,20 +586,25 @@ else:
         c1, c2, c3 = st.columns(3)
         
         with c1:
-            # Judul Kotak Mengambang untuk Grafik
-            st.markdown(f"<div class='premium-card' style='text-align:center; padding:10px; margin-bottom:10px; border-left: 3px solid #00f2fe;'><h5 style='color: #00f2fe; font-size: 0.95rem; margin:0;'>📈 Income Statement</h5></div>", unsafe_allow_html=True)
+            st.markdown("<div class='premium-card slim-card'>", unsafe_allow_html=True)
+            st.markdown(f"<h5 style='color: #00f2fe; text-align:center; font-size: 0.95rem; margin-bottom: 10px;'>📈 Income Statement</h5>", unsafe_allow_html=True)
             if not df_inc.empty: st.bar_chart(df_inc, color=["#00f2fe", "#10b981"], height=250)
             else: st.warning("Data Kosong")
+            st.markdown("</div>", unsafe_allow_html=True)
             
         with c2:
-            st.markdown(f"<div class='premium-card' style='text-align:center; padding:10px; margin-bottom:10px; border-left: 3px solid #3b82f6;'><h5 style='color: #3b82f6; font-size: 0.95rem; margin:0;'>⚖️ Balance Sheet</h5></div>", unsafe_allow_html=True)
+            st.markdown("<div class='premium-card slim-card'>", unsafe_allow_html=True)
+            st.markdown(f"<h5 style='color: #3b82f6; text-align:center; font-size: 0.95rem; margin-bottom: 10px;'>⚖️ Balance Sheet</h5>", unsafe_allow_html=True)
             if not df_bs.empty: st.bar_chart(df_bs, color=["#3b82f6", "#f43f5e"], height=250)
             else: st.warning("Data Kosong")
+            st.markdown("</div>", unsafe_allow_html=True)
             
         with c3:
-            st.markdown(f"<div class='premium-card' style='text-align:center; padding:10px; margin-bottom:10px; border-left: 3px solid #8b5cf6;'><h5 style='color: #8b5cf6; font-size: 0.95rem; margin:0;'>💵 Cash Flow</h5></div>", unsafe_allow_html=True)
+            st.markdown("<div class='premium-card slim-card'>", unsafe_allow_html=True)
+            st.markdown(f"<h5 style='color: #8b5cf6; text-align:center; font-size: 0.95rem; margin-bottom: 10px;'>💵 Cash Flow</h5>", unsafe_allow_html=True)
             if not df_cf.empty: st.bar_chart(df_cf, color=["#8b5cf6", "#f59e0b"], height=250)
             else: st.warning("Data Kosong")
+            st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown("---")
 st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ JIHAN-GHINA ENGINE • SECURE ALGORITHMIC TERMINAL v7.7</p>", unsafe_allow_html=True)
