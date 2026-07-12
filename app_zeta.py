@@ -12,7 +12,7 @@ warnings.filterwarnings('ignore')
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Pro Max v7.7", page_icon="💻", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Pro Max v7.9", page_icon="💻", layout="wide")
 
 st.markdown("""
 <style>
@@ -23,12 +23,11 @@ st.markdown("""
     [data-testid="stAppViewContainer"] { background: radial-gradient(circle at 50% -20%, #1a1e29, #0f1219) !important; color: #f8fafc !important; }
     [data-testid="stHeader"] { background: transparent !important; }
     
-    /* Kunci Layar Utama agar tidak melebar saat Sidebar ditutup */
+    /* Layar Utama Dinamis (Akan melebar otomatis jika sidebar ditutup) */
     .block-container { 
         padding-top: 1.5rem; 
         padding-bottom: 2rem; 
-        max-width: 1150px !important; 
-        margin: 0 auto !important; 
+        max-width: 98% !important; 
     }
     
     h1 { color: #f8fafc; font-weight: 900; letter-spacing: -1px; font-size: 2.2rem !important; margin-bottom: 0; }
@@ -59,15 +58,16 @@ st.markdown("""
         box-shadow: 0 12px 25px -5px rgba(0, 242, 254, 0.3);
         border-color: rgba(0, 242, 254, 0.4);
     }
-
-    /* Varian Slim Card untuk Grafik */
-    .slim-card {
-        padding: 10px !important;
-        border-radius: 8px !important;
-    }
-    .slim-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 15px -5px rgba(0, 242, 254, 0.2);
+    
+    /* Modifikasi Khusus Form Login Streamlit agar persis seperti Premium Card */
+    [data-testid="stForm"] {
+        background: rgba(30, 41, 59, 0.3); 
+        backdrop-filter: blur(16px); 
+        border: 1px solid rgba(255, 255, 255, 0.08); 
+        border-left: 5px solid #00f2fe;
+        border-radius: 10px; 
+        padding: 20px; 
+        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
     }
     
     /* Kotak IHSG Diperkecil */
@@ -78,10 +78,8 @@ st.markdown("""
     .strat-num { font-size: 2.2rem; font-weight: 900; margin: 2px 0; line-height: 1; text-align: center; }
     .strat-label { font-size: 0.75rem; font-weight: 600; text-align: center; letter-spacing: 1px; }
     
-    .stDataFrame { border-radius: 8px; overflow: hidden; font-size: 13px !important; border: 1px solid rgba(255,255,255,0.05); }
-    
     /* Tombol Global Diperhalus & Diperkecil */
-    div.stButton > button:first-child { 
+    div.stButton > button:first-child, div[data-testid="stFormSubmitButton"] > button { 
         background: rgba(0, 242, 254, 0.1) !important; 
         border: 1px solid rgba(0, 242, 254, 0.5) !important; 
         color: #00f2fe !important; 
@@ -89,19 +87,19 @@ st.markdown("""
         padding: 8px 12px !important; 
         transition: all 0.3s ease;
     }
-    div.stButton > button:first-child p {
+    div.stButton > button:first-child p, div[data-testid="stFormSubmitButton"] > button p {
         color: #00f2fe !important;
         font-weight: 800 !important; 
         font-size: 0.95rem !important; 
         letter-spacing: 0.5px;
         margin: 0;
     }
-    div.stButton > button:first-child:hover { 
+    div.stButton > button:first-child:hover, div[data-testid="stFormSubmitButton"] > button:hover { 
         background: #00f2fe !important; 
         transform: scale(1.02); 
         box-shadow: 0 0 15px rgba(0, 242, 254, 0.5); 
     }
-    div.stButton > button:first-child:hover p { color: #020617 !important; }
+    div.stButton > button:first-child:hover p, div[data-testid="stFormSubmitButton"] > button:hover p { color: #020617 !important; }
     
     /* Styling Header Login */
     .login-header {
@@ -130,20 +128,19 @@ st.markdown("""
         .strat-label { font-size: 0.6rem !important; }
         
         .premium-card { padding: 10px !important; }
+        [data-testid="stForm"] { padding: 12px !important; }
         
-        div.stButton > button:first-child { padding: 4px 8px !important; }
-        div.stButton > button:first-child p { font-size: 0.8rem !important; }
+        div.stButton > button:first-child, div[data-testid="stFormSubmitButton"] > button { padding: 4px 8px !important; }
+        div.stButton > button:first-child p, div[data-testid="stFormSubmitButton"] > button p { font-size: 0.8rem !important; }
         
         label { font-size: 0.8rem !important; }
         input { font-size: 0.85rem !important; padding: 6px !important; height: 35px !important; }
-        
-        .stDataFrame { font-size: 12px !important; }
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 1.5. SISTEM KEAMANAN (LOGIN GATE 2.0)
+# 1.5. SISTEM KEAMANAN (LOGIN GATE 2.0 VIA FORM)
 # ==========================================
 USERNAME_RAHASIA = "theo"
 PASSWORD_RAHASIA = "216455"
@@ -159,19 +156,21 @@ if not st.session_state.akses_diberikan:
     
     col1, col2, col3 = st.columns([1, 4, 1])
     with col2:
-        st.markdown("<div class='premium-card' style='border-left: 5px solid #00f2fe;'>", unsafe_allow_html=True)
-        user_input = st.text_input("👤 Username:")
-        pwd_input = st.text_input("🔑 Password:", type="password")
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("VERIFIKASI AKSES", use_container_width=True):
-            if user_input.strip().lower() == USERNAME_RAHASIA.lower() and pwd_input.strip() == PASSWORD_RAHASIA:
-                st.session_state.akses_diberikan = True
-                if hasattr(st, 'rerun'): st.rerun()
-                else: st.experimental_rerun()
-            else:
-                st.error("Akses Ditolak! Username atau Password tidak valid.")
-        st.markdown("</div>", unsafe_allow_html=True)
+        # Menggunakan st.form agar bisa menekan ENTER dari keyboard HP/PC langsung terproses
+        with st.form(key="login_form"):
+            user_input = st.text_input("👤 Username:")
+            pwd_input = st.text_input("🔑 Password:", type="password")
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            submit_button = st.form_submit_button("VERIFIKASI AKSES", use_container_width=True)
+            
+            if submit_button:
+                if user_input.strip().lower() == USERNAME_RAHASIA.lower() and pwd_input.strip() == PASSWORD_RAHASIA:
+                    st.session_state.akses_diberikan = True
+                    if hasattr(st, 'rerun'): st.rerun()
+                    else: st.experimental_rerun()
+                else:
+                    st.error("Akses Ditolak! Username atau Password tidak valid.")
     st.stop()
 
 # ==========================================
@@ -361,8 +360,9 @@ def fetch_analyst_consensus(ticker_symbol):
 # 4. SIDEBAR (CYBER COMMAND CENTER)
 # ==========================================
 with st.sidebar:
-    st.markdown("<h2 style='color: #00f2fe; font-size: 1.6rem; font-weight: 900; margin-bottom: 0px; text-align: center;'>👨‍💻 JIHAN-GHINA</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #94a3b8; font-size: 0.7rem; letter-spacing: 2px; margin-bottom: 15px;'>TERMINAL v7.7</p>", unsafe_allow_html=True)
+    # Memperbaiki margin, ukuran font, white-space dan rata kiri agar tidak terpotong jadi 2 baris
+    st.markdown("<h2 style='color: #00f2fe; font-size: 1.35rem; font-weight: 900; margin-bottom: 0px; text-align: left; margin-left: -5px; white-space: nowrap;'>👨‍💻 JIHAN-GHINA</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: left; margin-left: 20px; color: #94a3b8; font-size: 0.7rem; letter-spacing: 2px; margin-bottom: 15px;'>TERMINAL v7.9</p>", unsafe_allow_html=True)
     
     st.markdown("""
     <div style='background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 10px; margin-bottom: 20px; border-left: 3px solid #10b981;'>
@@ -492,7 +492,7 @@ else:
         else: bg_rek = 'background-color: rgba(244, 63, 94, 0.1); color: #fb7185;'
         
         for c, val in row.items():
-            if c == 'TICKER': styles.append('font-weight: 900; font-size: 15px; color: #00f2fe;')
+            if c == 'TICKER': styles.append('font-weight: 900; color: #00f2fe;')
             elif c == 'TARGET (TP)': styles.append('color: #10b981; font-weight: 800;') 
             elif c == 'STOP LOSS': styles.append('color: #f43f5e; font-weight: 800;')  
             elif c == 'AREA BELI': styles.append('color: #38bdf8; font-weight: 800;')  
@@ -516,7 +516,6 @@ else:
     end_idx = start_idx + ITEMS_PER_PAGE
     df_tampil = df_final.iloc[start_idx:end_idx]
     
-    # HTML siluman dihapus, kita render st.dataframe dengan ukuran penuh agar elegan di scroll di HP
     st.dataframe(df_tampil.style.apply(style_tabel, axis=1), use_container_width=True, hide_index=True)
     
     col_p1, col_p2, col_p3 = st.columns([1.5, 7, 1.5])
@@ -549,19 +548,19 @@ else:
         analyst_data = fetch_analyst_consensus(emiten_pilihan)
         st.markdown(f"""
         <div style='display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom: 20px;'>
-            <div class='premium-card slim-card' style='flex:1; min-width:140px; text-align:center; border-left: 5px solid #00f2fe;'>
+            <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px; border-left: 5px solid #00f2fe;'>
                 <div style='font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>💡 Rating Analis</div>
                 <div style='font-size:1.05rem; font-weight:800; color:#00f2fe; margin-top:5px;'>{analyst_data["Konsensus"]}</div>
             </div>
-            <div class='premium-card slim-card' style='flex:1; min-width:140px; text-align:center; border-left: 5px solid #f43f5e;'>
+            <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px; border-left: 5px solid #f43f5e;'>
                 <div style='font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>📉 Target Bawah</div>
                 <div style='font-size:1.05rem; font-weight:800; color:#f43f5e; margin-top:5px;'>{analyst_data["Target Bawah"]}</div>
             </div>
-            <div class='premium-card slim-card' style='flex:1; min-width:140px; text-align:center; border-left: 5px solid #f8fafc;'>
+            <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px; border-left: 5px solid #f8fafc;'>
                 <div style='font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>🎯 Target Rata-Rata</div>
                 <div style='font-size:1.05rem; font-weight:800; color:#f8fafc; margin-top:5px;'>{analyst_data["Target Rata-Rata"]}</div>
             </div>
-            <div class='premium-card slim-card' style='flex:1; min-width:140px; text-align:center; border-left: 5px solid #10b981;'>
+            <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px; border-left: 5px solid #10b981;'>
                 <div style='font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>📈 Target Atas</div>
                 <div style='font-size:1.05rem; font-weight:800; color:#10b981; margin-top:5px;'>{analyst_data["Target Atas"]}</div>
             </div>
@@ -586,25 +585,19 @@ else:
         c1, c2, c3 = st.columns(3)
         
         with c1:
-            st.markdown("<div class='premium-card slim-card'>", unsafe_allow_html=True)
             st.markdown(f"<h5 style='color: #00f2fe; text-align:center; font-size: 0.95rem; margin-bottom: 10px;'>📈 Income Statement</h5>", unsafe_allow_html=True)
             if not df_inc.empty: st.bar_chart(df_inc, color=["#00f2fe", "#10b981"], height=250)
             else: st.warning("Data Kosong")
-            st.markdown("</div>", unsafe_allow_html=True)
             
         with c2:
-            st.markdown("<div class='premium-card slim-card'>", unsafe_allow_html=True)
             st.markdown(f"<h5 style='color: #3b82f6; text-align:center; font-size: 0.95rem; margin-bottom: 10px;'>⚖️ Balance Sheet</h5>", unsafe_allow_html=True)
             if not df_bs.empty: st.bar_chart(df_bs, color=["#3b82f6", "#f43f5e"], height=250)
             else: st.warning("Data Kosong")
-            st.markdown("</div>", unsafe_allow_html=True)
             
         with c3:
-            st.markdown("<div class='premium-card slim-card'>", unsafe_allow_html=True)
             st.markdown(f"<h5 style='color: #8b5cf6; text-align:center; font-size: 0.95rem; margin-bottom: 10px;'>💵 Cash Flow</h5>", unsafe_allow_html=True)
             if not df_cf.empty: st.bar_chart(df_cf, color=["#8b5cf6", "#f59e0b"], height=250)
             else: st.warning("Data Kosong")
-            st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ JIHAN-GHINA ENGINE • SECURE ALGORITHMIC TERMINAL v7.7</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ JIHAN-GHINA ENGINE • SECURE ALGORITHMIC TERMINAL v7.9</p>", unsafe_allow_html=True)
