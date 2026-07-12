@@ -12,7 +12,7 @@ warnings.filterwarnings('ignore')
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE
 # ==========================================
-st.set_page_config(page_title="JIHAN_GHINA", page_icon="💎", layout="wide")
+st.set_page_config(page_title="ANALISA SAHAM", page_icon="💎", layout="wide")
 
 st.markdown("""
 <style>
@@ -72,7 +72,7 @@ st.markdown("""
 # ==========================================
 # 1.5. SISTEM KEAMANAN (LOGIN GATE)
 # ==========================================
-PASSWORD_RAHASIA = "CuanMax2026"
+PASSWORD_RAHASIA = "32495"
 
 if "akses_diberikan" not in st.session_state:
     st.session_state.akses_diberikan = False
@@ -284,7 +284,7 @@ def fetch_analyst_consensus(ticker_symbol):
 # 4. SIDEBAR (CYBER COMMAND CENTER)
 # ==========================================
 with st.sidebar:
-    st.markdown("<h2 style='color: #00f2fe; font-size: 1.8rem; font-weight: 900; margin-bottom: 0px; text-align: center;'>💎 ZETA CORE</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color: #00f2fe; font-size: 1.8rem; font-weight: 900; margin-bottom: 0px; text-align: center;'>💎 JIHAN_GHINA</h2>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: #94a3b8; font-size: 0.75rem; letter-spacing: 2px; margin-bottom: 20px;'>TERMINAL v7.0</p>", unsafe_allow_html=True)
     
     st.markdown("""
@@ -487,7 +487,7 @@ if st.session_state.raw_stocks:
         
         st.markdown(f"""
         <div class='premium-card' style='margin-bottom: 25px; border-left: 5px solid {color_hex};'>
-            <h4 style='color: #f8fafc; margin-top: 0; margin-bottom: 10px;'>🤖 AI Financial Health Status: <span style='color: {color_hex};'>{status_text}</span></h4>
+            <h4 style='color: #f8fafc; margin-top: 0; margin-bottom: 10px;'>🤖 Financial Health Status: <span style='color: {color_hex};'>{status_text}</span></h4>
             <p style='color: #94a3b8; font-size: 0.9rem; margin-bottom: 5px;'>Faktor Pendukung Berdasarkan Laporan Terbaru:</p>
             <ul style='color: #cbd5e1; font-size: 0.85rem; padding-left: 20px; margin: 0;'>
                 {reasons_html if reason_list else "<li>Belum cukup data untuk melakukan skoring.</li>"}
