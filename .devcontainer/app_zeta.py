@@ -12,7 +12,7 @@ warnings.filterwarnings('ignore')
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE
 # ==========================================
-st.set_page_config(page_title="JIHAN_GHINA", page_icon="💎", layout="wide")
+st.set_page_config(page_title="ZETA CORE Pro Max v7.0", page_icon="💎", layout="wide")
 
 st.markdown("""
 <style>
@@ -351,7 +351,7 @@ with col_h2:
 
 if st.session_state.raw_stocks:
     st.markdown("---")
-    st.markdown("<h3>🧠 Recommendation Engine</h3>", unsafe_allow_html=True)
+    st.markdown("<h3>🧠 AI Pro Max Recommendation Engine</h3>", unsafe_allow_html=True)
     
     hasil_rekomendasi = []
     for raw in st.session_state.raw_stocks:
@@ -514,4 +514,3 @@ if st.session_state.raw_stocks:
 
 st.markdown("---")
 st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ ZETA CORE ENGINE • SECURE ALGORITHMIC TERMINAL v7.0</p>", unsafe_allow_html=True)
-
