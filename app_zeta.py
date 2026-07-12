@@ -94,7 +94,7 @@ if not st.session_state.akses_diberikan:
                 if hasattr(st, 'rerun'): 
                     st.rerun()
                 else: 
-                    st.experimental_rerun()
+                    st.error("Akses Ditolak")
             else:
                 st.error("Akses Ditolak! Username atau Password tidak valid.")
         st.markdown("</div>", unsafe_allow_html=True)
