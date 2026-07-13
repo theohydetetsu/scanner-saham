@@ -12,7 +12,7 @@ warnings.filterwarnings('ignore')
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Pro Max v8.0", page_icon="💻", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Pro Max v8.1", page_icon="💻", layout="wide")
 
 st.markdown("""
 <style>
@@ -23,7 +23,7 @@ st.markdown("""
     [data-testid="stAppViewContainer"] { background: radial-gradient(circle at 50% -20%, #1a1e29, #0f1219) !important; color: #f8fafc !important; }
     [data-testid="stHeader"] { background: transparent !important; }
     
-    /* Layar Utama Dinamis (Akan melebar otomatis jika sidebar ditutup) */
+    /* Layar Utama Dinamis (Akan melebar otomatis 100% jika sidebar ditutup) */
     .block-container { 
         padding-top: 1.5rem; 
         padding-bottom: 2rem; 
@@ -33,9 +33,8 @@ st.markdown("""
     h1 { color: #f8fafc; font-weight: 900; letter-spacing: -1px; font-size: 2.2rem !important; margin-bottom: 0; }
     p { color: #94a3b8; font-weight: 300; }
     
-    /* Sidebar Styling: Menggunakan max-width agar fungsi minimize bawaan Streamlit bekerja */
+    /* Sidebar Styling: Mengembalikan Auto-Collapse bawaan agar layar utama bisa melebar penuh */
     section[data-testid="stSidebar"] { 
-        max-width: 220px !important; 
         background-color: rgba(15, 18, 25, 0.75) !important; 
         backdrop-filter: blur(15px); 
         border-right: 1px solid rgba(255, 255, 255, 0.05); 
@@ -76,7 +75,6 @@ st.markdown("""
     .strat-num { font-size: 2.2rem; font-weight: 900; margin: 2px 0; line-height: 1; text-align: center; }
     .strat-label { font-size: 0.75rem; font-weight: 600; text-align: center; letter-spacing: 1px; }
     
-    /* Perbaikan Tabel: Menghapus overflow:hidden yang merusak scroll header di HP */
     .stDataFrame { font-size: 13px !important; }
     
     /* Tombol Global Diperhalus & Diperkecil */
@@ -110,6 +108,16 @@ st.markdown("""
         font-weight: 900; 
         margin-top: 80px; 
         margin-bottom: 5px;
+    }
+
+    /* Panel Geser HP */
+    .swipe-panel {
+        background: rgba(245, 158, 11, 0.1); 
+        border: 1px solid #fbbf24; 
+        padding: 8px; 
+        border-radius: 6px; 
+        text-align: center; 
+        margin-bottom: 15px;
     }
 
     /* ========================================== */
@@ -361,7 +369,7 @@ def fetch_analyst_consensus(ticker_symbol):
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #00f2fe; font-size: 1.35rem; font-weight: 900; margin-bottom: 0px; text-align: left; margin-left: -5px; white-space: nowrap;'>👨‍💻 JIHAN-GHINA</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: left; margin-left: 20px; color: #94a3b8; font-size: 0.7rem; letter-spacing: 2px; margin-bottom: 15px;'>TERMINAL v8.0</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: left; margin-left: 20px; color: #94a3b8; font-size: 0.7rem; letter-spacing: 2px; margin-bottom: 15px;'>TERMINAL v8.1</p>", unsafe_allow_html=True)
     
     st.markdown("""
     <div style='background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 10px; margin-bottom: 20px; border-left: 3px solid #10b981;'>
@@ -406,8 +414,7 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    # FITUR BARU: TOMBOL LOGOUT DI SIDEBAR
-    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
     if st.button("🚪 LOGOUT", use_container_width=True):
         st.session_state.akses_diberikan = False
         st.session_state.scan_clicked = False
@@ -516,6 +523,13 @@ else:
 
     st.markdown("📄 **Market Radar Matrix (Auto-Paged & Color Coded)**")
     
+    # Petunjuk Geser Tabel (Scrollbar Manual Instruction)
+    st.markdown("""
+    <div class='swipe-panel'>
+        <span style='color: #fbbf24; font-size: 0.8rem; font-weight: 600;'>↔️ INFO: Sentuh dan Geser tabel ke Kiri/Kanan untuk melihat kolom tambahan.</span>
+    </div>
+    """, unsafe_allow_html=True)
+    
     ITEMS_PER_PAGE = 10
     total_pages = len(df_final) // ITEMS_PER_PAGE + (1 if len(df_final) % ITEMS_PER_PAGE > 0 else 0)
     
@@ -607,4 +621,4 @@ else:
             else: st.warning("Data Kosong")
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ JIHAN-GHINA ENGINE • SECURE ALGORITHMIC TERMINAL v8.0</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ JIHAN-GHINA ENGINE • SECURE ALGORITHMIC TERMINAL v8.1</p>", unsafe_allow_html=True)
