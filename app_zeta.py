@@ -6,13 +6,45 @@ from datetime import datetime
 import pytz
 import warnings
 import gc
+import json
+import os
 
 warnings.filterwarnings('ignore')
 
 # ==========================================
+# 0. SISTEM CACHE (AUTO-RESTORE)
+# ==========================================
+CACHE_FILE = "jihan_ghina_cache.json"
+
+# Inisialisasi awal dan tarik data dari file lokal (jika ada) saat aplikasi baru dibuka
+if "raw_stocks" not in st.session_state:
+    st.session_state.raw_stocks = []
+    st.session_state.last_update = None
+    
+    # Coba baca file memori terakhir
+    if os.path.exists(CACHE_FILE):
+        try:
+            with open(CACHE_FILE, "r") as f:
+                cache_data = json.load(f)
+                st.session_state.raw_stocks = cache_data.get("raw_stocks", [])
+                st.session_state.last_update = cache_data.get("last_update", None)
+        except Exception as e:
+            pass
+
+if "scan_clicked" not in st.session_state:
+    # Jika data berhasil ditarik dari memori lokal, langsung lewati halaman standby
+    if len(st.session_state.raw_stocks) > 0:
+        st.session_state.scan_clicked = True
+    else:
+        st.session_state.scan_clicked = False
+
+if "page_matrix" not in st.session_state:
+    st.session_state.page_matrix = 0
+
+# ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Pro Max v8.2", page_icon="💻", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Pro Max v8.3", page_icon="💻", layout="wide")
 
 st.markdown("""
 <style>
@@ -138,8 +170,6 @@ PASSWORD_RAHASIA = "216455"
 
 if "akses_diberikan" not in st.session_state:
     st.session_state.akses_diberikan = False
-if "scan_clicked" not in st.session_state:
-    st.session_state.scan_clicked = False
 
 if not st.session_state.akses_diberikan:
     st.markdown("<div class='login-header'>🔒 JIHAN-GHINA TERMINAL TERKUNCI</div>", unsafe_allow_html=True)
@@ -169,10 +199,6 @@ if not st.session_state.akses_diberikan:
 def get_waktu_wib():
     tz = pytz.timezone('Asia/Jakarta')
     return datetime.now(tz).strftime("%d %b %Y - %H:%M:%S WIB")
-
-if "raw_stocks" not in st.session_state: st.session_state.raw_stocks = []
-if "last_update" not in st.session_state: st.session_state.last_update = None
-if "page_matrix" not in st.session_state: st.session_state.page_matrix = 0
 
 roster_30_saham = [
     "BBCA", "BBRI", "BMRI", "BBNI", "TLKM", "ASII", "UNTR", "ICBP", "INDF", "AMRT",
@@ -348,7 +374,7 @@ def fetch_analyst_consensus(ticker_symbol):
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #00f2fe; font-size: 1.35rem; font-weight: 900; margin-bottom: 0px; text-align: left; margin-left: -5px; white-space: nowrap;'>👨‍💻 JIHAN-GHINA</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: left; margin-left: 20px; color: #94a3b8; font-size: 0.7rem; letter-spacing: 2px; margin-bottom: 15px;'>TERMINAL v8.2</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: left; margin-left: 20px; color: #94a3b8; font-size: 0.7rem; letter-spacing: 2px; margin-bottom: 15px;'>TERMINAL v8.3</p>", unsafe_allow_html=True)
     
     st.markdown("""
     <div style='background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 10px; margin-bottom: 20px; border-left: 3px solid #10b981;'>
@@ -383,6 +409,16 @@ with st.sidebar:
             
         my_bar.empty()
         st.session_state.last_update = get_waktu_wib()
+        
+        # === SIMPAN KE CACHE LOKAL ===
+        try:
+            with open(CACHE_FILE, "w") as f:
+                json.dump({
+                    "raw_stocks": st.session_state.raw_stocks,
+                    "last_update": st.session_state.last_update
+                }, f)
+        except Exception as e:
+            pass
         
         if hasattr(st, 'rerun'): st.rerun()
         else: st.experimental_rerun()
@@ -471,7 +507,6 @@ else:
         
     df_final = pd.DataFrame(hasil_rekomendasi)
     
-    # === FITUR BARU: SORTING ABJAD (A to Z) PADA TABEL ===
     df_final = df_final.sort_values(by="TICKER").reset_index(drop=True)
     
     m1, m2, m3 = st.columns(3)
@@ -538,7 +573,7 @@ else:
             else: st.experimental_rerun()
 
     # ==========================================
-    # 5.5. MODUL MASTERPIECE SIGNAL TRADING (FITUR BARU)
+    # 5.5. MODUL MASTERPIECE SIGNAL TRADING
     # ==========================================
     st.markdown("---")
     st.markdown("<h3 style='color: #f8fafc; font-weight: 800; margin-bottom: 1rem;'>🎯 Masterpiece Signal Trading</h3>", unsafe_allow_html=True)
@@ -553,17 +588,14 @@ else:
             analyst_data_signal = fetch_analyst_consensus(emiten_signal)
             konsensus_raw = analyst_data_signal["Konsensus"].upper()
             
-            # Klasifikasi Sistem
             sys_is_buy = "ACCUMULATE" in sys_rec_raw
             sys_is_sell = "LIQUIDATE" in sys_rec_raw
             sys_is_hold = "HOLD" in sys_rec_raw
             
-            # Klasifikasi Analis
             ana_is_buy = any(x in konsensus_raw for x in ["BUY", "OUTPERFORM", "OVERWEIGHT"])
             ana_is_sell = any(x in konsensus_raw for x in ["SELL", "UNDERPERFORM", "UNDERWEIGHT"])
             ana_is_hold = "HOLD" in konsensus_raw or "NEUTRAL" in konsensus_raw
             
-            # Matriks Keputusan (Masterpiece Decision)
             if sys_is_buy and ana_is_buy:
                 final_decision = "🚀 STRONG BUY (DOUBLE CONFIRMED)"
                 color = "#10b981"
@@ -674,4 +706,4 @@ else:
             else: st.warning("Data Kosong")
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ JIHAN-GHINA ENGINE • SECURE ALGORITHMIC TERMINAL v8.2</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ JIHAN-GHINA ENGINE • SECURE ALGORITHMIC TERMINAL v8.3</p>", unsafe_allow_html=True)
