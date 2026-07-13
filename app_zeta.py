@@ -44,7 +44,7 @@ if "page_matrix" not in st.session_state:
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Pro Max v8.3", page_icon="logo.png", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Pro Max v8.3", page_icon="Logo.png", layout="wide")
 
 st.markdown("""
 <style>
