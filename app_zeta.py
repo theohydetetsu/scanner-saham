@@ -39,10 +39,9 @@ if "page_matrix" not in st.session_state:
     st.session_state.page_matrix = 0
 
 # ==========================================
-# 1. KONFIGURASI HALAMAN & UI STYLE (MODIF LOGO)
+# 1. KONFIGURASI HALAMAN & UI STYLE
 # ==========================================
-# PASTIKAN FILE GAMBAR ANDA BERNAMA TEPAT "logo.png" DI GITHUB
-st.set_page_config(page_title="JIHAN-GHINA Pro Max v8.3", page_icon="logo.png", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Pro Max v8.6", page_icon="logo.png", layout="wide")
 
 st.markdown("""
 <style>
@@ -56,25 +55,17 @@ st.markdown("""
     h1 { color: #f8fafc; font-weight: 900; letter-spacing: -1px; font-size: 2.2rem !important; margin-bottom: 0; }
     p { color: #94a3b8; font-weight: 300; }
     
-    section[data-testid="stSidebar"] { 
-        background-color: rgba(15, 18, 25, 0.75) !important; 
-        backdrop-filter: blur(15px); 
-        border-right: 1px solid rgba(255, 255, 255, 0.05); 
-    }
+    ::-webkit-scrollbar { width: 8px; height: 10px; }
+    ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: rgba(0, 242, 254, 0.5); border-radius: 10px; border: 2px solid rgba(15, 23, 42, 0.5); }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(0, 242, 254, 1); }
     
-    .premium-card { 
-        background: rgba(30, 41, 59, 0.3); backdrop-filter: blur(16px); 
-        border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; 
-        padding: 15px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); 
-        transition: all 0.3s ease-in-out;
-    }
+    section[data-testid="stSidebar"] { background-color: rgba(15, 18, 25, 0.75) !important; backdrop-filter: blur(15px); border-right: 1px solid rgba(255, 255, 255, 0.05); }
+    
+    .premium-card { background: rgba(30, 41, 59, 0.3); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 15px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); transition: all 0.3s ease-in-out; }
     .premium-card:hover { transform: translateY(-5px); box-shadow: 0 12px 25px -5px rgba(0, 242, 254, 0.3); border-color: rgba(0, 242, 254, 0.4); }
     
-    [data-testid="stForm"] {
-        background: rgba(30, 41, 59, 0.3); backdrop-filter: blur(16px); 
-        border: 1px solid rgba(255, 255, 255, 0.08); border-left: 5px solid #00f2fe;
-        border-radius: 10px; padding: 20px; box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-    }
+    [data-testid="stForm"] { background: rgba(30, 41, 59, 0.3); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); border-left: 5px solid #00f2fe; border-radius: 10px; padding: 20px; box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5); }
     
     .ihsg-box { text-align: right; display: flex; flex-direction: column; justify-content: center; height: 100%; padding: 10px 15px !important; }
     .ihsg-title { color: #94a3b8; font-size: 0.65rem; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; }
@@ -85,21 +76,12 @@ st.markdown("""
     
     .stDataFrame { font-size: 13px !important; }
     
-    div.stButton > button:first-child, div[data-testid="stFormSubmitButton"] > button { 
-        background: rgba(0, 242, 254, 0.1) !important; border: 1px solid rgba(0, 242, 254, 0.5) !important; 
-        color: #00f2fe !important; border-radius: 6px !important; padding: 8px 12px !important; transition: all 0.3s ease;
-    }
-    div.stButton > button:first-child p, div[data-testid="stFormSubmitButton"] > button p {
-        color: #00f2fe !important; font-weight: 800 !important; font-size: 0.95rem !important; letter-spacing: 0.5px; margin: 0;
-    }
-    div.stButton > button:first-child:hover, div[data-testid="stFormSubmitButton"] > button:hover { 
-        background: #00f2fe !important; transform: scale(1.02); box-shadow: 0 0 15px rgba(0, 242, 254, 0.5); 
-    }
+    div.stButton > button:first-child, div[data-testid="stFormSubmitButton"] > button { background: rgba(0, 242, 254, 0.1) !important; border: 1px solid rgba(0, 242, 254, 0.5) !important; color: #00f2fe !important; border-radius: 6px !important; padding: 8px 12px !important; transition: all 0.3s ease; }
+    div.stButton > button:first-child p, div[data-testid="stFormSubmitButton"] > button p { color: #00f2fe !important; font-weight: 800 !important; font-size: 0.95rem !important; letter-spacing: 0.5px; margin: 0; }
+    div.stButton > button:first-child:hover, div[data-testid="stFormSubmitButton"] > button:hover { background: #00f2fe !important; transform: scale(1.02); box-shadow: 0 0 15px rgba(0, 242, 254, 0.5); }
     div.stButton > button:first-child:hover p, div[data-testid="stFormSubmitButton"] > button:hover p { color: #020617 !important; }
     
     .login-header { text-align: center; color: #00f2fe; font-size: 2.2rem; font-weight: 900; margin-top: 80px; margin-bottom: 5px; }
-
-    .swipe-panel { background: rgba(245, 158, 11, 0.1); border: 1px solid #fbbf24; padding: 8px; border-radius: 6px; text-align: center; margin-bottom: 15px; }
 
     @media (max-width: 768px) {
         .block-container { padding-top: 1rem !important; padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
@@ -112,10 +94,8 @@ st.markdown("""
         .strat-label { font-size: 0.6rem !important; }
         .premium-card { padding: 10px !important; }
         [data-testid="stForm"] { padding: 12px !important; }
-        div.stButton > button:first-child, div[data-testid="stFormSubmitButton"] > button { padding: 4px 8px !important; }
-        div.stButton > button:first-child p, div[data-testid="stFormSubmitButton"] > button p { font-size: 0.8rem !important; }
-        label { font-size: 0.8rem !important; }
-        input { font-size: 0.85rem !important; padding: 6px !important; height: 35px !important; }
+        div.stButton > button:first-child { padding: 4px 8px !important; }
+        div.stButton > button:first-child p { font-size: 0.8rem !important; }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -130,32 +110,27 @@ if "akses_diberikan" not in st.session_state: st.session_state.akses_diberikan =
 
 if not st.session_state.akses_diberikan:
     st.markdown("<div class='login-header'>🔒 JIHAN-GHINA TERMINAL TERKUNCI</div>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #94a3b8; font-size: 0.85rem; margin-bottom: 20px;'>Sistem intelijen ini bersifat privat. Silakan hubungi admin untuk akses.</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #94a3b8; font-size: 0.85rem; margin-bottom: 20px;'>Sistem intelijen ini bersifat privat.</p>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 4, 1])
     with col2:
         with st.form(key="login_form"):
             user_input = st.text_input("👤 Username:")
             pwd_input = st.text_input("🔑 Password:", type="password")
-            
             st.markdown("<br>", unsafe_allow_html=True)
-            submit_button = st.form_submit_button("VERIFIKASI AKSES", use_container_width=True)
-            
-            if submit_button:
+            if st.form_submit_button("VERIFIKASI AKSES", use_container_width=True):
                 if user_input.strip().lower() == USERNAME_RAHASIA.lower() and pwd_input.strip() == PASSWORD_RAHASIA:
                     st.session_state.akses_diberikan = True
                     if hasattr(st, 'rerun'): st.rerun()
                     else: st.experimental_rerun()
-                else:
-                    st.error("Akses Ditolak! Username atau Password tidak valid.")
+                else: st.error("Akses Ditolak!")
     st.stop()
 
 # ==========================================
 # 2. FUNGSI PEMROSESAN DATA UTAMA
 # ==========================================
 def get_waktu_wib():
-    tz = pytz.timezone('Asia/Jakarta')
-    return datetime.now(tz).strftime("%d %b %Y - %H:%M:%S WIB")
+    return datetime.now(pytz.timezone('Asia/Jakarta')).strftime("%d %b %Y - %H:%M:%S WIB")
 
 roster_30_saham = [
     "BBCA", "BBRI", "BMRI", "BBNI", "TLKM", "ASII", "UNTR", "ICBP", "INDF", "AMRT",
@@ -184,12 +159,23 @@ def hitung_rsi_akurat(df, periods=14):
     rs = gain / loss
     return 100 - (100 / (1 + rs))
 
-def fetch_single_stock(emiten):
+def fetch_single_stock(emiten, mode_tf):
     try:
+        # LOGIKA TIME FRAME MULTIPLE 
+        if "1 Jam" in mode_tf: per, inv = "1mo", "1h"
+        elif "4 Jam" in mode_tf: per, inv = "1mo", "1h" # Di-resample di bawah
+        elif "1 Minggu" in mode_tf: per, inv = "2y", "1wk"
+        else: per, inv = "6mo", "1d" # 1 Hari (Daily)
+
         kode = emiten.replace(".JK", "")
-        df = yf.download(emiten, period="6mo", progress=False)
+        df = yf.download(emiten, period=per, interval=inv, progress=False)
         if df.empty: return None
         if isinstance(df.columns, pd.MultiIndex): df.columns = [col[0] for col in df.columns]
+        
+        # JAHIT DATA 4 JAM (H4 RESAMPLING)
+        if "4 Jam" in mode_tf:
+            df = df.resample('4H').agg({'Open':'first', 'High':'max', 'Low':'min', 'Close':'last', 'Volume':'sum'}).dropna()
+            
         df = df.ffill() 
         
         df['EMA20'] = df['Close'].ewm(span=20, adjust=False).mean()
@@ -205,28 +191,25 @@ def fetch_single_stock(emiten):
         vol_skg = float(df['Volume'].iloc[-1])
         vol_sma20 = float(df['Vol_SMA20'].iloc[-1])
         
-        high_1mo = float(df['High'].tail(20).max())
-        low_1mo = float(df['Low'].tail(20).min())
+        high_history = float(df['High'].tail(20).max())
+        low_history = float(df['Low'].tail(20).min())
         
         status_bandar = "AKUMULASI" if (vol_skg > (vol_sma20 * 1.2) and harga_skg > ema20_skg) else ("DISTRIBUSI" if (vol_skg > (vol_sma20 * 1.2) and harga_skg < ema20_skg) else "NEUTRAL")
         
         tkr = yf.Ticker(emiten)
         info = tkr.info if tkr.info else {}
-        
-        per = info.get('trailingPE', 0.0)
-        pbv = info.get('priceToBook', 1.0)
+        per_val = info.get('trailingPE', 0.0)
+        pbv_val = info.get('priceToBook', 1.0)
         div_rate = info.get('trailingAnnualDividendRate', 0)
         div_yield = (div_rate / harga_skg * 100) if (div_rate and harga_skg > 0) else 0.0
             
         return {
-            "TICKER": kode, "HARGA": harga_skg, "PER": round(per, 2), "PBV": round(pbv, 2), 
+            "TICKER": kode, "HARGA": harga_skg, "PER": round(per_val, 2), "PBV": round(pbv_val, 2), 
             "DIV_YIELD": round(div_yield, 2), "RSI": round(float(df['RSI'].iloc[-1]), 2), 
             "UP_EMA20": harga_skg > ema20_skg, "MACD_GOLDEN": float(df['MACD'].iloc[-1]) > float(df['Signal'].iloc[-1]),
-            "STATUS_BANDAR": status_bandar,
-            "EMA20_VAL": ema20_skg, "RESISTANCE": high_1mo, "SUPPORT": low_1mo
+            "STATUS_BANDAR": status_bandar, "EMA20_VAL": ema20_skg, "RESISTANCE": high_history, "SUPPORT": low_history
         }
-    except Exception as e:
-        return None
+    except: return None
 
 def format_rupiah(val):
     if pd.isna(val) or val == 0: return "-"
@@ -331,7 +314,7 @@ def fetch_analyst_consensus(ticker_symbol):
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #00f2fe; font-size: 1.35rem; font-weight: 900; margin-bottom: 0px; text-align: left; margin-left: -5px; white-space: nowrap;'>👨‍💻 JIHAN-GHINA</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: left; margin-left: 20px; color: #94a3b8; font-size: 0.7rem; letter-spacing: 2px; margin-bottom: 15px;'>TERMINAL v8.3</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: left; margin-left: 20px; color: #94a3b8; font-size: 0.7rem; letter-spacing: 2px; margin-bottom: 15px;'>TERMINAL v8.6</p>", unsafe_allow_html=True)
     
     st.markdown("""
     <div style='background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 10px; margin-bottom: 20px; border-left: 3px solid #10b981;'>
@@ -342,6 +325,8 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
     
+    # DROPDOWN TIMEFRAME BERDASARKAN REQUEST
+    tf_pilihan = st.selectbox("⏱️ Timeframe Analisis:", ["1 Jam", "4 Jam", "1 Hari (Daily)", "1 Minggu (Weekly)"], index=2, label_visibility="visible")
     profil_risiko = st.selectbox("🎯 Profil Risiko:", ["Moderat", "Agresif", "Konservatif"], label_visibility="visible")
     
     st.markdown("<br>", unsafe_allow_html=True)
@@ -354,39 +339,29 @@ with st.sidebar:
         st.session_state.page_matrix = 0 
         st.session_state.raw_stocks = []
         
-        progress_text = "Memindai Market..."
+        progress_text = f"Memindai Market ({tf_pilihan})..."
         my_bar = st.progress(0, text=progress_text)
         
         for i, t in enumerate(daftar_saham):
             my_bar.progress((i + 1) / len(daftar_saham), text=f"Menganalisis {t} ({i+1}/{len(daftar_saham)})")
-            data = fetch_single_stock(t)
-            if data:
-                st.session_state.raw_stocks.append(data)
+            data = fetch_single_stock(t, tf_pilihan)
+            if data: st.session_state.raw_stocks.append(data)
             gc.collect() 
             
         my_bar.empty()
         st.session_state.last_update = get_waktu_wib()
         
-        # === SIMPAN KE CACHE LOKAL ===
         try:
             with open(CACHE_FILE, "w") as f:
-                json.dump({
-                    "raw_stocks": st.session_state.raw_stocks,
-                    "last_update": st.session_state.last_update
-                }, f)
-        except Exception as e:
-            pass
+                json.dump({"raw_stocks": st.session_state.raw_stocks, "last_update": st.session_state.last_update}, f)
+        except: pass
         
         if hasattr(st, 'rerun'): st.rerun()
         else: st.experimental_rerun()
         
-    st.markdown("""
-    <div style='margin-top: 20px; text-align: center; color: #475569; font-size: 0.65rem;'>
-        Analisis 30 Saham (Bluechip & Multibagger)
-    </div>
-    """, unsafe_allow_html=True)
-
+    st.markdown("""<div style='margin-top: 20px; text-align: center; color: #475569; font-size: 0.65rem;'>Analisis 30 Saham (Bluechip & Multibagger)</div>""", unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
+    
     if st.button("🚪 LOGOUT", use_container_width=True):
         st.session_state.akses_diberikan = False
         st.session_state.scan_clicked = False
@@ -463,7 +438,6 @@ else:
         })
         
     df_final = pd.DataFrame(hasil_rekomendasi)
-    
     df_final = df_final.sort_values(by="TICKER").reset_index(drop=True)
     
     m1, m2, m3 = st.columns(3)
@@ -495,13 +469,7 @@ else:
             else: styles.append('')
         return styles
 
-    st.markdown("📄 **Market Radar Matrix (Auto-Paged & Color Coded)**")
-    
-    st.markdown("""
-    <div class='swipe-panel'>
-        <span style='color: #fbbf24; font-size: 0.8rem; font-weight: 600;'>↔️ INFO: Sentuh dan Geser tabel ke Kiri/Kanan untuk melihat kolom tambahan.</span>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("📄 **Market Radar Matrix (Auto-Paged)**")
     
     ITEMS_PER_PAGE = 10
     total_pages = len(df_final) // ITEMS_PER_PAGE + (1 if len(df_final) % ITEMS_PER_PAGE > 0 else 0)
@@ -604,7 +572,8 @@ else:
     st.markdown("---")
     st.markdown("<h3 style='color: #f8fafc; font-weight: 800; margin-bottom: 1rem;'>📊 Financial & Analyst Charts</h3>", unsafe_allow_html=True)
     
-    emiten_pilihan = st.selectbox("🎯 Target Emiten untuk Bedah Fundamental:", roster_30_saham, label_visibility="visible")
+    idx_default = scanned_tickers.index(emiten_signal) if emiten_signal in scanned_tickers else 0
+    emiten_pilihan = st.selectbox("🎯 Target Emiten untuk Bedah Fundamental:", scanned_tickers, index=idx_default, label_visibility="visible")
     
     with st.spinner(f"Menarik Visualisasi Finansial {emiten_pilihan} dari Server..."):
         
@@ -663,4 +632,4 @@ else:
             else: st.warning("Data Kosong")
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ JIHAN-GHINA ENGINE • SECURE ALGORITHMIC TERMINAL v8.3</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ JIHAN-GHINA ENGINE • SECURE ALGORITHMIC TERMINAL v8.6</p>", unsafe_allow_html=True)
