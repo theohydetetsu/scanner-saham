@@ -16,12 +16,10 @@ warnings.filterwarnings('ignore')
 # ==========================================
 CACHE_FILE = "jihan_ghina_cache.json"
 
-# Inisialisasi awal dan tarik data dari file lokal (jika ada) saat aplikasi baru dibuka
 if "raw_stocks" not in st.session_state:
     st.session_state.raw_stocks = []
     st.session_state.last_update = None
     
-    # Coba baca file memori terakhir
     if os.path.exists(CACHE_FILE):
         try:
             with open(CACHE_FILE, "r") as f:
@@ -32,7 +30,6 @@ if "raw_stocks" not in st.session_state:
             pass
 
 if "scan_clicked" not in st.session_state:
-    # Jika data berhasil ditarik dari memori lokal, langsung lewati halaman standby
     if len(st.session_state.raw_stocks) > 0:
         st.session_state.scan_clicked = True
     else:
@@ -42,9 +39,10 @@ if "page_matrix" not in st.session_state:
     st.session_state.page_matrix = 0
 
 # ==========================================
-# 1. KONFIGURASI HALAMAN & UI STYLE
+# 1. KONFIGURASI HALAMAN & UI STYLE (MODIF LOGO)
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Pro Max v8.3", page_icon="Logo1.png", layout="wide")
+# PASTIKAN FILE GAMBAR ANDA BERNAMA TEPAT "logo.png" DI GITHUB
+st.set_page_config(page_title="JIHAN-GHINA Pro Max v8.3", page_icon="logo.png", layout="wide")
 
 st.markdown("""
 <style>
@@ -54,12 +52,7 @@ st.markdown("""
     [data-testid="stAppViewContainer"] { background: radial-gradient(circle at 50% -20%, #1a1e29, #0f1219) !important; color: #f8fafc !important; }
     [data-testid="stHeader"] { background: transparent !important; }
     
-    .block-container { 
-        padding-top: 1.5rem; 
-        padding-bottom: 2rem; 
-        max-width: 98% !important; 
-    }
-    
+    .block-container { padding-top: 1.5rem; padding-bottom: 2rem; max-width: 98% !important; }
     h1 { color: #f8fafc; font-weight: 900; letter-spacing: -1px; font-size: 2.2rem !important; margin-bottom: 0; }
     p { color: #94a3b8; font-weight: 300; }
     
@@ -70,28 +63,17 @@ st.markdown("""
     }
     
     .premium-card { 
-        background: rgba(30, 41, 59, 0.3); 
-        backdrop-filter: blur(16px); 
-        border: 1px solid rgba(255, 255, 255, 0.08); 
-        border-radius: 10px; 
-        padding: 15px; 
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); 
+        background: rgba(30, 41, 59, 0.3); backdrop-filter: blur(16px); 
+        border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; 
+        padding: 15px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); 
         transition: all 0.3s ease-in-out;
     }
-    .premium-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 12px 25px -5px rgba(0, 242, 254, 0.3);
-        border-color: rgba(0, 242, 254, 0.4);
-    }
+    .premium-card:hover { transform: translateY(-5px); box-shadow: 0 12px 25px -5px rgba(0, 242, 254, 0.3); border-color: rgba(0, 242, 254, 0.4); }
     
     [data-testid="stForm"] {
-        background: rgba(30, 41, 59, 0.3); 
-        backdrop-filter: blur(16px); 
-        border: 1px solid rgba(255, 255, 255, 0.08); 
-        border-left: 5px solid #00f2fe;
-        border-radius: 10px; 
-        padding: 20px; 
-        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        background: rgba(30, 41, 59, 0.3); backdrop-filter: blur(16px); 
+        border: 1px solid rgba(255, 255, 255, 0.08); border-left: 5px solid #00f2fe;
+        border-radius: 10px; padding: 20px; box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
     }
     
     .ihsg-box { text-align: right; display: flex; flex-direction: column; justify-content: center; height: 100%; padding: 10px 15px !important; }
@@ -104,44 +86,20 @@ st.markdown("""
     .stDataFrame { font-size: 13px !important; }
     
     div.stButton > button:first-child, div[data-testid="stFormSubmitButton"] > button { 
-        background: rgba(0, 242, 254, 0.1) !important; 
-        border: 1px solid rgba(0, 242, 254, 0.5) !important; 
-        color: #00f2fe !important; 
-        border-radius: 6px !important; 
-        padding: 8px 12px !important; 
-        transition: all 0.3s ease;
+        background: rgba(0, 242, 254, 0.1) !important; border: 1px solid rgba(0, 242, 254, 0.5) !important; 
+        color: #00f2fe !important; border-radius: 6px !important; padding: 8px 12px !important; transition: all 0.3s ease;
     }
     div.stButton > button:first-child p, div[data-testid="stFormSubmitButton"] > button p {
-        color: #00f2fe !important;
-        font-weight: 800 !important; 
-        font-size: 0.95rem !important; 
-        letter-spacing: 0.5px;
-        margin: 0;
+        color: #00f2fe !important; font-weight: 800 !important; font-size: 0.95rem !important; letter-spacing: 0.5px; margin: 0;
     }
     div.stButton > button:first-child:hover, div[data-testid="stFormSubmitButton"] > button:hover { 
-        background: #00f2fe !important; 
-        transform: scale(1.02); 
-        box-shadow: 0 0 15px rgba(0, 242, 254, 0.5); 
+        background: #00f2fe !important; transform: scale(1.02); box-shadow: 0 0 15px rgba(0, 242, 254, 0.5); 
     }
     div.stButton > button:first-child:hover p, div[data-testid="stFormSubmitButton"] > button:hover p { color: #020617 !important; }
     
-    .login-header {
-        text-align: center; 
-        color: #00f2fe; 
-        font-size: 2.2rem; 
-        font-weight: 900; 
-        margin-top: 80px; 
-        margin-bottom: 5px;
-    }
+    .login-header { text-align: center; color: #00f2fe; font-size: 2.2rem; font-weight: 900; margin-top: 80px; margin-bottom: 5px; }
 
-    .swipe-panel {
-        background: rgba(245, 158, 11, 0.1); 
-        border: 1px solid #fbbf24; 
-        padding: 8px; 
-        border-radius: 6px; 
-        text-align: center; 
-        margin-bottom: 15px;
-    }
+    .swipe-panel { background: rgba(245, 158, 11, 0.1); border: 1px solid #fbbf24; padding: 8px; border-radius: 6px; text-align: center; margin-bottom: 15px; }
 
     @media (max-width: 768px) {
         .block-container { padding-top: 1rem !important; padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
@@ -163,13 +121,12 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 1.5. SISTEM KEAMANAN (LOGIN GATE)
+# 1.5. SISTEM KEAMANAN
 # ==========================================
 USERNAME_RAHASIA = "theo"
 PASSWORD_RAHASIA = "216455"
 
-if "akses_diberikan" not in st.session_state:
-    st.session_state.akses_diberikan = False
+if "akses_diberikan" not in st.session_state: st.session_state.akses_diberikan = False
 
 if not st.session_state.akses_diberikan:
     st.markdown("<div class='login-header'>🔒 JIHAN-GHINA TERMINAL TERKUNCI</div>", unsafe_allow_html=True)
