@@ -12,18 +12,16 @@ warnings.filterwarnings('ignore')
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Pro Max v8.1", page_icon="💻", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Pro Max v8.2", page_icon="💻", layout="wide")
 
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800;900&display=swap');
     html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
     
-    /* Paksa Background Gelap ke Container Utama Streamlit */
     [data-testid="stAppViewContainer"] { background: radial-gradient(circle at 50% -20%, #1a1e29, #0f1219) !important; color: #f8fafc !important; }
     [data-testid="stHeader"] { background: transparent !important; }
     
-    /* Layar Utama Dinamis (Akan melebar otomatis 100% jika sidebar ditutup) */
     .block-container { 
         padding-top: 1.5rem; 
         padding-bottom: 2rem; 
@@ -33,14 +31,12 @@ st.markdown("""
     h1 { color: #f8fafc; font-weight: 900; letter-spacing: -1px; font-size: 2.2rem !important; margin-bottom: 0; }
     p { color: #94a3b8; font-weight: 300; }
     
-    /* Sidebar Styling: Mengembalikan Auto-Collapse bawaan agar layar utama bisa melebar penuh */
     section[data-testid="stSidebar"] { 
         background-color: rgba(15, 18, 25, 0.75) !important; 
         backdrop-filter: blur(15px); 
         border-right: 1px solid rgba(255, 255, 255, 0.05); 
     }
     
-    /* Kartu Premium dengan Efek Melayang (Hover Effect) */
     .premium-card { 
         background: rgba(30, 41, 59, 0.3); 
         backdrop-filter: blur(16px); 
@@ -56,7 +52,6 @@ st.markdown("""
         border-color: rgba(0, 242, 254, 0.4);
     }
     
-    /* Modifikasi Khusus Form Login Streamlit agar persis seperti Premium Card */
     [data-testid="stForm"] {
         background: rgba(30, 41, 59, 0.3); 
         backdrop-filter: blur(16px); 
@@ -67,7 +62,6 @@ st.markdown("""
         box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
     }
     
-    /* Kotak IHSG Diperkecil */
     .ihsg-box { text-align: right; display: flex; flex-direction: column; justify-content: center; height: 100%; padding: 10px 15px !important; }
     .ihsg-title { color: #94a3b8; font-size: 0.65rem; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; }
     .ihsg-score { color: #00f2fe; font-size: 1.5rem; font-weight: 900; line-height: 1.1; margin: 2px 0; }
@@ -77,7 +71,6 @@ st.markdown("""
     
     .stDataFrame { font-size: 13px !important; }
     
-    /* Tombol Global Diperhalus & Diperkecil */
     div.stButton > button:first-child, div[data-testid="stFormSubmitButton"] > button { 
         background: rgba(0, 242, 254, 0.1) !important; 
         border: 1px solid rgba(0, 242, 254, 0.5) !important; 
@@ -100,7 +93,6 @@ st.markdown("""
     }
     div.stButton > button:first-child:hover p, div[data-testid="stFormSubmitButton"] > button:hover p { color: #020617 !important; }
     
-    /* Styling Header Login */
     .login-header {
         text-align: center; 
         color: #00f2fe; 
@@ -110,7 +102,6 @@ st.markdown("""
         margin-bottom: 5px;
     }
 
-    /* Panel Geser HP */
     .swipe-panel {
         background: rgba(245, 158, 11, 0.1); 
         border: 1px solid #fbbf24; 
@@ -120,28 +111,19 @@ st.markdown("""
         margin-bottom: 15px;
     }
 
-    /* ========================================== */
-    /* RESPONSIVE MOBILE FIX (EKSTREM UNTUK HP)   */
-    /* ========================================== */
     @media (max-width: 768px) {
         .block-container { padding-top: 1rem !important; padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
-        
         h1 { font-size: 1.3rem !important; }
         .login-header { font-size: 1.4rem !important; margin-top: 20px !important; } 
         p { font-size: 0.8rem !important; }
-        
         .ihsg-score { font-size: 1.2rem !important; }
         .ihsg-title { font-size: 0.6rem !important; }
-        
         .strat-num { font-size: 1.4rem !important; margin: 0px !important; }
         .strat-label { font-size: 0.6rem !important; }
-        
         .premium-card { padding: 10px !important; }
         [data-testid="stForm"] { padding: 12px !important; }
-        
         div.stButton > button:first-child, div[data-testid="stFormSubmitButton"] > button { padding: 4px 8px !important; }
         div.stButton > button:first-child p, div[data-testid="stFormSubmitButton"] > button p { font-size: 0.8rem !important; }
-        
         label { font-size: 0.8rem !important; }
         input { font-size: 0.85rem !important; padding: 6px !important; height: 35px !important; }
     }
@@ -149,7 +131,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 1.5. SISTEM KEAMANAN (LOGIN GATE 2.0 VIA FORM)
+# 1.5. SISTEM KEAMANAN (LOGIN GATE)
 # ==========================================
 USERNAME_RAHASIA = "theo"
 PASSWORD_RAHASIA = "216455"
@@ -267,9 +249,6 @@ def format_rupiah(val):
     if pd.isna(val) or val == 0: return "-"
     return f"Rp {val:,.0f}".replace(",", ".")
 
-# ==========================================
-# 3. ENGINE FINANCIAL CHARTS & HEALTH INDICATOR
-# ==========================================
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_financial_charts(ticker_symbol):
     tkr = yf.Ticker(ticker_symbol + ".JK")
@@ -369,7 +348,7 @@ def fetch_analyst_consensus(ticker_symbol):
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #00f2fe; font-size: 1.35rem; font-weight: 900; margin-bottom: 0px; text-align: left; margin-left: -5px; white-space: nowrap;'>👨‍💻 JIHAN-GHINA</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: left; margin-left: 20px; color: #94a3b8; font-size: 0.7rem; letter-spacing: 2px; margin-bottom: 15px;'>TERMINAL v8.1</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: left; margin-left: 20px; color: #94a3b8; font-size: 0.7rem; letter-spacing: 2px; margin-bottom: 15px;'>TERMINAL v8.2</p>", unsafe_allow_html=True)
     
     st.markdown("""
     <div style='background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 10px; margin-bottom: 20px; border-left: 3px solid #10b981;'>
@@ -492,6 +471,9 @@ else:
         
     df_final = pd.DataFrame(hasil_rekomendasi)
     
+    # === FITUR BARU: SORTING ABJAD (A to Z) PADA TABEL ===
+    df_final = df_final.sort_values(by="TICKER").reset_index(drop=True)
+    
     m1, m2, m3 = st.columns(3)
     with m1: st.markdown(f"<div class='premium-card' style='border-left: 5px solid #10b981;'><div class='strat-label' style='color:#34d399;'>🟢 BUY STRATEGY</div><div class='strat-num' style='color:#f8fafc;'>{sum('🟢' in x for x in df_final['REKOMENDASI'])}</div></div>", unsafe_allow_html=True)
     with m2: st.markdown(f"<div class='premium-card' style='border-left: 5px solid #fbbf24;'><div class='strat-label' style='color:#fbbf24;'>🟡 HOLD STRATEGY</div><div class='strat-num' style='color:#f8fafc;'>{sum('🟡' in x for x in df_final['REKOMENDASI'])}</div></div>", unsafe_allow_html=True)
@@ -523,7 +505,6 @@ else:
 
     st.markdown("📄 **Market Radar Matrix (Auto-Paged & Color Coded)**")
     
-    # Petunjuk Geser Tabel (Scrollbar Manual Instruction)
     st.markdown("""
     <div class='swipe-panel'>
         <span style='color: #fbbf24; font-size: 0.8rem; font-weight: 600;'>↔️ INFO: Sentuh dan Geser tabel ke Kiri/Kanan untuk melihat kolom tambahan.</span>
@@ -557,12 +538,84 @@ else:
             else: st.experimental_rerun()
 
     # ==========================================
+    # 5.5. MODUL MASTERPIECE SIGNAL TRADING (FITUR BARU)
+    # ==========================================
+    st.markdown("---")
+    st.markdown("<h3 style='color: #f8fafc; font-weight: 800; margin-bottom: 1rem;'>🎯 Masterpiece Signal Trading</h3>", unsafe_allow_html=True)
+    
+    scanned_tickers = df_final['TICKER'].tolist()
+    if scanned_tickers:
+        emiten_signal = st.selectbox("⚡ Evaluasi Silang (Algoritma vs Analis Global):", scanned_tickers, key="signal_select")
+        
+        with st.spinner(f"Mengkalkulasi Konfirmasi Ganda untuk {emiten_signal}..."):
+            sys_rec_raw = df_final[df_final['TICKER'] == emiten_signal]['REKOMENDASI'].values[0]
+            
+            analyst_data_signal = fetch_analyst_consensus(emiten_signal)
+            konsensus_raw = analyst_data_signal["Konsensus"].upper()
+            
+            # Klasifikasi Sistem
+            sys_is_buy = "ACCUMULATE" in sys_rec_raw
+            sys_is_sell = "LIQUIDATE" in sys_rec_raw
+            sys_is_hold = "HOLD" in sys_rec_raw
+            
+            # Klasifikasi Analis
+            ana_is_buy = any(x in konsensus_raw for x in ["BUY", "OUTPERFORM", "OVERWEIGHT"])
+            ana_is_sell = any(x in konsensus_raw for x in ["SELL", "UNDERPERFORM", "UNDERWEIGHT"])
+            ana_is_hold = "HOLD" in konsensus_raw or "NEUTRAL" in konsensus_raw
+            
+            # Matriks Keputusan (Masterpiece Decision)
+            if sys_is_buy and ana_is_buy:
+                final_decision = "🚀 STRONG BUY (DOUBLE CONFIRMED)"
+                color = "#10b981"
+                desc = "Algoritma JIHAN-GHINA dan Analis Global sepakat: Emiten berada dalam fase akumulasi emas."
+            elif sys_is_sell and ana_is_sell:
+                final_decision = "🩸 STRONG SELL (DOUBLE CONFIRMED)"
+                color = "#f43f5e"
+                desc = "Algoritma JIHAN-GHINA dan Analis Global sepakat: Risiko penurunan tinggi, segera likuidasi."
+            elif sys_is_buy and not ana_is_buy:
+                final_decision = "🟢 CAUTIOUS BUY (SYSTEM ONLY)"
+                color = "#34d399"
+                desc = "Algoritma mendeteksi sinyal beli teknikal, namun Fundamental/Analis Global belum mengkonfirmasi penuh. Bisa cicil beli."
+            elif sys_is_sell and not ana_is_sell:
+                final_decision = "🟠 CAUTIOUS SELL (SYSTEM ONLY)"
+                color = "#fb923c"
+                desc = "Algoritma mendeteksi distribusi, meskipun Analis Global masih optimis. Amankan profit / pasang Trailing Stop."
+            elif sys_is_hold and ana_is_hold:
+                final_decision = "⚖️ SOLID HOLD"
+                color = "#fbbf24"
+                desc = "Kedua belah pihak sepakat untuk wait-and-see. Tahan posisi yang ada."
+            else:
+                final_decision = "🔍 MIXED SIGNAL (MONITOR)"
+                color = "#a855f7"
+                desc = "Perbedaan pendapat antara Data Algoritma (Teknikal/Bandar) dan Pandangan Analis (Fundamental). Pantau ketat."
+                
+            st.markdown(f"""
+            <div class='premium-card' style='border-left: 5px solid {color}; margin-top: 10px; margin-bottom: 25px;'>
+                <div style='display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;'>
+                    <div style='flex: 1; min-width: 150px; text-align: center; border-right: 1px solid rgba(255,255,255,0.1);'>
+                        <span style='color: #94a3b8; font-size: 0.75rem; letter-spacing: 1px;'>💻 JIHAN-GHINA ALGO</span><br>
+                        <span style='font-weight: 800; font-size: 1.15rem; color: #f8fafc;'>{sys_rec_raw}</span>
+                    </div>
+                    <div style='flex: 1; min-width: 150px; text-align: center;'>
+                        <span style='color: #94a3b8; font-size: 0.75rem; letter-spacing: 1px;'>🌍 GLOBAL ANALYST</span><br>
+                        <span style='font-weight: 800; font-size: 1.15rem; color: #f8fafc;'>{konsensus_raw if konsensus_raw != 'N/A' else 'TIDAK ADA DATA'}</span>
+                    </div>
+                </div>
+                <div style='margin-top: 15px; text-align: center; background: rgba(0,0,0,0.25); padding: 20px; border-radius: 8px;'>
+                    <span style='color: #94a3b8; font-size: 0.75rem; letter-spacing: 2px;'>🏆 MASTERPIECE FINAL DECISION</span><br>
+                    <span style='color: {color}; font-weight: 900; font-size: 1.5rem; display: block; margin: 8px 0;'>{final_decision}</span>
+                    <span style='color: #cbd5e1; font-size: 0.85rem;'>{desc}</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # ==========================================
     # 6. MODUL VISUAL CHART KEUANGAN & HEALTH
     # ==========================================
     st.markdown("---")
     st.markdown("<h3 style='color: #f8fafc; font-weight: 800; margin-bottom: 1rem;'>📊 Financial & Analyst Charts</h3>", unsafe_allow_html=True)
     
-    emiten_pilihan = st.selectbox("🎯 Target Emiten untuk Dibedah:", roster_30_saham, label_visibility="visible")
+    emiten_pilihan = st.selectbox("🎯 Target Emiten untuk Bedah Fundamental:", roster_30_saham, label_visibility="visible")
     
     with st.spinner(f"Menarik Visualisasi Finansial {emiten_pilihan} dari Server..."):
         
@@ -621,4 +674,4 @@ else:
             else: st.warning("Data Kosong")
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ JIHAN-GHINA ENGINE • SECURE ALGORITHMIC TERMINAL v8.1</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ JIHAN-GHINA ENGINE • SECURE ALGORITHMIC TERMINAL v8.2</p>", unsafe_allow_html=True)
