@@ -37,7 +37,7 @@ if "current_tf" not in st.session_state:
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Saham Pro Max v9.0", page_icon="logo.png", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Saham Pro Max v9.1", page_icon="logo.png", layout="wide")
 
 st.markdown("""
 <style>
@@ -51,7 +51,6 @@ st.markdown("""
     h1 { color: #f8fafc; font-weight: 900; letter-spacing: -1px; font-size: 2.2rem !important; margin-bottom: 0; }
     p { color: #94a3b8; font-weight: 300; }
     
-    /* Scrollbar Global */
     ::-webkit-scrollbar { width: 8px; height: 10px; }
     ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); border-radius: 10px; }
     ::-webkit-scrollbar-thumb { background: rgba(0, 242, 254, 0.5); border-radius: 10px; border: 2px solid rgba(15, 23, 42, 0.5); }
@@ -199,7 +198,7 @@ def fetch_single_stock(emiten, mode_tf):
             "TARGET (TP)": harga_skg * 1.05 if high_history <= harga_skg else high_history,
             "STOP LOSS": harga_skg * 0.97 if low_history >= harga_skg else low_history,
             "VOLATILITAS": volatilitas_stat, "RSI": round(float(df['RSI'].iloc[-1]), 2),
-            "BANDARMOLOGI": status_bandar,
+            "STATUS_BANDAR": status_bandar, # <--- FIXED THIS BUG
             "UP_EMA20": harga_skg > ema20_skg, "MACD_GOLDEN": float(df['MACD'].iloc[-1]) > float(df['Signal'].iloc[-1]),
             "PER": round(per_val, 2), "PBV": round(pbv_val, 2), "DIV_YIELD": round(div_yield, 2)
         }
@@ -322,7 +321,7 @@ def fetch_analyst_consensus(ticker_symbol):
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #00f2fe; font-size: 1.35rem; font-weight: 900; margin-bottom: 0px; text-align: left; margin-left: -5px; white-space: nowrap;'>👨‍💻 JIHAN-GHINA</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: left; margin-left: 20px; color: #94a3b8; font-size: 0.7rem; letter-spacing: 2px; margin-bottom: 15px;'>TERMINAL SAHAM v9.0</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: left; margin-left: 20px; color: #94a3b8; font-size: 0.7rem; letter-spacing: 2px; margin-bottom: 15px;'>TERMINAL SAHAM PRO MAX</p>", unsafe_allow_html=True)
     
     st.markdown("""
     <div style='background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 10px; margin-bottom: 20px; border-left: 3px solid #10b981;'>
@@ -516,7 +515,6 @@ else:
         )
     )])
     
-    # Height=450 memicu scrollbar vertikal + horizontal secara internal ala Excel
     fig_table.update_layout(
         margin=dict(l=0, r=0, t=0, b=0),
         paper_bgcolor='rgba(0,0,0,0)',
