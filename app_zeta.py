@@ -9,6 +9,7 @@ import gc
 import json
 import os
 import plotly.graph_objects as go
+import requests  # Tambahan untuk mesin Telegram
 
 warnings.filterwarnings('ignore')
 
@@ -31,16 +32,17 @@ if "raw_stocks" not in st.session_state:
 if "scan_clicked" not in st.session_state:
     st.session_state.scan_clicked = True if len(st.session_state.raw_stocks) > 0 else False
 
-if "page_matrix" not in st.session_state:
-    st.session_state.page_matrix = 0
+if "page_matrix" not in st.session_state: st.session_state.page_matrix = 0
+if "current_tf" not in st.session_state: st.session_state.current_tf = "1 Hari (Daily)"
 
-if "current_tf" not in st.session_state:
-    st.session_state.current_tf = "1 Hari (Daily)"
+# Memori pengunci Telegram
+if "tg_token" not in st.session_state: st.session_state.tg_token = ""
+if "tg_chat_id" not in st.session_state: st.session_state.tg_chat_id = ""
 
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Saham Ultimate v10.2", page_icon="logo.png", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Saham Ultimate v10.3", page_icon="logo.png", layout="wide")
 
 st.markdown("""
 <style>
@@ -59,7 +61,12 @@ st.markdown("""
     ::-webkit-scrollbar-thumb { background: rgba(0, 242, 254, 0.5); border-radius: 10px; border: 2px solid rgba(15, 23, 42, 0.5); }
     ::-webkit-scrollbar-thumb:hover { background: rgba(0, 242, 254, 1); }
     
-    section[data-testid="stSidebar"] { background-color: rgba(2, 6, 23, 0.85) !important; backdrop-filter: blur(20px); border-right: 1px solid rgba(255, 255, 255, 0.05); }
+    /* MODIFIKASI SIDEBAR COMPACT */
+    section[data-testid="stSidebar"] { width: 250px !important; min-width: 250px !important; max-width: 250px !important; background-color: rgba(2, 6, 23, 0.85) !important; backdrop-filter: blur(20px); border-right: 1px solid rgba(255, 255, 255, 0.05); }
+    section[data-testid="stSidebar"] .stMarkdown, section[data-testid="stSidebar"] p, section[data-testid="stSidebar"] span { font-size: 0.75rem !important; }
+    section[data-testid="stSidebar"] label { font-size: 0.7rem !important; font-weight: 600 !important; color: #94a3b8 !important; }
+    section[data-testid="stSidebar"] input, section[data-testid="stSidebar"] div[data-baseweb="select"] { font-size: 0.75rem !important; min-height: 32px !important; }
+    
     .premium-card { background: rgba(30, 41, 59, 0.25); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 15px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4); transition: all 0.3s ease-in-out; }
     .premium-card:hover { transform: translateY(-3px); box-shadow: 0 15px 30px -5px rgba(0, 242, 254, 0.2); border-color: rgba(0, 242, 254, 0.3); }
     [data-testid="stForm"] { background: rgba(30, 41, 59, 0.3); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); border-left: 5px solid #00f2fe; border-radius: 10px; padding: 20px; box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5); }
@@ -76,7 +83,7 @@ st.markdown("""
     div.stButton > button:first-child:hover p, div[data-testid="stFormSubmitButton"] > button:hover p { color: #020617 !important; }
     
     .login-header { text-align: center; color: #00f2fe; font-size: 2.2rem; font-weight: 900; margin-top: 80px; margin-bottom: 5px; }
-    .stDataFrame { font-size: 13.5px !important; }
+    .stDataFrame { font-size: 13px !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -336,8 +343,8 @@ def fetch_analyst_consensus(ticker_symbol):
 # 4. SIDEBAR (ULTIMATE RADAR CONTROL)
 # ==========================================
 with st.sidebar:
-    st.markdown("<h2 style='color: #00f2fe; font-size: 1.35rem; font-weight: 900; margin-bottom: 0px;'>👨‍💻 JIHAN-GHINA</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #94a3b8; font-size: 0.7rem; letter-spacing: 2px; margin-bottom: 15px;'>ULTIMATE TERMINAL v10.2</p>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color: #00f2fe; font-size: 1.15rem; font-weight: 900; margin-bottom: 0px;'>👨‍💻 JIHAN-GHINA</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #94a3b8; font-size: 0.65rem; letter-spacing: 1.5px; margin-bottom: 15px;'>ULTIMATE TERMINAL v10.3</p>", unsafe_allow_html=True)
     
     tf_pilihan = st.selectbox("⏱️ Timeframe Analisis:", ["1 Jam", "4 Jam", "1 Hari (Daily)", "1 Minggu (Weekly)"], index=2)
     tf_berubah = tf_pilihan != st.session_state.current_tf
@@ -345,14 +352,16 @@ with st.sidebar:
         
     profil_risiko = st.selectbox("🎯 Profil Risiko:", ["Moderat", "Agresif", "Konservatif"])
     
-    st.markdown("<div style='font-size:0.75rem; color:#00f2fe; font-weight:800; letter-spacing:1px; margin-top:15px;'>⚙️ POSITION SIZING ENGINE</div>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size:0.7rem; color:#00f2fe; font-weight:800; letter-spacing:1px; margin-top:10px;'>⚙️ POSITION SIZING ENGINE</div>", unsafe_allow_html=True)
     modal_trading = st.number_input("💰 Total Modal Akun (Rp):", min_value=1_000_000, value=50_000_000, step=1_000_000)
     risiko_pct = st.slider("🚨 Batas Risiko per Trade (%):", min_value=0.5, max_value=5.0, value=1.0, step=0.5)
     
+    # Pengikatan state Telegram agar tidak hilang
     with st.expander("🤖 Telegram Automation Alert"):
-        bot_token = st.text_input("Bot Token:", placeholder="123456789:ABCDef...")
-        chat_id = st.text_input("Chat ID:", placeholder="987654321")
-        st.caption("Pondasi robot otomatis sudah aktif, siap dihubungkan ke bot bursa Anda.")
+        bot_token = st.text_input("Bot Token:", value=st.session_state.tg_token, placeholder="123456789:ABCDef...", type="password")
+        chat_id = st.text_input("Chat ID:", value=st.session_state.tg_chat_id, placeholder="987654321")
+        st.session_state.tg_token = bot_token
+        st.session_state.tg_chat_id = chat_id
 
     st.markdown("<br>", unsafe_allow_html=True)
     
@@ -371,6 +380,38 @@ with st.sidebar:
         my_bar.empty()
         st.session_state.last_update = get_waktu_wib()
         
+        # LOGIKA PENGIRIMAN TELEGRAM OTOMATIS
+        if st.session_state.tg_token and st.session_state.tg_chat_id:
+            alert_text = f"🤖 *JIHAN-GHINA ALERTS* ({st.session_state.current_tf})\n\n"
+            has_buys = False
+            for raw in st.session_state.raw_stocks:
+                skor = 0
+                if raw["UP_EMA20"]: skor += 15
+                if raw["MACD_GOLDEN"]: skor += 15
+                if raw["RSI"] < 30: skor += 15
+                elif 30 <= raw["RSI"] <= 70: skor += 10
+                elif raw["RSI"] > 70: skor -= 10
+                if raw["STATUS_BANDAR"] == "AKUMULASI": skor += 20
+                elif raw["STATUS_BANDAR"] == "DISTRIBUSI": skor -= 15
+                else: skor += 5
+                if 0 < raw["PER"] < 15: skor += 10
+                if 0 < raw["PBV"] < 2: skor += 10
+                if raw["DIV_YIELD"] > 3: skor += 5
+                
+                target_skor = 60 if profil_risiko == "Agresif" else (75 if profil_risiko == "Konservatif" else 70)
+                kep = "ACCUMULATE" if skor >= target_skor else ("HOLD" if skor >= 45 else "LIQUIDATE")
+                if raw["VOLATILITAS"] == "🔥 TINGGI" and raw["STATUS_BANDAR"] == "DISTRIBUSI": kep = "LIQUIDATE"  
+                elif raw["VOLATILITAS"] == "❄️ RENDAH" and kep == "ACCUMULATE": kep = "HOLD"
+                
+                if kep == "ACCUMULATE":
+                    has_buys = True
+                    alert_text += f"✅ *{raw['TICKER']}* | Hrg: Rp{int(raw['HARGA']):,} | TP: Rp{int(raw['TARGET (TP)']):,} | Bndr: {raw['STATUS_BANDAR']}\n"
+            
+            if has_buys:
+                try:
+                    requests.post(f"https://api.telegram.org/bot{st.session_state.tg_token}/sendMessage", json={"chat_id": st.session_state.tg_chat_id, "text": alert_text, "parse_mode": "Markdown"})
+                except: pass
+
         try:
             with open(CACHE_FILE, "w") as f:
                 json.dump({"raw_stocks": st.session_state.raw_stocks, "last_update": st.session_state.last_update}, f)
@@ -392,7 +433,7 @@ st.markdown("<h1>🌐 Algorithmic Market Intelligence</h1>", unsafe_allow_html=T
 col_h1, col_h2 = st.columns([3.5, 1.5])
 with col_h1:
     upd_time = st.session_state.last_update if st.session_state.last_update else "Menunggu inisiasi radar..."
-    st.markdown(f"<p style='font-size: 0.9rem;'>🕒 Terakhir Diperbarui: <span style='color:#00f2fe;'>{upd_time}</span><br>Multi-Pilar Integrasi Terminal Ultimate v10.2: Teknikal, Fundamental, Bandarmologi, Volatilitas & Money Management.</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='font-size: 0.9rem;'>🕒 Terakhir Diperbarui: <span style='color:#00f2fe;'>{upd_time}</span><br>Multi-Pilar Integrasi Terminal Ultimate v10.3: Teknikal, Fundamental, Bandarmologi, Volatilitas & Money Management.</p>", unsafe_allow_html=True)
 
 df_ihsg_hist, ihsg_now, ihsg_chg, ihsg_pct = fetch_ihsg_data()
 with col_h2:
@@ -446,7 +487,6 @@ else:
         if raw["VOLATILITAS"] == "🔥 TINGGI" and raw["STATUS_BANDAR"] == "DISTRIBUSI": kep = "🔴 LIQUIDATE"  
         elif raw["VOLATILITAS"] == "❄️ RENDAH" and kep == "🟢 ACCUMULATE": kep = "🟡 HOLD"       
         
-        # Hitung data rotasi sektor & simpan emiten
         sec_name = raw.get("SEKTOR", "Others")
         if sec_name in sektor_counts:
             sektor_counts[sec_name] += 1
@@ -454,7 +494,6 @@ else:
                 sektor_accum[sec_name] += 1
                 sektor_tickers_accum[sec_name].append(raw["TICKER"])
             
-        # Perhitungan Lot Maksimal Otomatis (Position Sizing)
         max_loss_money = modal_trading * (risiko_pct / 100)
         risk_per_share = raw["HARGA"] - raw["STOP LOSS"]
         if "ACCUMULATE" in kep and risk_per_share > 0:
@@ -477,7 +516,6 @@ else:
             "REKOMENDASI": kep
         })
         
-    # Render Modul Tampilan Kekuatan Sektor (Update v10.2: Dengan Emiten)
     sec_col1, sec_col2, sec_col3, sec_col4 = st.columns(4)
     
     t_fin = ", ".join(sektor_tickers_accum["Finance"]) if sektor_tickers_accum["Finance"] else "-"
@@ -496,9 +534,6 @@ else:
     df_final = pd.DataFrame(hasil_rekomendasi)
     df_final = df_final.sort_values(by="TICKER").reset_index(drop=True)
     
-    # ==========================================
-    # 5.1. LUXURY DATA MATRIX (PAGINASI + NEON GLOW)
-    # ==========================================
     def style_tabel(row):
         styles = []
         if '🟢' in row['REKOMENDASI']: bg_rek = 'background-color: rgba(16, 185, 129, 0.1); color: #34d399;'
@@ -560,7 +595,12 @@ else:
     st.markdown("<h3 style='color: #f8fafc; font-weight: 800; margin-bottom: 1rem;'>🎯 Masterpiece Signal Trading</h3>", unsafe_allow_html=True)
     
     scanned_tickers = df_final['TICKER'].tolist()
+    
+    # Inisialisasi variabel agar aman dari Error jika list kosong
+    emiten_signal = None 
+    
     if scanned_tickers:
+        # HANYA ADA 1 DROPDOWN SEKARANG (Menjadi Commander Utama)
         emiten_signal = st.selectbox("⚡ Evaluasi Silang (Algoritma vs Analis Global):", scanned_tickers, key="signal_select")
         
         with st.spinner(f"Mengkalkulasi Konfirmasi Ganda untuk {emiten_signal}..."):
@@ -649,74 +689,72 @@ else:
     # ==========================================
     # 6. MODUL VISUAL CHART KEUANGAN & HEALTH
     # ==========================================
-    st.markdown("---")
-    st.markdown("<h3 style='color: #f8fafc; font-weight: 800; margin-bottom: 1rem;'>📊 Quarterly Financial & Analyst Charts</h3>", unsafe_allow_html=True)
-    
-    idx_default = scanned_tickers.index(emiten_signal) if emiten_signal in scanned_tickers else 0
-    emiten_pilihan = st.selectbox("🎯 Target Emiten untuk Bedah Fundamental:", scanned_tickers, index=idx_default, label_visibility="visible")
-    
-    with st.spinner(f"Menarik Visualisasi Finansial (QoQ) {emiten_pilihan} dari Server..."):
+    if emiten_signal: # Menggunakan Data Emiten dari Dropdown Pertama!
+        st.markdown("---")
+        st.markdown(f"<h3 style='color: #f8fafc; font-weight: 800; margin-bottom: 1rem;'>📊 Quarterly Financial & Analyst Charts : {emiten_signal}</h3>", unsafe_allow_html=True)
         
-        analyst_data = fetch_analyst_consensus(emiten_pilihan)
-        st.markdown(f"""
-        <div style='display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom: 20px;'>
-            <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px; border-left: 5px solid #00f2fe;'>
-                <div style='font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>💡 Rating Analis</div>
-                <div style='font-size:1.05rem; font-weight:800; color:#00f2fe; margin-top:5px;'>{analyst_data["Konsensus"]}</div>
-            </div>
-            <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px; border-left: 5px solid #f43f5e;'>
-                <div style='font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>📉 Target Bawah</div>
-                <div style='font-size:1.05rem; font-weight:800; color:#f43f5e; margin-top:5px;'>{analyst_data["Target Bawah"]}</div>
-            </div>
-            <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px; border-left: 5px solid #f8fafc;'>
-                <div style='font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>🎯 Target Rata-Rata</div>
-                <div style='font-size:1.05rem; font-weight:800; color:#f8fafc; margin-top:5px;'>{analyst_data["Target Rata-Rata"]}</div>
-            </div>
-            <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px; border-left: 5px solid #10b981;'>
-                <div style='font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>📈 Target Atas</div>
-                <div style='font-size:1.05rem; font-weight:800; color:#10b981; margin-top:5px;'>{analyst_data["Target Atas"]}</div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        df_inc, df_bs, df_cf = fetch_financial_charts(emiten_pilihan)
-        
-        status_text, color_hex, reason_list = analyze_financial_health(df_inc, df_bs, df_cf)
-        reasons_html = "".join([f"<li style='margin-bottom: 4px;'>{r}</li>" for r in reason_list])
-        
-        st.markdown(f"""
-        <div class='premium-card' style='margin-bottom: 25px; border-left: 5px solid {color_hex};'>
-            <h4 style='color: #f8fafc; margin-top: 0; margin-bottom: 10px; font-size: 1.1rem;'>💠 Quarterly Health Status: <span style='color: {color_hex};'>{status_text}</span></h4>
-            <p style='color: #94a3b8; font-size: 0.85rem; margin-bottom: 5px;'>Faktor Pendukung Berdasarkan Laporan Keuangan Kuartal Terbaru:</p>
-            <ul style='color: #cbd5e1; font-size: 0.8rem; padding-left: 20px; margin: 0;'>
-                {reasons_html if reason_list else "<li>Belum cukup data kuartalan dari bursa untuk melakukan skoring.</li>"}
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        c1, c2, c3 = st.columns(3)
-        lock_config = {'displayModeBar': False, 'scrollZoom': False}
-        
-        with c1:
-            st.markdown("<h5 style='color: #00f2fe; text-align:center; font-size: 0.95rem; margin-bottom: 5px;'>📈 Income Statement</h5>", unsafe_allow_html=True)
-            if not df_inc.empty:
-                fig1 = create_locked_plotly_chart(df_inc, "#00f2fe", "#10b981")
-                st.plotly_chart(fig1, use_container_width=True, config=lock_config)
-            else: st.warning("Data Kuartal Kosong")
+        with st.spinner(f"Menarik Visualisasi Finansial (QoQ) {emiten_signal} dari Server..."):
             
-        with c2:
-            st.markdown("<h5 style='color: #3b82f6; text-align:center; font-size: 0.95rem; margin-bottom: 5px;'>⚖️ Balance Sheet</h5>", unsafe_allow_html=True)
-            if not df_bs.empty:
-                fig2 = create_locked_plotly_chart(df_bs, "#3b82f6", "#f43f5e")
-                st.plotly_chart(fig2, use_container_width=True, config=lock_config)
-            else: st.warning("Data Kuartal Kosong")
+            analyst_data = fetch_analyst_consensus(emiten_signal)
+            st.markdown(f"""
+            <div style='display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom: 20px;'>
+                <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px; border-left: 5px solid #00f2fe;'>
+                    <div style='font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>💡 Rating Analis</div>
+                    <div style='font-size:1.05rem; font-weight:800; color:#00f2fe; margin-top:5px;'>{analyst_data["Konsensus"]}</div>
+                </div>
+                <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px; border-left: 5px solid #f43f5e;'>
+                    <div style='font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>📉 Target Bawah</div>
+                    <div style='font-size:1.05rem; font-weight:800; color:#f43f5e; margin-top:5px;'>{analyst_data["Target Bawah"]}</div>
+                </div>
+                <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px; border-left: 5px solid #f8fafc;'>
+                    <div style='font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>🎯 Target Rata-Rata</div>
+                    <div style='font-size:1.05rem; font-weight:800; color:#f8fafc; margin-top:5px;'>{analyst_data["Target Rata-Rata"]}</div>
+                </div>
+                <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px; border-left: 5px solid #10b981;'>
+                    <div style='font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>📈 Target Atas</div>
+                    <div style='font-size:1.05rem; font-weight:800; color:#10b981; margin-top:5px;'>{analyst_data["Target Atas"]}</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
             
-        with c3:
-            st.markdown("<h5 style='color: #8b5cf6; text-align:center; font-size: 0.95rem; margin-bottom: 5px;'>💵 Cash Flow</h5>", unsafe_allow_html=True)
-            if not df_cf.empty:
-                fig3 = create_locked_plotly_chart(df_cf, "#8b5cf6", "#f59e0b")
-                st.plotly_chart(fig3, use_container_width=True, config=lock_config)
-            else: st.warning("Data Kuartal Kosong")
+            df_inc, df_bs, df_cf = fetch_financial_charts(emiten_signal)
+            
+            status_text, color_hex, reason_list = analyze_financial_health(df_inc, df_bs, df_cf)
+            reasons_html = "".join([f"<li style='margin-bottom: 4px;'>{r}</li>" for r in reason_list])
+            
+            st.markdown(f"""
+            <div class='premium-card' style='margin-bottom: 25px; border-left: 5px solid {color_hex};'>
+                <h4 style='color: #f8fafc; margin-top: 0; margin-bottom: 10px; font-size: 1.1rem;'>💠 Quarterly Health Status: <span style='color: {color_hex};'>{status_text}</span></h4>
+                <p style='color: #94a3b8; font-size: 0.85rem; margin-bottom: 5px;'>Faktor Pendukung Berdasarkan Laporan Keuangan Kuartal Terbaru:</p>
+                <ul style='color: #cbd5e1; font-size: 0.8rem; padding-left: 20px; margin: 0;'>
+                    {reasons_html if reason_list else "<li>Belum cukup data kuartalan dari bursa untuk melakukan skoring.</li>"}
+                </ul>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            c1, c2, c3 = st.columns(3)
+            lock_config = {'displayModeBar': False, 'scrollZoom': False}
+            
+            with c1:
+                st.markdown("<h5 style='color: #00f2fe; text-align:center; font-size: 0.95rem; margin-bottom: 5px;'>📈 Income Statement</h5>", unsafe_allow_html=True)
+                if not df_inc.empty:
+                    fig1 = create_locked_plotly_chart(df_inc, "#00f2fe", "#10b981")
+                    st.plotly_chart(fig1, use_container_width=True, config=lock_config)
+                else: st.warning("Data Kuartal Kosong")
+                
+            with c2:
+                st.markdown("<h5 style='color: #3b82f6; text-align:center; font-size: 0.95rem; margin-bottom: 5px;'>⚖️ Balance Sheet</h5>", unsafe_allow_html=True)
+                if not df_bs.empty:
+                    fig2 = create_locked_plotly_chart(df_bs, "#3b82f6", "#f43f5e")
+                    st.plotly_chart(fig2, use_container_width=True, config=lock_config)
+                else: st.warning("Data Kuartal Kosong")
+                
+            with c3:
+                st.markdown("<h5 style='color: #8b5cf6; text-align:center; font-size: 0.95rem; margin-bottom: 5px;'>💵 Cash Flow</h5>", unsafe_allow_html=True)
+                if not df_cf.empty:
+                    fig3 = create_locked_plotly_chart(df_cf, "#8b5cf6", "#f59e0b")
+                    st.plotly_chart(fig3, use_container_width=True, config=lock_config)
+                else: st.warning("Data Kuartal Kosong")
 
     # ==========================================
     # 7. FITUR 10.2: TERMINAL ACADEMY & USER GUIDE
@@ -762,4 +800,4 @@ else:
         """)
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ JIHAN-GHINA ENGINE • SECURE ALGORITHMIC TERMINAL PRO MAX v10.2</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ JIHAN-GHINA ENGINE • SECURE ALGORITHMIC TERMINAL PRO MAX v10.3</p>", unsafe_allow_html=True)
