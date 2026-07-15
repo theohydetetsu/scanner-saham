@@ -40,7 +40,7 @@ if "current_tf" not in st.session_state:
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Saham Ultimate v10.1", page_icon="logo.png", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Saham Ultimate v10.2", page_icon="logo.png", layout="wide")
 
 st.markdown("""
 <style>
@@ -115,14 +115,13 @@ roster_30_saham = [
     "AMMN", "BREN", "CUAN", "PANI", "BRPT", "MDKA", "MEDC", "ARTO", "SIDO", "MYOR"
 ]
 
-# FIX PERMANEN: Mendefinisikan daftar saham .JK secara global agar tidak hilang lagi
 daftar_saham = [s.strip().upper() + ".JK" for s in roster_30_saham]
 
 sektor_mapping = {
     "BBCA": "Finance", "BBRI": "Finance", "BMRI": "Finance", "BBNI": "Finance", "ARTO": "Finance", "BRIS": "Finance",
-    "ICBP": "Consumer", "INDF": "Consumer", "AMRT": "Consumer", "UNVR": "Consumer", "MYOR": "Consumer", "SIDO": "Consumer", "CPIN": "Consumer",
-    "UNTR": "Energy & Mining", "PGAS": "Energy & Mining", "PTBA": "Energy & Mining", "ITMG": "Energy & Mining", "ADRO": "Energy & Mining", "ANTM": "Energy & Mining", "AMMN": "Energy & Mining", "MEDC": "Energy & Mining", "MDKA": "Energy & Mining",
-    "TLKM": "Tech & Infra", "GOTO": "Tech & Infra", "BREN": "Tech & Infra", "CUAN": "Tech & Infra", "PANI": "Tech & Infra", "BRPT": "Tech & Infra"
+    "ICBP": "Consumer", "INDF": "Consumer", "AMRT": "Consumer", "UNVR": "Consumer", "MYOR": "Consumer", "SIDO": "Consumer", "CPIN": "Consumer", "KLBF": "Consumer",
+    "UNTR": "Energy & Mining", "PGAS": "Energy & Mining", "PTBA": "Energy & Mining", "ITMG": "Energy & Mining", "ADRO": "Energy & Mining", "ANTM": "Energy & Mining", "AMMN": "Energy & Mining", "MEDC": "Energy & Mining", "MDKA": "Energy & Mining", "CUAN": "Energy & Mining",
+    "TLKM": "Tech & Infra", "GOTO": "Tech & Infra", "BREN": "Tech & Infra", "PANI": "Tech & Infra", "BRPT": "Tech & Infra", "ASII": "Tech & Infra"
 }
 
 def get_waktu_wib():
@@ -338,7 +337,7 @@ def fetch_analyst_consensus(ticker_symbol):
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #00f2fe; font-size: 1.35rem; font-weight: 900; margin-bottom: 0px;'>👨‍💻 JIHAN-GHINA</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #94a3b8; font-size: 0.7rem; letter-spacing: 2px; margin-bottom: 15px;'>ULTIMATE TERMINAL v10.1</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #94a3b8; font-size: 0.7rem; letter-spacing: 2px; margin-bottom: 15px;'>ULTIMATE TERMINAL v10.2</p>", unsafe_allow_html=True)
     
     tf_pilihan = st.selectbox("⏱️ Timeframe Analisis:", ["1 Jam", "4 Jam", "1 Hari (Daily)", "1 Minggu (Weekly)"], index=2)
     tf_berubah = tf_pilihan != st.session_state.current_tf
@@ -346,14 +345,10 @@ with st.sidebar:
         
     profil_risiko = st.selectbox("🎯 Profil Risiko:", ["Moderat", "Agresif", "Konservatif"])
     
-    # ------------------------------------------
-    # FITUR BARU 1: ENGINE MONEY MANAGEMENT
-    # ------------------------------------------
     st.markdown("<div style='font-size:0.75rem; color:#00f2fe; font-weight:800; letter-spacing:1px; margin-top:15px;'>⚙️ POSITION SIZING ENGINE</div>", unsafe_allow_html=True)
     modal_trading = st.number_input("💰 Total Modal Akun (Rp):", min_value=1_000_000, value=50_000_000, step=1_000_000)
     risiko_pct = st.slider("🚨 Batas Risiko per Trade (%):", min_value=0.5, max_value=5.0, value=1.0, step=0.5)
     
-    # TELEGRAM BOT INTEGRATION CONFIG (Kerangka Siap Pakai)
     with st.expander("🤖 Telegram Automation Alert"):
         bot_token = st.text_input("Bot Token:", placeholder="123456789:ABCDef...")
         chat_id = st.text_input("Chat ID:", placeholder="987654321")
@@ -361,7 +356,6 @@ with st.sidebar:
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # PERBAIKAN: SCAN LOOP MENGGUNAKAN `daftar_saham` YANG SUDAH DIDEFINISIKAN GLOBAL
     if st.button("🔄 SCAN MARKET", use_container_width=True) or tf_berubah:
         st.session_state.scan_clicked = True
         st.cache_data.clear()
@@ -398,7 +392,7 @@ st.markdown("<h1>🌐 Algorithmic Market Intelligence</h1>", unsafe_allow_html=T
 col_h1, col_h2 = st.columns([3.5, 1.5])
 with col_h1:
     upd_time = st.session_state.last_update if st.session_state.last_update else "Menunggu inisiasi radar..."
-    st.markdown(f"<p style='font-size: 0.9rem;'>🕒 Terakhir Diperbarui: <span style='color:#00f2fe;'>{upd_time}</span><br>Multi-Pilar Integrasi Terminal Ultimate v10.1: Teknikal, Fundamental, Bandarmologi, Volatilitas & Money Management.</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='font-size: 0.9rem;'>🕒 Terakhir Diperbarui: <span style='color:#00f2fe;'>{upd_time}</span><br>Multi-Pilar Integrasi Terminal Ultimate v10.2: Teknikal, Fundamental, Bandarmologi, Volatilitas & Money Management.</p>", unsafe_allow_html=True)
 
 df_ihsg_hist, ihsg_now, ihsg_chg, ihsg_pct = fetch_ihsg_data()
 with col_h2:
@@ -419,12 +413,13 @@ if not st.session_state.scan_clicked or not st.session_state.raw_stocks:
     st.info("👈 Sistem aman dan standby. Silakan tekan tombol '🔄 SCAN MARKET' di sidebar untuk memulai analisis.")
 else:
     # ------------------------------------------
-    # FITUR BARU 2: SECTORAL HEAT RADAR MATRIX
+    # FITUR 10.2: SECTORAL HEAT RADAR MATRIX & TICKERS
     # ------------------------------------------
     st.markdown("<h3>📊 Sectoral Rotation Heat Tracker</h3>", unsafe_allow_html=True)
     
-    sektor_counts = {"Finance": 0, "Consumer": 0, "Energy & Mining": 0, "Tech & Infrastructure": 0}
-    sektor_accum = {"Finance": 0, "Consumer": 0, "Energy & Mining": 0, "Tech & Infrastructure": 0}
+    sektor_counts = {"Finance": 0, "Consumer": 0, "Energy & Mining": 0, "Tech & Infra": 0}
+    sektor_accum = {"Finance": 0, "Consumer": 0, "Energy & Mining": 0, "Tech & Infra": 0}
+    sektor_tickers_accum = {"Finance": [], "Consumer": [], "Energy & Mining": [], "Tech & Infra": []}
     
     hasil_rekomendasi = []
     for raw in st.session_state.raw_stocks:
@@ -451,11 +446,13 @@ else:
         if raw["VOLATILITAS"] == "🔥 TINGGI" and raw["STATUS_BANDAR"] == "DISTRIBUSI": kep = "🔴 LIQUIDATE"  
         elif raw["VOLATILITAS"] == "❄️ RENDAH" and kep == "🟢 ACCUMULATE": kep = "🟡 HOLD"       
         
-        # Hitung data rotasi sektor
+        # Hitung data rotasi sektor & simpan emiten
         sec_name = raw.get("SEKTOR", "Others")
         if sec_name in sektor_counts:
             sektor_counts[sec_name] += 1
-            if kep == "🟢 ACCUMULATE": sektor_accum[sec_name] += 1
+            if kep == "🟢 ACCUMULATE": 
+                sektor_accum[sec_name] += 1
+                sektor_tickers_accum[sec_name].append(raw["TICKER"])
             
         # Perhitungan Lot Maksimal Otomatis (Position Sizing)
         max_loss_money = modal_trading * (risiko_pct / 100)
@@ -480,12 +477,18 @@ else:
             "REKOMENDASI": kep
         })
         
-    # Render Modul Tampilan Kekuatan Sektor
+    # Render Modul Tampilan Kekuatan Sektor (Update v10.2: Dengan Emiten)
     sec_col1, sec_col2, sec_col3, sec_col4 = st.columns(4)
-    with sec_col1: st.markdown(f"<div class='premium-card' style='border-top: 4px solid #3b82f6;'><div class='strat-label'>🏦 FINANCE STRENGTH</div><div class='strat-num' style='color:#3b82f6;'>{sektor_accum['Finance']}/{sektor_counts['Finance']}</div></div>", unsafe_allow_html=True)
-    with sec_col2: st.markdown(f"<div class='premium-card' style='border-top: 4px solid #10b981;'><div class='strat-label'>🛒 CONSUMER GOODS</div><div class='strat-num' style='color:#10b981;'>{sektor_accum['Consumer']}/{sektor_counts['Consumer']}</div></div>", unsafe_allow_html=True)
-    with sec_col3: st.markdown(f"<div class='premium-card' style='border-top: 4px solid #f59e0b;'><div class='strat-label'>⚡ ENERGY & MINING</div><div class='strat-num' style='color:#f59e0b;'>{sektor_accum['Energy & Mining']}/{sektor_counts['Energy & Mining']}</div></div>", unsafe_allow_html=True)
-    with sec_col4: st.markdown(f"<div class='premium-card' style='border-top: 4px solid #8b5cf6;'><div class='strat-label'>🌐 TECH & INFRASTRUCTURE</div><div class='strat-num' style='color:#8b5cf6;'>{sektor_accum['Tech & Infrastructure']}/{sektor_counts['Tech & Infrastructure']}</div></div>", unsafe_allow_html=True)
+    
+    t_fin = ", ".join(sektor_tickers_accum["Finance"]) if sektor_tickers_accum["Finance"] else "-"
+    t_cons = ", ".join(sektor_tickers_accum["Consumer"]) if sektor_tickers_accum["Consumer"] else "-"
+    t_eng = ", ".join(sektor_tickers_accum["Energy & Mining"]) if sektor_tickers_accum["Energy & Mining"] else "-"
+    t_tech = ", ".join(sektor_tickers_accum["Tech & Infra"]) if sektor_tickers_accum["Tech & Infra"] else "-"
+
+    with sec_col1: st.markdown(f"<div class='premium-card' style='border-top: 4px solid #3b82f6;'><div class='strat-label'>🏦 FINANCE STRENGTH</div><div class='strat-num' style='color:#3b82f6;'>{sektor_accum['Finance']}/{sektor_counts['Finance']}</div><div style='font-size:0.7rem; color:#94a3b8; text-align:center; margin-top:5px;'>Emiten Aktif: <strong style='color:#f8fafc;'>{t_fin}</strong></div></div>", unsafe_allow_html=True)
+    with sec_col2: st.markdown(f"<div class='premium-card' style='border-top: 4px solid #10b981;'><div class='strat-label'>🛒 CONSUMER GOODS</div><div class='strat-num' style='color:#10b981;'>{sektor_accum['Consumer']}/{sektor_counts['Consumer']}</div><div style='font-size:0.7rem; color:#94a3b8; text-align:center; margin-top:5px;'>Emiten Aktif: <strong style='color:#f8fafc;'>{t_cons}</strong></div></div>", unsafe_allow_html=True)
+    with sec_col3: st.markdown(f"<div class='premium-card' style='border-top: 4px solid #f59e0b;'><div class='strat-label'>⚡ ENERGY & MINING</div><div class='strat-num' style='color:#f59e0b;'>{sektor_accum['Energy & Mining']}/{sektor_counts['Energy & Mining']}</div><div style='font-size:0.7rem; color:#94a3b8; text-align:center; margin-top:5px;'>Emiten Aktif: <strong style='color:#f8fafc;'>{t_eng}</strong></div></div>", unsafe_allow_html=True)
+    with sec_col4: st.markdown(f"<div class='premium-card' style='border-top: 4px solid #8b5cf6;'><div class='strat-label'>🌐 TECH & INFRA</div><div class='strat-num' style='color:#8b5cf6;'>{sektor_accum['Tech & Infra']}/{sektor_counts['Tech & Infra']}</div><div style='font-size:0.7rem; color:#94a3b8; text-align:center; margin-top:5px;'>Emiten Aktif: <strong style='color:#f8fafc;'>{t_tech}</strong></div></div>", unsafe_allow_html=True)
 
     st.markdown("---")
     st.markdown("<h3>🛰️ Pro Max Intelligent Matrix Terminal</h3>", unsafe_allow_html=True)
@@ -715,5 +718,48 @@ else:
                 st.plotly_chart(fig3, use_container_width=True, config=lock_config)
             else: st.warning("Data Kuartal Kosong")
 
+    # ==========================================
+    # 7. FITUR 10.2: TERMINAL ACADEMY & USER GUIDE
+    # ==========================================
+    st.markdown("---")
+    st.markdown("<h3 style='color: #f8fafc; font-weight: 800; margin-bottom: 1rem; text-align: center;'>📚 Jihan-Ghina Academy & User Guide</h3>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #94a3b8; font-size: 0.85rem; margin-bottom: 20px;'>Panduan operasional dan cara membaca matriks algoritma terminal.</p>", unsafe_allow_html=True)
+
+    with st.expander("📖 1. Panduan Analisa Teknikal (Momentum & Trend)"):
+        st.markdown("""
+        **Cara Algoritma Membaca Trend:**
+        *   **EMA20 (Exponential Moving Average):** Mesin mencari saham yang harganya berada di atas garis rata-rata 20 hari. Ini adalah indikator bahwa saham sedang dalam fase *Uptrend* (naik). Area Beli terbaik adalah saat harga mendekati garis EMA20 ini.
+        *   **MACD Golden Cross:** Saat garis MACD memotong ke atas garis Sinyal, itu menandakan momentum beli yang kuat baru saja dimulai.
+        *   **RSI (Relative Strength Index):** 
+            *   Di bawah 30 = **Oversold** (Terlalu banyak dijual, sangat murah, waktunya serok).
+            *   Di atas 70 = **Overbought** (Terlalu banyak dibeli, sangat mahal, waktunya jualan/TP).
+        """)
+
+    with st.expander("📖 2. Panduan Bandarmologi & Volatilitas Proteksi"):
+        st.markdown("""
+        **Filter Keselamatan Dana (Anti-Gorengan):**
+        *   **Volatilitas 🔥 TINGGI + Bandar DISTRIBUSI:** Ini adalah pola **BULL TRAP (Jebakan Bandar)**. Harga sengaja dinaikkan liar agar ritel masuk, padahal bandar sedang jualan besar-besaran. Algoritma akan otomatis mem-blokir saham ini menjadi sinyal 🔴 `LIQUIDATE`.
+        *   **Volatilitas ❄️ RENDAH + Bandar AKUMULASI:** Ini adalah ciri khas saham tidur atau sedang diakumulasi diam-diam. Mesin akan mengunci rekomendasinya di 🟡 `HOLD` agar dana Anda tidak mandek berbulan-bulan menunggu sahamnya "bangun".
+        *   **Sinyal Emas:** Cari saham dengan Volatilitas **MODERAT**, Status Bandar **AKUMULASI**, dan Teknikal yang solid.
+        """)
+
+    with st.expander("📖 3. Panduan Analisa Fundamental (Health Matrix)"):
+        st.markdown("""
+        **Cara Membaca Kuartal Finansial:**
+        Mesin menarik data laporan keuangan (Kuartal demi Kuartal) dan memberikan skoring:
+        *   **Income Statement:** Mencari emiten yang Laba Bersihnya (*Net Income*) konsisten positif dan bertumbuh.
+        *   **Balance Sheet:** Memastikan Total Aset perusahaan jauh lebih besar daripada Total Hutang (Ekuitas Kuat).
+        *   **Cash Flow:** Menitikberatkan pada Arus Kas Operasi positif, yang berarti perusahaan benar-benar menerima uang *cash* dari bisnis utamanya, bukan hanya untung di atas kertas.
+        """)
+
+    with st.expander("📖 4. Panduan Money Management (Position Sizing)"):
+        st.markdown("""
+        **Cara Menggunakan Rekomendasi Lot Otomatis:**
+        1. Di Sidebar kiri, masukkan **Total Modal** Anda di bursa.
+        2. Tentukan **Batas Risiko** (Misal: 1% atau 2% dari total modal).
+        3. Saat Anda menekan Scan, mesin akan menghitung jarak harga beli ke batas *Stop Loss*.
+        4. Di tabel utama, kolom **REKOMENDASI LOT** akan memberitahu Anda secara spesifik **Maksimal Lot** yang boleh dibeli. Jika Anda terkena *Stop Loss*, kerugian Anda akan persis sama dengan persentase batas risiko yang Anda tentukan di awal. Jantung aman, pikiran tenang!
+        """)
+
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ JIHAN-GHINA ENGINE • SECURE ALGORITHMIC TERMINAL PRO MAX</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ JIHAN-GHINA ENGINE • SECURE ALGORITHMIC TERMINAL PRO MAX v10.2</p>", unsafe_allow_html=True)
