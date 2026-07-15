@@ -31,13 +31,16 @@ if "raw_stocks" not in st.session_state:
 if "scan_clicked" not in st.session_state:
     st.session_state.scan_clicked = True if len(st.session_state.raw_stocks) > 0 else False
 
+if "page_matrix" not in st.session_state:
+    st.session_state.page_matrix = 0
+
 if "current_tf" not in st.session_state:
     st.session_state.current_tf = "1 Hari (Daily)"
 
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Saham Pro Max v9.1", page_icon="logo.png", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Saham Pro Max v9.2", page_icon="logo.png", layout="wide")
 
 st.markdown("""
 <style>
@@ -73,6 +76,7 @@ st.markdown("""
     div.stButton > button:first-child:hover p, div[data-testid="stFormSubmitButton"] > button:hover p { color: #020617 !important; }
     
     .login-header { text-align: center; color: #00f2fe; font-size: 2.2rem; font-weight: 900; margin-top: 80px; margin-bottom: 5px; }
+    .stDataFrame { font-size: 13.5px !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -146,7 +150,7 @@ def hitung_atr(df, period=14):
 def fetch_single_stock(emiten, mode_tf):
     try:
         if "1 Jam" in mode_tf: per, inv = "1mo", "1h"
-        elif "4 Jam" in mode_tf: per, inv = "1mo", "1h" 
+        elif "4 Jam" in mode_tf: per, inv = "3mo", "1h" # Diperpanjang periodenya agar data tidak kosong
         elif "1 Minggu" in mode_tf: per, inv = "2y", "1wk"
         else: per, inv = "6mo", "1d" 
 
@@ -155,11 +159,16 @@ def fetch_single_stock(emiten, mode_tf):
         if df.empty: return None
         if isinstance(df.columns, pd.MultiIndex): df.columns = [col[0] for col in df.columns]
         
+        # PERBAIKAN BUG WAKTU (Mencegah error saat resample 4H)
+        df.index = pd.to_datetime(df.index)
+        if df.index.tz is not None:
+            df.index = df.index.tz_localize(None)
+            
         if "4 Jam" in mode_tf:
             df = df.resample('4h').agg({'Open':'first', 'High':'max', 'Low':'min', 'Close':'last', 'Volume':'sum'}).dropna(subset=['Close'])
             
         df = df.ffill() 
-        if len(df) < 20: return None
+        if len(df) < 15: return None # Toleransi diturunkan agar lebih banyak saham masuk
         
         df['EMA20'] = df['Close'].ewm(span=20, adjust=False).mean()
         df['EMA12'] = df['Close'].ewm(span=12, adjust=False).mean()
@@ -198,7 +207,7 @@ def fetch_single_stock(emiten, mode_tf):
             "TARGET (TP)": harga_skg * 1.05 if high_history <= harga_skg else high_history,
             "STOP LOSS": harga_skg * 0.97 if low_history >= harga_skg else low_history,
             "VOLATILITAS": volatilitas_stat, "RSI": round(float(df['RSI'].iloc[-1]), 2),
-            "STATUS_BANDAR": status_bandar, # <--- FIXED THIS BUG
+            "BANDARMOLOGI": status_bandar,
             "UP_EMA20": harga_skg > ema20_skg, "MACD_GOLDEN": float(df['MACD'].iloc[-1]) > float(df['Signal'].iloc[-1]),
             "PER": round(per_val, 2), "PBV": round(pbv_val, 2), "DIV_YIELD": round(div_yield, 2)
         }
@@ -328,7 +337,7 @@ with st.sidebar:
         <div style='font-size: 0.65rem; color: #94a3b8; letter-spacing: 1px; margin-bottom: 5px;'>SYSTEM STATUS</div>
         <div style='font-size: 0.8rem; color: #10b981; margin-bottom: 2px;'>🟢 Core Engine: <strong>Online</strong></div>
         <div style='font-size: 0.8rem; color: #10b981; margin-bottom: 2px;'>🟢 Data Link: <strong>Secured</strong></div>
-        <div style='font-size: 0.8rem; color: #00f2fe;'>⚡ UX Module: <strong>Plotly Grid</strong></div>
+        <div style='font-size: 0.8rem; color: #00f2fe;'>⚡ UX Module: <strong>Luxury Dataframe</strong></div>
     </div>
     """, unsafe_allow_html=True)
     
@@ -346,7 +355,8 @@ with st.sidebar:
     
     if st.button("🔄 SCAN MARKET", use_container_width=True) or tf_berubah:
         st.session_state.scan_clicked = True
-        st.cache_data.clear()
+        st.cache_data.clear() # Paksa memori mereset
+        st.session_state.page_matrix = 0 
         st.session_state.raw_stocks = []
         
         progress_text = f"Memindai Market ({st.session_state.current_tf})..."
@@ -454,74 +464,67 @@ else:
     st.write(" ")
     
     # ==========================================
-    # 5.1. PLOTLY TABLE ENGINE (EXCEL-LIKE NATIVE SCROLL)
+    # 5.1. NATIVE ELEGANT TABLE (PAGINASI + GLOWING TICKER)
     # ==========================================
-    st.markdown("📄 **Market Radar Matrix (Plotly Engine: Scroll Kanan Kiri/Bawah Langsung Dalam Kotak)**")
-    
-    font_colors = []
-    fill_colors = []
-    
-    for col in df_final.columns:
-        f_col = []
-        bg_col = []
-        for i, val in enumerate(df_final[col]):
-            bg_col.append('rgba(15, 23, 42, 0.8)' if i % 2 == 0 else 'rgba(30, 41, 59, 0.8)')
-            
-            if col == 'TICKER': f_col.append('#00f2fe')
-            elif col == 'TARGET (TP)': f_col.append('#10b981')
-            elif col == 'STOP LOSS': f_col.append('#f43f5e')
-            elif col == 'AREA BELI': f_col.append('#38bdf8')
-            elif col == 'VOLATILITAS':
-                if '🔥' in str(val): f_col.append('#f43f5e')
-                elif '⚡' in str(val): f_col.append('#fbbf24')
-                else: f_col.append('#38bdf8')
-            elif col == 'BANDARMOLOGI':
-                if 'AKUMULASI' in str(val): f_col.append('#34d399')
-                elif 'DISTRIBUSI' in str(val): f_col.append('#fb7185')
-                else: f_col.append('#94a3b8')
-            elif col == 'REKOMENDASI':
-                if '🟢' in str(val): f_col.append('#34d399')
-                elif '🔴' in str(val): f_col.append('#fb7185')
-                elif '🟡' in str(val): f_col.append('#fbbf24')
-                else: f_col.append('#f8fafc')
-            elif col == 'RSI':
-                try:
-                    v = float(val)
-                    if v > 70: f_col.append('#f43f5e')
-                    elif v < 30: f_col.append('#10b981')
-                    else: f_col.append('#f8fafc')
-                except: f_col.append('#f8fafc')
-            else: f_col.append('#f8fafc')
-                
-        font_colors.append(f_col)
-        fill_colors.append(bg_col)
+    def style_tabel(row):
+        styles = []
+        if '🟢' in row['REKOMENDASI']: bg_rek = 'background-color: rgba(16, 185, 129, 0.1); color: #34d399;'
+        elif '🟡' in row['REKOMENDASI']: bg_rek = 'background-color: rgba(245, 158, 11, 0.1); color: #fbbf24;'
+        else: bg_rek = 'background-color: rgba(244, 63, 94, 0.1); color: #fb7185;'
         
-    fig_table = go.Figure(data=[go.Table(
-        header=dict(
-            values=[f"<b>{col}</b>" for col in df_final.columns],
-            fill_color='#0f172a',
-            align='center',
-            font=dict(color='#94a3b8', size=11, family="Inter"),
-            line_color='rgba(255,255,255,0.1)',
-            height=40
-        ),
-        cells=dict(
-            values=[df_final[col] for col in df_final.columns],
-            fill_color=fill_colors,
-            align='center',
-            font=dict(color=font_colors, size=12, family="Inter"),
-            line_color='rgba(255,255,255,0.05)',
-            height=35
-        )
-    )])
+        for c, val in row.items():
+            if c == 'TICKER': 
+                # EXTRA PREMIUM: Font Ticker dibesarkan, di-bold, dan dikasih Glow Effect
+                styles.append('font-weight: 900; font-size: 1.15rem; color: #00f2fe; text-shadow: 0px 0px 8px rgba(0,242,254,0.4);')
+            elif c == 'TARGET (TP)': styles.append('color: #10b981; font-weight: 800;') 
+            elif c == 'STOP LOSS': styles.append('color: #f43f5e; font-weight: 800;')  
+            elif c == 'AREA BELI': styles.append('color: #38bdf8; font-weight: 800;')  
+            elif c in ['BANDARMOLOGI', 'REKOMENDASI']: styles.append(bg_rek)
+            elif c == 'VOLATILITAS':
+                if '🔥' in str(val): styles.append('color: #f43f5e; font-weight: 800;')
+                elif '⚡' in str(val): styles.append('color: #fbbf24; font-weight: 800;')
+                else: styles.append('color: #38bdf8; font-weight: 800;')
+            elif c == 'RSI':
+                try:
+                    rsi_val = float(val)
+                    if rsi_val > 70: styles.append('color: #f43f5e; font-weight: 800;') 
+                    elif rsi_val < 30: styles.append('color: #10b981; font-weight: 800;') 
+                    else: styles.append('')
+                except: styles.append('')
+            else: styles.append('')
+        return styles
+
+    st.markdown("📄 **Market Radar Matrix (Luxury Edition)**")
     
-    fig_table.update_layout(
-        margin=dict(l=0, r=0, t=0, b=0),
-        paper_bgcolor='rgba(0,0,0,0)',
-        height=450 
-    )
+    ITEMS_PER_PAGE = 10
+    total_pages = len(df_final) // ITEMS_PER_PAGE + (1 if len(df_final) % ITEMS_PER_PAGE > 0 else 0)
+    if total_pages == 0: total_pages = 1
     
-    st.plotly_chart(fig_table, use_container_width=True, config={'displayModeBar': False})
+    start_idx = st.session_state.page_matrix * ITEMS_PER_PAGE
+    end_idx = start_idx + ITEMS_PER_PAGE
+    df_tampil = df_final.iloc[start_idx:end_idx]
+    
+    # MENGGUNAKAN NATIVE STREAMLIT DATAFRAME (Scroll di HP mulus, tampilan premium)
+    st.dataframe(df_tampil.style.apply(style_tabel, axis=1), use_container_width=True, hide_index=True)
+    
+    # TRIK KOLOM UNTUK MEMBUAT TOMBOL PREV/NEXT KECIL & DI TENGAH
+    # Rasio kolom: [Kiri kosong, Tombol Prev, Teks Halaman, Tombol Next, Kanan kosong]
+    col_space1, col_prev, col_page, col_next, col_space2 = st.columns([3, 1, 2, 1, 3])
+    
+    with col_prev:
+        if st.button("⬅️ Prev", use_container_width=True, disabled=(st.session_state.page_matrix == 0)):
+            st.session_state.page_matrix -= 1
+            if hasattr(st, 'rerun'): st.rerun()
+            else: st.experimental_rerun()
+            
+    with col_page:
+        st.markdown(f"<p style='text-align: center; font-size:0.75rem; color:#94a3b8; margin-top:8px;'>Halaman {st.session_state.page_matrix + 1} dari {total_pages}</p>", unsafe_allow_html=True)
+        
+    with col_next:
+        if st.button("Next ➡️", use_container_width=True, disabled=(st.session_state.page_matrix >= total_pages - 1)):
+            st.session_state.page_matrix += 1
+            if hasattr(st, 'rerun'): st.rerun()
+            else: st.experimental_rerun()
 
     # ==========================================
     # 5.5. MODUL MASTERPIECE SIGNAL TRADING
@@ -686,3 +689,4 @@ else:
 
 st.markdown("---")
 st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ JIHAN-GHINA ENGINE • SECURE ALGORITHMIC TERMINAL PRO MAX</p>", unsafe_allow_html=True)
+
