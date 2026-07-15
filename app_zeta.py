@@ -40,7 +40,7 @@ if "current_tf" not in st.session_state:
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Saham Ultimate v10.0", page_icon="logo.png", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Saham Ultimate v10.1", page_icon="logo.png", layout="wide")
 
 st.markdown("""
 <style>
@@ -109,6 +109,15 @@ if not st.session_state.akses_diberikan:
 # ==========================================
 # 2. SECTOR MAPPING & FUNGSI UTAMA
 # ==========================================
+roster_30_saham = [
+    "BBCA", "BBRI", "BMRI", "BBNI", "TLKM", "ASII", "UNTR", "ICBP", "INDF", "AMRT",
+    "GOTO", "PGAS", "PTBA", "ITMG", "KLBF", "ADRO", "UNVR", "BRIS", "CPIN", "ANTM",
+    "AMMN", "BREN", "CUAN", "PANI", "BRPT", "MDKA", "MEDC", "ARTO", "SIDO", "MYOR"
+]
+
+# FIX PERMANEN: Mendefinisikan daftar saham .JK secara global agar tidak hilang lagi
+daftar_saham = [s.strip().upper() + ".JK" for s in roster_30_saham]
+
 sektor_mapping = {
     "BBCA": "Finance", "BBRI": "Finance", "BMRI": "Finance", "BBNI": "Finance", "ARTO": "Finance", "BRIS": "Finance",
     "ICBP": "Consumer", "INDF": "Consumer", "AMRT": "Consumer", "UNVR": "Consumer", "MYOR": "Consumer", "SIDO": "Consumer", "CPIN": "Consumer",
@@ -118,6 +127,20 @@ sektor_mapping = {
 
 def get_waktu_wib():
     return datetime.now(pytz.timezone('Asia/Jakarta')).strftime("%d %b %Y - %H:%M:%S WIB")
+
+@st.cache_data(ttl=300, show_spinner=False)
+def fetch_ihsg_data():
+    try:
+        df = yf.download("^JKSE", period="1mo", interval="1d", progress=False)
+        if df.empty: return None, None, None, None
+        if isinstance(df.columns, pd.MultiIndex): df.columns = [col[0] for col in df.columns]
+        df = df.ffill() 
+        harga_skg = float(df['Close'].iloc[-1])
+        harga_lalu = float(df['Close'].iloc[-2])
+        perubahan = harga_skg - harga_lalu
+        persen = (perubahan / harga_lalu) * 100
+        return df, harga_skg, perubahan, persen
+    except: return None, None, None, None
 
 def hitung_rsi_akurat(df, periods=14):
     delta = df['Close'].diff()
@@ -203,11 +226,119 @@ def format_rupiah(val):
     return f"Rp {val:,.0f}".replace(",", ".")
 
 # ==========================================
-# 3. SIDEBAR (ULTIMATE RADAR CONTROL)
+# 3. FUNGSI CHART PLOTLY 
+# ==========================================
+@st.cache_data(ttl=3600, show_spinner=False)
+def fetch_financial_charts(ticker_symbol):
+    tkr = yf.Ticker(ticker_symbol + ".JK")
+    df_inc, df_bs, df_cf = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+    PEMBAGI = 1_000_000_000_000 
+    
+    try:
+        inc = tkr.quarterly_financials
+        if not inc.empty:
+            rev = (inc.loc['Total Revenue'] / PEMBAGI) if 'Total Revenue' in inc.index else pd.Series(dtype=float)
+            ni = (inc.loc['Net Income'] / PEMBAGI) if 'Net Income' in inc.index else pd.Series(dtype=float)
+            df_inc = pd.DataFrame({'Revenue': rev, 'Net Income': ni}).dropna(how='all')
+            df_inc.index = pd.to_datetime(df_inc.index).strftime('%b %Y')
+            df_inc = df_inc.iloc[::-1] 
+    except: pass
+    
+    try:
+        bs = tkr.quarterly_balance_sheet
+        if not bs.empty:
+            assets = (bs.loc['Total Assets'] / PEMBAGI) if 'Total Assets' in bs.index else pd.Series(dtype=float)
+            liab = (bs.loc['Total Liabilities Net Minority Interest'] / PEMBAGI) if 'Total Liabilities Net Minority Interest' in bs.index else (bs.loc['Total Liabilities'] / PEMBAGI if 'Total Liabilities' in bs.index else pd.Series(dtype=float))
+            df_bs = pd.DataFrame({'Total Assets': assets, 'Total Liabilities': liab}).dropna(how='all')
+            df_bs.index = pd.to_datetime(df_bs.index).strftime('%b %Y')
+            df_bs = df_bs.iloc[::-1]
+    except: pass
+    
+    try:
+        cf = tkr.quarterly_cashflow
+        if not cf.empty:
+            ocf = (cf.loc['Operating Cash Flow'] / PEMBAGI) if 'Operating Cash Flow' in cf.index else pd.Series(dtype=float)
+            fcf = (cf.loc['Free Cash Flow'] / PEMBAGI) if 'Free Cash Flow' in cf.index else pd.Series(dtype=float)
+            df_cf = pd.DataFrame({'Operating Cash': ocf, 'Free Cash Flow': fcf}).dropna(how='all')
+            df_cf.index = pd.to_datetime(df_cf.index).strftime('%b %Y')
+            df_cf = df_cf.iloc[::-1]
+    except: pass
+    
+    return df_inc, df_bs, df_cf
+
+def create_locked_plotly_chart(df, color1, color2):
+    fig = go.Figure()
+    if not df.empty and len(df.columns) >= 2:
+        col1, col2 = df.columns[0], df.columns[1]
+        fig.add_trace(go.Bar(x=df.index, y=df[col1], name=col1, marker_color=color1))
+        fig.add_trace(go.Bar(x=df.index, y=df[col2], name=col2, marker_color=color2))
+        
+    fig.update_layout(
+        barmode='group', height=250, margin=dict(l=10, r=10, t=10, b=10), 
+        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='#94a3b8'),
+        legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5, font=dict(size=10)),
+        dragmode=False, hovermode='x unified'
+    )
+    fig.update_xaxes(fixedrange=True, showgrid=False)
+    fig.update_yaxes(fixedrange=True, gridcolor='rgba(255,255,255,0.05)')
+    return fig
+
+def analyze_financial_health(df_inc, df_bs, df_cf):
+    score = 0
+    indikator = []
+    
+    if not df_inc.empty and len(df_inc) >= 1:
+        latest_ni = df_inc['Net Income'].iloc[-1]
+        if latest_ni > 0:
+            score += 25
+            indikator.append("✔️ Laba Bersih Positif (QoQ)")
+        if len(df_inc) >= 2:
+            prev_ni = df_inc['Net Income'].iloc[-2]
+            if latest_ni > prev_ni:
+                score += 15
+                indikator.append("✔️ Laba Bertumbuh Kuartal Ini")
+                
+    if not df_bs.empty and len(df_bs) >= 1:
+        assets = df_bs['Total Assets'].iloc[-1]
+        liab = df_bs['Total Liabilities'].iloc[-1]
+        if assets > liab:
+            score += 20
+            indikator.append("✔️ Ekuitas Kuat (Aset > Hutang)")
+        if assets > (liab * 1.5):
+            score += 10
+            indikator.append("✔️ Rasio Hutang Sangat Rendah")
+            
+    if not df_cf.empty and len(df_cf) >= 1:
+        ocf = df_cf['Operating Cash'].iloc[-1]
+        if ocf > 0:
+            score += 20
+            indikator.append("✔️ Arus Kas Operasi Positif")
+                
+    if score >= 80: return "🚀 POTENSI BAGGER (SANGAT SEHAT)", "#10b981", indikator
+    elif score >= 60: return "🟢 SEHAT & BAGUS", "#00f2fe", indikator
+    elif score >= 40: return "🟡 STABIL / MODERAT", "#fbbf24", indikator
+    else: return "🔴 BERISIKO / KURANG SEHAT", "#f43f5e", indikator
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def fetch_analyst_consensus(ticker_symbol):
+    data = {"Konsensus": "N/A", "Target Bawah": "-", "Target Rata-Rata": "-", "Target Atas": "-"}
+    try:
+        info = yf.Ticker(ticker_symbol + ".JK").info
+        rec = info.get('recommendationKey', 'none').replace('_', ' ').title()
+        if rec and rec.lower() != 'none': data["Konsensus"] = rec
+        if info.get('targetLowPrice'): data["Target Bawah"] = format_rupiah(info['targetLowPrice'])
+        if info.get('targetMeanPrice'): data["Target Rata-Rata"] = format_rupiah(info['targetMeanPrice'])
+        if info.get('targetHighPrice'): data["Target Atas"] = format_rupiah(info['targetHighPrice'])
+    except: pass
+    return data
+
+# ==========================================
+# 4. SIDEBAR (ULTIMATE RADAR CONTROL)
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #00f2fe; font-size: 1.35rem; font-weight: 900; margin-bottom: 0px;'>👨‍💻 JIHAN-GHINA</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #94a3b8; font-size: 0.7rem; letter-spacing: 2px; margin-bottom: 15px;'>ULTIMATE TERMINAL v10.0</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #94a3b8; font-size: 0.7rem; letter-spacing: 2px; margin-bottom: 15px;'>ULTIMATE TERMINAL v10.1</p>", unsafe_allow_html=True)
     
     tf_pilihan = st.selectbox("⏱️ Timeframe Analisis:", ["1 Jam", "4 Jam", "1 Hari (Daily)", "1 Minggu (Weekly)"], index=2)
     tf_berubah = tf_pilihan != st.session_state.current_tf
@@ -229,6 +360,8 @@ with st.sidebar:
         st.caption("Pondasi robot otomatis sudah aktif, siap dihubungkan ke bot bursa Anda.")
 
     st.markdown("<br>", unsafe_allow_html=True)
+    
+    # PERBAIKAN: SCAN LOOP MENGGUNAKAN `daftar_saham` YANG SUDAH DIDEFINISIKAN GLOBAL
     if st.button("🔄 SCAN MARKET", use_container_width=True) or tf_berubah:
         st.session_state.scan_clicked = True
         st.cache_data.clear()
@@ -265,7 +398,7 @@ st.markdown("<h1>🌐 Algorithmic Market Intelligence</h1>", unsafe_allow_html=T
 col_h1, col_h2 = st.columns([3.5, 1.5])
 with col_h1:
     upd_time = st.session_state.last_update if st.session_state.last_update else "Menunggu inisiasi radar..."
-    st.markdown(f"<p style='font-size: 0.9rem;'>🕒 Terakhir Diperbarui: <span style='color:#00f2fe;'>{upd_time}</span><br>Multi-Pilar Integrasi Terminal Ultimate v10.0: Teknikal, Fundamental, Bandarmologi, Volatilitas & Money Management.</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='font-size: 0.9rem;'>🕒 Terakhir Diperbarui: <span style='color:#00f2fe;'>{upd_time}</span><br>Multi-Pilar Integrasi Terminal Ultimate v10.1: Teknikal, Fundamental, Bandarmologi, Volatilitas & Money Management.</p>", unsafe_allow_html=True)
 
 df_ihsg_hist, ihsg_now, ihsg_chg, ihsg_pct = fetch_ihsg_data()
 with col_h2:
@@ -340,7 +473,7 @@ else:
             "AREA BELI": f"{int(raw['AREA BELI']):,}".replace(",", "."),
             "TARGET (TP)": f"{int(raw['TARGET (TP)']):,}".replace(",", "."),
             "STOP LOSS": f"{int(raw['STOP LOSS']):,}".replace(",", "."),
-            "REKOMENDASI LOT": rec_lot_text, # <--- BARU (MONEY MANAGEMENT)
+            "REKOMENDASI LOT": rec_lot_text,
             "VOLATILITAS": raw["VOLATILITAS"],
             "RSI": f"{raw['RSI']:.2f}", 
             "BANDARMOLOGI": raw["STATUS_BANDAR"], 
@@ -510,4 +643,77 @@ else:
             </div>
             """, unsafe_allow_html=True)
 
-# [KODE BLOK FINANSIAL QUARTERLY & DEKLARASI BAWAH SAMA SEPERTI v9.2 - DIJAMIN STABIL]
+    # ==========================================
+    # 6. MODUL VISUAL CHART KEUANGAN & HEALTH
+    # ==========================================
+    st.markdown("---")
+    st.markdown("<h3 style='color: #f8fafc; font-weight: 800; margin-bottom: 1rem;'>📊 Quarterly Financial & Analyst Charts</h3>", unsafe_allow_html=True)
+    
+    idx_default = scanned_tickers.index(emiten_signal) if emiten_signal in scanned_tickers else 0
+    emiten_pilihan = st.selectbox("🎯 Target Emiten untuk Bedah Fundamental:", scanned_tickers, index=idx_default, label_visibility="visible")
+    
+    with st.spinner(f"Menarik Visualisasi Finansial (QoQ) {emiten_pilihan} dari Server..."):
+        
+        analyst_data = fetch_analyst_consensus(emiten_pilihan)
+        st.markdown(f"""
+        <div style='display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom: 20px;'>
+            <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px; border-left: 5px solid #00f2fe;'>
+                <div style='font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>💡 Rating Analis</div>
+                <div style='font-size:1.05rem; font-weight:800; color:#00f2fe; margin-top:5px;'>{analyst_data["Konsensus"]}</div>
+            </div>
+            <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px; border-left: 5px solid #f43f5e;'>
+                <div style='font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>📉 Target Bawah</div>
+                <div style='font-size:1.05rem; font-weight:800; color:#f43f5e; margin-top:5px;'>{analyst_data["Target Bawah"]}</div>
+            </div>
+            <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px; border-left: 5px solid #f8fafc;'>
+                <div style='font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>🎯 Target Rata-Rata</div>
+                <div style='font-size:1.05rem; font-weight:800; color:#f8fafc; margin-top:5px;'>{analyst_data["Target Rata-Rata"]}</div>
+            </div>
+            <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px; border-left: 5px solid #10b981;'>
+                <div style='font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;'>📈 Target Atas</div>
+                <div style='font-size:1.05rem; font-weight:800; color:#10b981; margin-top:5px;'>{analyst_data["Target Atas"]}</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        df_inc, df_bs, df_cf = fetch_financial_charts(emiten_pilihan)
+        
+        status_text, color_hex, reason_list = analyze_financial_health(df_inc, df_bs, df_cf)
+        reasons_html = "".join([f"<li style='margin-bottom: 4px;'>{r}</li>" for r in reason_list])
+        
+        st.markdown(f"""
+        <div class='premium-card' style='margin-bottom: 25px; border-left: 5px solid {color_hex};'>
+            <h4 style='color: #f8fafc; margin-top: 0; margin-bottom: 10px; font-size: 1.1rem;'>💠 Quarterly Health Status: <span style='color: {color_hex};'>{status_text}</span></h4>
+            <p style='color: #94a3b8; font-size: 0.85rem; margin-bottom: 5px;'>Faktor Pendukung Berdasarkan Laporan Keuangan Kuartal Terbaru:</p>
+            <ul style='color: #cbd5e1; font-size: 0.8rem; padding-left: 20px; margin: 0;'>
+                {reasons_html if reason_list else "<li>Belum cukup data kuartalan dari bursa untuk melakukan skoring.</li>"}
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        c1, c2, c3 = st.columns(3)
+        lock_config = {'displayModeBar': False, 'scrollZoom': False}
+        
+        with c1:
+            st.markdown("<h5 style='color: #00f2fe; text-align:center; font-size: 0.95rem; margin-bottom: 5px;'>📈 Income Statement</h5>", unsafe_allow_html=True)
+            if not df_inc.empty:
+                fig1 = create_locked_plotly_chart(df_inc, "#00f2fe", "#10b981")
+                st.plotly_chart(fig1, use_container_width=True, config=lock_config)
+            else: st.warning("Data Kuartal Kosong")
+            
+        with c2:
+            st.markdown("<h5 style='color: #3b82f6; text-align:center; font-size: 0.95rem; margin-bottom: 5px;'>⚖️ Balance Sheet</h5>", unsafe_allow_html=True)
+            if not df_bs.empty:
+                fig2 = create_locked_plotly_chart(df_bs, "#3b82f6", "#f43f5e")
+                st.plotly_chart(fig2, use_container_width=True, config=lock_config)
+            else: st.warning("Data Kuartal Kosong")
+            
+        with c3:
+            st.markdown("<h5 style='color: #8b5cf6; text-align:center; font-size: 0.95rem; margin-bottom: 5px;'>💵 Cash Flow</h5>", unsafe_allow_html=True)
+            if not df_cf.empty:
+                fig3 = create_locked_plotly_chart(df_cf, "#8b5cf6", "#f59e0b")
+                st.plotly_chart(fig3, use_container_width=True, config=lock_config)
+            else: st.warning("Data Kuartal Kosong")
+
+st.markdown("---")
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem;'>⚡ JIHAN-GHINA ENGINE • SECURE ALGORITHMIC TERMINAL PRO MAX</p>", unsafe_allow_html=True)
