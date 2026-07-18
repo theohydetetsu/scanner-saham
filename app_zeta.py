@@ -50,7 +50,7 @@ if "current_tf" not in st.session_state: st.session_state.current_tf = "1 Hari (
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE (LUXURY)
 # ==========================================
-st.set_page_config(page_title="Jihan-ghina Ultimate v11.0", page_icon="logoo.png", layout="wide")
+st.set_page_config(page_title="Jihan-ghina Ultimate v11.0", page_icon="logo-idx.png", layout="wide")
 
 st.markdown("""
 <style>
