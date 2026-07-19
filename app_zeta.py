@@ -50,7 +50,7 @@ if "current_tf" not in st.session_state: st.session_state.current_tf = "1 Hari (
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE (LUXURY)
 # ==========================================
-st.set_page_config(page_title="Jihan-ghina Ultimate v11.0", page_icon="logo-idx.png", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Ultimate v11.2", page_icon="🧬", layout="wide")
 
 st.markdown("""
 <style>
@@ -92,7 +92,7 @@ st.markdown("""
     div.stButton > button:first-child:hover { background: linear-gradient(90deg, #00f2fe 0%, #3b82f6 100%) !important; transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(0, 242, 254, 0.4); border-color: transparent !important; }
     
     .login-header { text-align: center; color: #00f2fe; font-size: 2.4rem; font-weight: 900; margin-top: 80px; margin-bottom: 5px; letter-spacing: -1px; }
-    .stDataFrame { font-size: 13.5px !important; }
+    .stDataFrame { font-size: 13px !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -125,7 +125,6 @@ if not st.session_state.akses_diberikan:
 # ==========================================
 # 2. CORE ENGINE & 100 SAHAM TERLIKUID
 # ==========================================
-# 30 Bluechips (Pertama) + 70 Saham Likuid Lapis 2/3 (Untuk Scalping & ARA)
 roster_100_saham = [
     "BBCA", "BBRI", "BMRI", "BBNI", "TLKM", "ASII", "UNTR", "ICBP", "INDF", "AMRT",
     "GOTO", "PGAS", "PTBA", "ITMG", "KLBF", "ADRO", "UNVR", "BRIS", "CPIN", "ANTM",
@@ -193,7 +192,6 @@ def fetch_single_stock(emiten, mode_tf):
         df = df.ffill() 
         if len(df) < 25: return None 
         
-        # TEKNIKAL & CLUSTERING METRICS
         df['EMA20'] = df['Close'].ewm(span=20, adjust=False).mean()
         df['SMA5'] = df['Close'].rolling(window=5).mean()
         df['SMA50'] = df['Close'].rolling(window=50).mean()
@@ -217,7 +215,6 @@ def fetch_single_stock(emiten, mode_tf):
         vol_sma20 = float(df['Vol_SMA20'].iloc[-1])
         atr_skg = float(df['ATR'].iloc[-1])
         
-        # Metrics Clustering
         prev_close = float(df['Close'].iloc[-2])
         prev_vol = float(df['Volume'].iloc[-2])
         ret_1d = ((harga_skg - prev_close) / prev_close * 100) if prev_close > 0 else 0
@@ -244,7 +241,16 @@ def fetch_single_stock(emiten, mode_tf):
         div_rate = info.get('trailingAnnualDividendRate', 0)
         div_yield = (div_rate / harga_skg * 100) if (div_rate and harga_skg > 0) else 0.0
         
-        # Free Float Proxy (Jika tersedia di Yahoo Finance)
+        # Ekstraksi Data Fundamental Baru
+        mcap = info.get('marketCap', 0)
+        eps_ttm = info.get('trailingEps', 0.0)
+        div_date_unix = info.get('exDividendDate', None)
+        div_date_str = "-"
+        if div_date_unix:
+            try:
+                div_date_str = datetime.fromtimestamp(div_date_unix).strftime('%d %b %Y')
+            except: pass
+        
         float_shares = info.get('floatShares', 0)
         out_shares = info.get('sharesOutstanding', 0)
         float_pct = (float_shares / out_shares * 100) if out_shares and float_shares else 0
@@ -260,10 +266,10 @@ def fetch_single_stock(emiten, mode_tf):
             "UP_SMA50": harga_skg > sma50_skg,
             "MACD_GOLDEN": float(df['MACD'].iloc[-1]) > float(df['Signal'].iloc[-1]),
             "PER": round(per_val, 2), "PBV": round(pbv_val, 2), "DIV_YIELD": round(div_yield, 2),
-            # CLUSTERING DATA
             "PREV_VOL": prev_vol, "VOL_SMA20": vol_sma20, "RET_1D": ret_1d, "HIGH": high_skg, 
             "LOW": low_skg, "SMA5": sma5_skg, "SMA50": sma50_skg, "TRANS_VAL": trans_val, 
-            "TRANS_VAL_MA10": trans_val_ma10, "FLOAT_PCT": float_pct, "VOLUME": vol_skg
+            "TRANS_VAL_MA10": trans_val_ma10, "FLOAT_PCT": float_pct, "VOLUME": vol_skg,
+            "MARKET_CAP": mcap, "EPS_TTM": eps_ttm, "DIVIDEND_DATE": div_date_str
         }
     except Exception as e: 
         return None
@@ -272,8 +278,14 @@ def format_rupiah(val):
     if pd.isna(val) or val == 0: return "-"
     return f"Rp {val:,.0f}".replace(",", ".")
 
+def format_market_cap(val):
+    if pd.isna(val) or val == 0: return "-"
+    if val >= 1_000_000_000_000: return f"Rp {val/1_000_000_000_000:.2f} T"
+    elif val >= 1_000_000_000: return f"Rp {val/1_000_000_000:.2f} M"
+    else: return f"Rp {val/1_000_000:.2f} Jt"
+
 # ==========================================
-# 3. CHART & ANALYST DATA FETCHING (TETAP)
+# 3. CHART & ANALYST DATA FETCHING
 # ==========================================
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_financial_charts(ticker_symbol):
@@ -376,7 +388,7 @@ def create_locked_plotly_chart(df, color1, color2):
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #00f2fe; font-size: 1.25rem; font-weight: 900; margin-bottom: 0px;'>🧬 QUANTUM MATRIX</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #94a3b8; font-size: 0.65rem; letter-spacing: 1.5px; margin-bottom: 25px;'>JIHAN-GHINA TERMINAL v11.0</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #94a3b8; font-size: 0.65rem; letter-spacing: 1.5px; margin-bottom: 25px;'>JIHAN-GHINA TERMINAL v11.2</p>", unsafe_allow_html=True)
     
     tf_pilihan = st.selectbox("⏱️ Timeframe Analisis:", ["1 Jam", "4 Jam", "1 Hari (Daily)", "1 Minggu (Weekly)"], index=2)
     tf_berubah = tf_pilihan != st.session_state.current_tf
@@ -385,17 +397,27 @@ with st.sidebar:
     profil_risiko = st.selectbox("🎯 Profil Risiko:", ["Moderat", "Agresif", "Konservatif"])
     
     st.markdown("<div style='font-size:0.7rem; color:#00f2fe; font-weight:800; letter-spacing:1px; margin-top:20px; border-bottom: 1px solid rgba(0,242,254,0.2); padding-bottom: 5px;'>⚙️ POSITION SIZING ENGINE</div>", unsafe_allow_html=True)
-    modal_trading = st.number_input("💰 Modal Trading (Rp):", min_value=1_000_000, value=50_000_000, step=1_000_000)
+    
+    modal_input_str = st.text_input("💰 Modal Trading (Rp):", value="50.000.000", help="Gunakan titik untuk memisahkan ribuan (Misal: 10.000.000)")
+    try:
+        modal_trading = int(modal_input_str.replace(".", "").replace(",", ""))
+    except ValueError:
+        modal_trading = 50000000
+        st.error("Format angka salah. Otomatis kembali ke 50.000.000")
+        
     risiko_pct = st.slider("🚨 Batas Risiko /Trade (%):", min_value=0.5, max_value=5.0, value=1.0, step=0.5)
     
     with st.expander("🤖 Telegram Automation Alert"):
-        st.markdown("<p style='font-size: 0.7rem; color: #10b981;'>Data otomatis tersimpan secara permanen.</p>", unsafe_allow_html=True)
-        new_token = st.text_input("Bot Token:", value=app_config["tg_token"], type="password")
-        new_chat_id = st.text_input("Chat ID:", value=app_config["tg_chat_id"])
-        if new_token != app_config["tg_token"] or new_chat_id != app_config["tg_chat_id"]:
-            save_config(new_token, new_chat_id)
-            app_config["tg_token"] = new_token
-            app_config["tg_chat_id"] = new_chat_id
+        st.markdown("<p style='font-size: 0.7rem; color: #10b981;'>Data otomatis tersimpan ke server.</p>", unsafe_allow_html=True)
+        
+        bot_token = st.text_input("Bot Token:", value=app_config["tg_token"], type="password")
+        chat_id = st.text_input("Chat ID:", value=app_config["tg_chat_id"])
+        
+        if bot_token != app_config["tg_token"] or chat_id != app_config["tg_chat_id"]:
+            save_config(bot_token, chat_id)
+            app_config["tg_token"] = bot_token
+            app_config["tg_chat_id"] = chat_id
+            st.success("Config Telegram Tersimpan!")
 
     st.markdown("<br>", unsafe_allow_html=True)
     
@@ -469,7 +491,7 @@ st.markdown("<h1>🌐 Algorithmic Market Intelligence</h1>", unsafe_allow_html=T
 col_h1, col_h2 = st.columns([3.5, 1.5])
 with col_h1:
     upd_time = st.session_state.last_update if st.session_state.last_update else "Menunggu inisiasi radar..."
-    st.markdown(f"<p style='font-size: 0.95rem; margin-top:5px;'>🕒 Last Market Sync: <strong style='color:#00f2fe;'>{upd_time}</strong><br>100 Liquid Stocks Radar. Multi-Pilar Integrasi Terminal Ultimate v11.0: Teknikal, Clustering Matrix, Bandarmologi & Money Management.</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='font-size: 0.95rem; margin-top:5px;'>🕒 Last Market Sync: <strong style='color:#00f2fe;'>{upd_time}</strong><br>100 Liquid Stocks Radar. Multi-Pilar Integrasi Terminal Ultimate v11.2: Teknikal, Clustering Matrix, Bandarmologi & Money Management.</p>", unsafe_allow_html=True)
 
 df_ihsg_hist, ihsg_now, ihsg_chg, ihsg_pct = fetch_ihsg_data()
 with col_h2:
@@ -490,11 +512,10 @@ if not st.session_state.scan_clicked or not st.session_state.raw_stocks:
     st.info("👈 Sistem terminal siaga. Silakan tekan tombol '🔄 SCAN 100 SAHAM' di panel navigasi kiri.")
 else:
     # ------------------------------------------
-    # SISTEM MULTI-TAB (V11.0)
+    # SISTEM MULTI-TAB 
     # ------------------------------------------
     tab1, tab2, tab3, tab4 = st.tabs(["🚀 PRO MAX SIGNAL", "🧬 CLUSTERING MATRIX", "📊 FUNDAMENTAL CHARTS", "📚 ACADEMY"])
     
-    # PERSIAPAN DATA REKOMENDASI UTAMA & CLUSTERING
     hasil_rekomendasi = []
     cluster_ara = []
     cluster_scalp = []
@@ -503,7 +524,6 @@ else:
     cluster_bluechip = []
     
     for raw in st.session_state.raw_stocks:
-        # LOGIKA SCORING UTAMA (Untuk TAB 1)
         skor = 0
         if raw["UP_EMA20"]: skor += 10
         if raw.get("UP_SMA50", False): skor += 10 
@@ -534,12 +554,15 @@ else:
         else:
             rec_lot_text = "🔒 Proteksi/Hold"
             
+        # FORMATTING BARU TABEL UTAMA V11.2
         hasil_rekomendasi.append({
             "TICKER": raw["TICKER"], 
             "HARGA": f"{int(raw['HARGA']):,}".replace(",", "."),
-            "AREA BELI": f"{int(raw['AREA BELI']):,}".replace(",", "."),
-            "TARGET (TP)": f"{int(raw['TARGET (TP)']):,}".replace(",", "."),
-            "STOP LOSS": f"{int(raw['STOP LOSS']):,}".replace(",", "."),
+            "MARKET CAP": format_market_cap(raw.get("MARKET_CAP", 0)),
+            "VOLUME": f"{int(raw['VOLUME']):,}".replace(",", "."),
+            "EPS (TTM)": f"{raw.get('EPS_TTM', 0):.2f}",
+            "DIV YIELD (%)": f"{raw['DIV_YIELD']:.2f}%",
+            "DIVIDEND DATE": raw.get("DIVIDEND_DATE", "-"),
             "REKOMENDASI LOT": rec_lot_text,
             "VOLATILITAS": raw["VOLATILITAS"],
             "RSI": f"{raw['RSI']:.2f}", 
@@ -547,27 +570,20 @@ else:
             "REKOMENDASI": kep
         })
         
-        # ------------------------------------------
-        # LOGIKA CLUSTERING (TAB 2)
-        # ------------------------------------------
-        # 1. ARA HUNTER (Proxy: Prev Vol > 2*MA20, Val Momentum > MA10, Return > 3%, High > MA5, Low > MA50)
+        # LOGIKA CLUSTERING
         if (raw["PREV_VOL"] > (2 * raw["VOL_SMA20"])) and (raw["TRANS_VAL"] > raw["TRANS_VAL_MA10"]) and (raw["RET_1D"] > 3) and (raw["HIGH"] > raw["SMA5"]) and (raw["LOW"] > raw["SMA50"]):
             cluster_ara.append(raw["TICKER"])
             
-        # 2. SCALPING DAILY (Proxy: 1% < Return < 10%, Value > 2M, Price < 3000, Vol > 50M)
         if (1 < raw["RET_1D"] < 10) and (raw["TRANS_VAL"] > 2_000_000_000) and (raw["HARGA"] < 3000) and (raw["VOLUME"] > 50_000_000):
             cluster_scalp.append(raw["TICKER"])
             
-        # 3. BIG ACCUMULATION (Proxy: Vol > 1.5*MA20, Harga mantul EMA20, Tutup di atas harga tengah)
         harga_tengah = (raw["HIGH"] + raw["LOW"]) / 2
         if (raw["VOLUME"] > (1.5 * raw["VOL_SMA20"])) and (raw["HARGA"] > raw["UP_EMA20"]) and (raw["HARGA"] >= harga_tengah):
             cluster_accum.append(raw["TICKER"])
             
-        # 4. FREE FLOAT (15% - 30%)
         if (15 < raw["FLOAT_PCT"] < 30):
             cluster_float.append(raw["TICKER"])
             
-        # 5. BLUECHIP (Berada di 30 saham teratas list)
         if raw["TICKER"] in roster_100_saham[:30]:
             cluster_bluechip.append(raw["TICKER"])
 
@@ -587,9 +603,17 @@ else:
             
             for c, val in row.items():
                 if c == 'TICKER': styles.append('font-weight: 900; font-size: 1.15rem; color: #00f2fe; text-shadow: 0px 0px 10px rgba(0,242,254,0.3); text-align:center;')
-                elif c == 'TARGET (TP)': styles.append('color: #10b981; font-weight: 800;') 
-                elif c == 'STOP LOSS': styles.append('color: #f43f5e; font-weight: 800;')  
-                elif c == 'AREA BELI': styles.append('color: #38bdf8; font-weight: 800;')  
+                elif c == 'MARKET CAP': styles.append('color: #cbd5e1; font-weight: 600;')
+                elif c == 'VOLUME': styles.append('color: #94a3b8; font-weight: 600;')
+                elif c == 'EPS (TTM)': styles.append('color: #fbbf24; font-weight: 700;')
+                elif c == 'DIV YIELD (%)':
+                    try:
+                        dy_val = float(str(val).replace('%', ''))
+                        if dy_val >= 5: styles.append('color: #10b981; font-weight: 800;')
+                        elif dy_val > 0: styles.append('color: #34d399; font-weight: 600;')
+                        else: styles.append('color: #64748b;')
+                    except: styles.append('')
+                elif c == 'DIVIDEND DATE': styles.append('color: #64748b; font-size: 0.8rem;')
                 elif c == 'REKOMENDASI LOT':
                     if 'Max' in str(val): styles.append('color: #facc15; font-weight: 900; background-color: rgba(250,204,21,0.08);')
                     else: styles.append('color: #64748b; font-weight: 400;')
@@ -633,7 +657,7 @@ else:
                 else: st.experimental_rerun()
 
         # ==========================================
-        # 5.5. MODUL MASTERPIECE SIGNAL TRADING
+        # 5.5. MODUL MASTERPIECE SIGNAL TRADING V11.2
         # ==========================================
         st.markdown("---")
         st.markdown("<h3 style='font-size: 1.5rem;'>🎯 Executive Cross-Validation</h3>", unsafe_allow_html=True)
@@ -645,10 +669,17 @@ else:
             emiten_signal = st.selectbox("⚡ Pilih Target Emiten (Algo vs Analyst):", scanned_tickers, key="signal_select")
             
             with st.spinner(f"Mengkalkulasi Konfirmasi Ganda untuk {emiten_signal}..."):
+                # Tarik Data Rekomendasi
                 sys_rec_raw = df_final[df_final['TICKER'] == emiten_signal]['REKOMENDASI'].values[0]
                 vol_target = df_final[df_final['TICKER'] == emiten_signal]['VOLATILITAS'].values[0]
                 bandar_target = df_final[df_final['TICKER'] == emiten_signal]['BANDARMOLOGI'].values[0]
                 lot_rec_target = df_final[df_final['TICKER'] == emiten_signal]['REKOMENDASI LOT'].values[0]
+                
+                # Tarik Data Target Plan (Area Beli, SL, TP) dari raw_stocks
+                raw_target = next((item for item in st.session_state.raw_stocks if item["TICKER"] == emiten_signal), None)
+                area_beli = f"{int(raw_target['AREA BELI']):,}".replace(",", ".") if raw_target else "-"
+                target_tp = f"{int(raw_target['TARGET (TP)']):,}".replace(",", ".") if raw_target else "-"
+                stop_loss = f"{int(raw_target['STOP LOSS']):,}".replace(",", ".") if raw_target else "-"
                 
                 analyst_data_signal = fetch_analyst_consensus(emiten_signal)
                 konsensus_raw = analyst_data_signal["Konsensus"].upper()
@@ -706,16 +737,33 @@ else:
                 st.markdown(f"""
                 <div class='premium-card' style='border-left: 5px solid {color}; margin-top: 10px; margin-bottom: 25px;'>
                     <div style='display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;'>
-                        <div style='flex: 1; min-width: 150px; text-align: center; border-right: 1px solid rgba(255,255,255,0.1);'>
+                        <div style='flex: 1.5; min-width: 280px; text-align: center; border-right: 1px solid rgba(255,255,255,0.1); padding-right: 15px;'>
                             <span style='color: #94a3b8; font-size: 0.75rem; letter-spacing: 1px; font-weight:700;'>💻 JIHAN-GHINA ALGO</span><br>
-                            <span style='font-weight: 900; font-size: 1.15rem; color: #f8fafc;'>{sys_rec_raw}</span>
+                            <span style='font-weight: 900; font-size: 1.4rem; color: #f8fafc; display: block; margin-top: 5px;'>{sys_rec_raw}</span>
+                            
+                            <!-- MINI DASHBOARD TRADING PLAN V11.2 -->
+                            <div style='display: flex; justify-content: center; gap: 15px; margin-top: 15px; background: rgba(0,0,0,0.25); padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.03);'>
+                                <div style='text-align: center; flex: 1;'>
+                                    <span style='color: #94a3b8; font-size: 0.65rem; font-weight: bold; letter-spacing: 0.5px;'>AREA BELI</span><br>
+                                    <span style='color: #38bdf8; font-weight: 900; font-size: 1rem;'>{area_beli}</span>
+                                </div>
+                                <div style='text-align: center; flex: 1; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 10px;'>
+                                    <span style='color: #94a3b8; font-size: 0.65rem; font-weight: bold; letter-spacing: 0.5px;'>TARGET (TP)</span><br>
+                                    <span style='color: #10b981; font-weight: 900; font-size: 1rem;'>{target_tp}</span>
+                                </div>
+                                <div style='text-align: center; flex: 1; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 10px;'>
+                                    <span style='color: #94a3b8; font-size: 0.65rem; font-weight: bold; letter-spacing: 0.5px;'>STOP LOSS</span><br>
+                                    <span style='color: #f43f5e; font-weight: 900; font-size: 1rem;'>{stop_loss}</span>
+                                </div>
+                            </div>
+                            
                         </div>
-                        <div style='flex: 1; min-width: 150px; text-align: center;'>
+                        <div style='flex: 1; min-width: 150px; text-align: center; display: flex; flex-direction: column; justify-content: center;'>
                             <span style='color: #94a3b8; font-size: 0.75rem; letter-spacing: 1px; font-weight:700;'>🌍 GLOBAL ANALYST</span><br>
-                            <span style='font-weight: 900; font-size: 1.15rem; color: #f8fafc;'>{konsensus_raw if konsensus_raw != 'N/A' else 'DATA UNAVAILABLE'}</span>
+                            <span style='font-weight: 900; font-size: 1.4rem; color: #f8fafc; margin-top: 5px;'>{konsensus_raw if konsensus_raw != 'N/A' else 'DATA UNAVAILABLE'}</span>
                         </div>
                     </div>
-                    <div style='margin-top: 18px; text-align: center; background: rgba(0,0,0,0.3); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.02);'>
+                    <div style='margin-top: 25px; text-align: center; background: rgba(0,0,0,0.4); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.02);'>
                         <span style='color: #94a3b8; font-size: 0.75rem; letter-spacing: 2px; font-weight:700;'>🏆 ULTIMATE FINAL DECISION</span><br>
                         <span style='color: {color}; font-weight: 900; font-size: 1.5rem; display: block; margin: 8px 0; letter-spacing: -0.5px;'>{final_decision}</span>
                         <span style='color: #cbd5e1; font-size: 0.85rem; margin-bottom: 12px; display: block; font-weight: 300;'>{desc}</span>
@@ -728,7 +776,7 @@ else:
                 """, unsafe_allow_html=True)
 
     # ==========================================
-    # TAB 2: CLUSTERING MATRIX (NEW!)
+    # TAB 2: CLUSTERING MATRIX
     # ==========================================
     with tab2:
         st.markdown("<br><h3 style='font-size: 1.5rem;'>🧬 Behavioral Clustering Matrix</h3>", unsafe_allow_html=True)
@@ -885,4 +933,4 @@ else:
             """)
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem; font-weight:600; letter-spacing: 1px;'>⚡ JIHAN-GHINA ENGINE • INSTITUTIONAL TERMINAL PRO MAX v11.0</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem; font-weight:600; letter-spacing: 1px;'>⚡ JIHAN-GHINA ENGINE • INSTITUTIONAL TERMINAL PRO MAX v11.2</p>", unsafe_allow_html=True)
