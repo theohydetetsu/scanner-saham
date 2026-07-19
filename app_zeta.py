@@ -48,9 +48,9 @@ if "page_matrix" not in st.session_state: st.session_state.page_matrix = 0
 if "current_tf" not in st.session_state: st.session_state.current_tf = "1 Hari (Daily)"
 
 # ==========================================
-# 1. KONFIGURASI HALAMAN & UI STYLE (LUXURY)
+# 1. KONFIGURASI HALAMAN & UI STYLE (LUXURY & FULL WIDE)
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Ultimate v11.2", page_icon="🧬", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Ultimate v11.3", page_icon="🧬", layout="wide")
 
 st.markdown("""
 <style>
@@ -60,7 +60,18 @@ st.markdown("""
     [data-testid="stAppViewContainer"] { background: radial-gradient(circle at 50% -20%, #0f172a, #020617) !important; color: #f8fafc !important; }
     [data-testid="stHeader"] { background: transparent !important; }
     
-    .block-container { padding-top: 1.5rem; padding-bottom: 2rem; max-width: 98% !important; }
+    /* MODIFIKASI UKURAN LAYAR FULL-WIDTH MENYAPU MARGIN */
+    .block-container { 
+        padding-top: 1.5rem !important; 
+        padding-bottom: 2rem !important; 
+        padding-left: 2rem !important;
+        padding-right: 2rem !important;
+        max-width: 100% !important; 
+    }
+    [data-testid="stAppViewBlockContainer"] { 
+        max-width: 100% !important; 
+    }
+    
     h1 { color: #f8fafc; font-weight: 900; letter-spacing: -1.5px; font-size: 2.4rem !important; margin-bottom: 0; text-shadow: 0 4px 20px rgba(0,242,254,0.15); }
     p { color: #94a3b8; font-weight: 300; }
     
@@ -92,7 +103,7 @@ st.markdown("""
     div.stButton > button:first-child:hover { background: linear-gradient(90deg, #00f2fe 0%, #3b82f6 100%) !important; transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(0, 242, 254, 0.4); border-color: transparent !important; }
     
     .login-header { text-align: center; color: #00f2fe; font-size: 2.4rem; font-weight: 900; margin-top: 80px; margin-bottom: 5px; letter-spacing: -1px; }
-    .stDataFrame { font-size: 13px !important; }
+    .stDataFrame { font-size: 13.5px !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -241,7 +252,6 @@ def fetch_single_stock(emiten, mode_tf):
         div_rate = info.get('trailingAnnualDividendRate', 0)
         div_yield = (div_rate / harga_skg * 100) if (div_rate and harga_skg > 0) else 0.0
         
-        # Ekstraksi Data Fundamental Baru
         mcap = info.get('marketCap', 0)
         eps_ttm = info.get('trailingEps', 0.0)
         div_date_unix = info.get('exDividendDate', None)
@@ -388,7 +398,7 @@ def create_locked_plotly_chart(df, color1, color2):
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #00f2fe; font-size: 1.25rem; font-weight: 900; margin-bottom: 0px;'>🧬 QUANTUM MATRIX</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #94a3b8; font-size: 0.65rem; letter-spacing: 1.5px; margin-bottom: 25px;'>JIHAN-GHINA TERMINAL v11.2</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #94a3b8; font-size: 0.65rem; letter-spacing: 1.5px; margin-bottom: 25px;'>JIHAN-GHINA TERMINAL v11.3</p>", unsafe_allow_html=True)
     
     tf_pilihan = st.selectbox("⏱️ Timeframe Analisis:", ["1 Jam", "4 Jam", "1 Hari (Daily)", "1 Minggu (Weekly)"], index=2)
     tf_berubah = tf_pilihan != st.session_state.current_tf
@@ -491,7 +501,7 @@ st.markdown("<h1>🌐 Algorithmic Market Intelligence</h1>", unsafe_allow_html=T
 col_h1, col_h2 = st.columns([3.5, 1.5])
 with col_h1:
     upd_time = st.session_state.last_update if st.session_state.last_update else "Menunggu inisiasi radar..."
-    st.markdown(f"<p style='font-size: 0.95rem; margin-top:5px;'>🕒 Last Market Sync: <strong style='color:#00f2fe;'>{upd_time}</strong><br>100 Liquid Stocks Radar. Multi-Pilar Integrasi Terminal Ultimate v11.2: Teknikal, Clustering Matrix, Bandarmologi & Money Management.</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='font-size: 0.95rem; margin-top:5px;'>🕒 Last Market Sync: <strong style='color:#00f2fe;'>{upd_time}</strong><br>100 Liquid Stocks Radar. Multi-Pilar Integrasi Terminal Ultimate v11.3: Teknikal, Clustering Matrix, Bandarmologi & Money Management.</p>", unsafe_allow_html=True)
 
 df_ihsg_hist, ihsg_now, ihsg_chg, ihsg_pct = fetch_ihsg_data()
 with col_h2:
@@ -554,7 +564,6 @@ else:
         else:
             rec_lot_text = "🔒 Proteksi/Hold"
             
-        # FORMATTING BARU TABEL UTAMA V11.2
         hasil_rekomendasi.append({
             "TICKER": raw["TICKER"], 
             "HARGA": f"{int(raw['HARGA']):,}".replace(",", "."),
@@ -570,7 +579,6 @@ else:
             "REKOMENDASI": kep
         })
         
-        # LOGIKA CLUSTERING
         if (raw["PREV_VOL"] > (2 * raw["VOL_SMA20"])) and (raw["TRANS_VAL"] > raw["TRANS_VAL_MA10"]) and (raw["RET_1D"] > 3) and (raw["HIGH"] > raw["SMA5"]) and (raw["LOW"] > raw["SMA50"]):
             cluster_ara.append(raw["TICKER"])
             
@@ -657,7 +665,7 @@ else:
                 else: st.experimental_rerun()
 
         # ==========================================
-        # 5.5. MODUL MASTERPIECE SIGNAL TRADING V11.2
+        # 5.5. MODUL MASTERPIECE SIGNAL TRADING V11.3
         # ==========================================
         st.markdown("---")
         st.markdown("<h3 style='font-size: 1.5rem;'>🎯 Executive Cross-Validation</h3>", unsafe_allow_html=True)
@@ -669,13 +677,11 @@ else:
             emiten_signal = st.selectbox("⚡ Pilih Target Emiten (Algo vs Analyst):", scanned_tickers, key="signal_select")
             
             with st.spinner(f"Mengkalkulasi Konfirmasi Ganda untuk {emiten_signal}..."):
-                # Tarik Data Rekomendasi
                 sys_rec_raw = df_final[df_final['TICKER'] == emiten_signal]['REKOMENDASI'].values[0]
                 vol_target = df_final[df_final['TICKER'] == emiten_signal]['VOLATILITAS'].values[0]
                 bandar_target = df_final[df_final['TICKER'] == emiten_signal]['BANDARMOLOGI'].values[0]
                 lot_rec_target = df_final[df_final['TICKER'] == emiten_signal]['REKOMENDASI LOT'].values[0]
                 
-                # Tarik Data Target Plan (Area Beli, SL, TP) dari raw_stocks
                 raw_target = next((item for item in st.session_state.raw_stocks if item["TICKER"] == emiten_signal), None)
                 area_beli = f"{int(raw_target['AREA BELI']):,}".replace(",", ".") if raw_target else "-"
                 target_tp = f"{int(raw_target['TARGET (TP)']):,}".replace(",", ".") if raw_target else "-"
@@ -733,47 +739,46 @@ else:
                     durasi_valid = "⏳ 1 - 3 Minggu (Medium-Term Swing)"
                 else:
                     durasi_valid = "⏳ 1 - 3 Bulan (Long-Term Trend)"
-                    
-                st.markdown(f"""
-                <div class='premium-card' style='border-left: 5px solid {color}; margin-top: 10px; margin-bottom: 25px;'>
-                    <div style='display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;'>
-                        <div style='flex: 1.5; min-width: 280px; text-align: center; border-right: 1px solid rgba(255,255,255,0.1); padding-right: 15px;'>
-                            <span style='color: #94a3b8; font-size: 0.75rem; letter-spacing: 1px; font-weight:700;'>💻 JIHAN-GHINA ALGO</span><br>
-                            <span style='font-weight: 900; font-size: 1.4rem; color: #f8fafc; display: block; margin-top: 5px;'>{sys_rec_raw}</span>
-                            
-                            <!-- MINI DASHBOARD TRADING PLAN V11.2 -->
-                            <div style='display: flex; justify-content: center; gap: 15px; margin-top: 15px; background: rgba(0,0,0,0.25); padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.03);'>
-                                <div style='text-align: center; flex: 1;'>
-                                    <span style='color: #94a3b8; font-size: 0.65rem; font-weight: bold; letter-spacing: 0.5px;'>AREA BELI</span><br>
-                                    <span style='color: #38bdf8; font-weight: 900; font-size: 1rem;'>{area_beli}</span>
-                                </div>
-                                <div style='text-align: center; flex: 1; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 10px;'>
-                                    <span style='color: #94a3b8; font-size: 0.65rem; font-weight: bold; letter-spacing: 0.5px;'>TARGET (TP)</span><br>
-                                    <span style='color: #10b981; font-weight: 900; font-size: 1rem;'>{target_tp}</span>
-                                </div>
-                                <div style='text-align: center; flex: 1; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 10px;'>
-                                    <span style='color: #94a3b8; font-size: 0.65rem; font-weight: bold; letter-spacing: 0.5px;'>STOP LOSS</span><br>
-                                    <span style='color: #f43f5e; font-weight: 900; font-size: 1rem;'>{stop_loss}</span>
-                                </div>
-                            </div>
-                            
-                        </div>
-                        <div style='flex: 1; min-width: 150px; text-align: center; display: flex; flex-direction: column; justify-content: center;'>
-                            <span style='color: #94a3b8; font-size: 0.75rem; letter-spacing: 1px; font-weight:700;'>🌍 GLOBAL ANALYST</span><br>
-                            <span style='font-weight: 900; font-size: 1.4rem; color: #f8fafc; margin-top: 5px;'>{konsensus_raw if konsensus_raw != 'N/A' else 'DATA UNAVAILABLE'}</span>
-                        </div>
-                    </div>
-                    <div style='margin-top: 25px; text-align: center; background: rgba(0,0,0,0.4); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.02);'>
-                        <span style='color: #94a3b8; font-size: 0.75rem; letter-spacing: 2px; font-weight:700;'>🏆 ULTIMATE FINAL DECISION</span><br>
-                        <span style='color: {color}; font-weight: 900; font-size: 1.5rem; display: block; margin: 8px 0; letter-spacing: -0.5px;'>{final_decision}</span>
-                        <span style='color: #cbd5e1; font-size: 0.85rem; margin-bottom: 12px; display: block; font-weight: 300;'>{desc}</span>
-                        <div style='display:flex; justify-content:center; gap:15px; flex-wrap:wrap; margin-top: 15px;'>
-                            <span style='background: rgba(0,242,254,0.1); border: 1px solid rgba(0,242,254,0.3); padding: 8px 15px; border-radius: 8px; color: #00f2fe; font-size: 0.8rem; font-weight: 800;'>🎯 SIZING: {lot_rec_target}</span>
-                            <span style='background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 8px 15px; border-radius: 8px; color: #facc15; font-size: 0.8rem; font-weight: 800;'>{durasi_valid}</span>
-                        </div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+                
+                # PERBAIKAN HTML RENDER (Tanpa spasi di awal baris agar tidak jadi Code Block)
+                final_box_html = f"""
+<div class='premium-card' style='border-left: 5px solid {color}; margin-top: 10px; margin-bottom: 25px;'>
+<div style='display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;'>
+<div style='flex: 1.5; min-width: 280px; text-align: center; border-right: 1px solid rgba(255,255,255,0.1); padding-right: 15px;'>
+<span style='color: #94a3b8; font-size: 0.75rem; letter-spacing: 1px; font-weight:700;'>💻 JIHAN-GHINA ALGO</span><br>
+<span style='font-weight: 900; font-size: 1.4rem; color: #f8fafc; display: block; margin-top: 5px;'>{sys_rec_raw}</span>
+<div style='display: flex; justify-content: center; gap: 15px; margin-top: 15px; background: rgba(0,0,0,0.25); padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.03);'>
+<div style='text-align: center; flex: 1;'>
+<span style='color: #94a3b8; font-size: 0.65rem; font-weight: bold; letter-spacing: 0.5px;'>AREA BELI</span><br>
+<span style='color: #38bdf8; font-weight: 900; font-size: 1rem;'>{area_beli}</span>
+</div>
+<div style='text-align: center; flex: 1; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 10px;'>
+<span style='color: #94a3b8; font-size: 0.65rem; font-weight: bold; letter-spacing: 0.5px;'>TARGET (TP)</span><br>
+<span style='color: #10b981; font-weight: 900; font-size: 1rem;'>{target_tp}</span>
+</div>
+<div style='text-align: center; flex: 1; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 10px;'>
+<span style='color: #94a3b8; font-size: 0.65rem; font-weight: bold; letter-spacing: 0.5px;'>STOP LOSS</span><br>
+<span style='color: #f43f5e; font-weight: 900; font-size: 1rem;'>{stop_loss}</span>
+</div>
+</div>
+</div>
+<div style='flex: 1; min-width: 150px; text-align: center; display: flex; flex-direction: column; justify-content: center;'>
+<span style='color: #94a3b8; font-size: 0.75rem; letter-spacing: 1px; font-weight:700;'>🌍 GLOBAL ANALYST</span><br>
+<span style='font-weight: 900; font-size: 1.4rem; color: #f8fafc; margin-top: 5px;'>{konsensus_raw if konsensus_raw != 'N/A' else 'DATA UNAVAILABLE'}</span>
+</div>
+</div>
+<div style='margin-top: 25px; text-align: center; background: rgba(0,0,0,0.4); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.02);'>
+<span style='color: #94a3b8; font-size: 0.75rem; letter-spacing: 2px; font-weight:700;'>🏆 ULTIMATE FINAL DECISION</span><br>
+<span style='color: {color}; font-weight: 900; font-size: 1.5rem; display: block; margin: 8px 0; letter-spacing: -0.5px;'>{final_decision}</span>
+<span style='color: #cbd5e1; font-size: 0.85rem; margin-bottom: 12px; display: block; font-weight: 300;'>{desc}</span>
+<div style='display:flex; justify-content:center; gap:15px; flex-wrap:wrap; margin-top: 15px;'>
+<span style='background: rgba(0,242,254,0.1); border: 1px solid rgba(0,242,254,0.3); padding: 8px 15px; border-radius: 8px; color: #00f2fe; font-size: 0.8rem; font-weight: 800;'>🎯 SIZING: {lot_rec_target}</span>
+<span style='background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 8px 15px; border-radius: 8px; color: #facc15; font-size: 0.8rem; font-weight: 800;'>{durasi_valid}</span>
+</div>
+</div>
+</div>
+"""
+                st.markdown(final_box_html, unsafe_allow_html=True)
 
     # ==========================================
     # TAB 2: CLUSTERING MATRIX
@@ -933,4 +938,4 @@ else:
             """)
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem; font-weight:600; letter-spacing: 1px;'>⚡ JIHAN-GHINA ENGINE • INSTITUTIONAL TERMINAL PRO MAX v11.2</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem; font-weight:600; letter-spacing: 1px;'>⚡ JIHAN-GHINA ENGINE • INSTITUTIONAL TERMINAL PRO MAX v11.3</p>", unsafe_allow_html=True)
