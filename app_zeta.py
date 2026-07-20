@@ -50,7 +50,7 @@ if "current_tf" not in st.session_state: st.session_state.current_tf = "1 Hari (
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE (FULL WIDE)
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Ultimate v12.2", page_icon="🧬", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Ultimate v12.4", page_icon="🧬", layout="wide")
 
 st.markdown("""
 <style>
@@ -79,7 +79,7 @@ st.markdown("""
     .stTabs [data-baseweb="tab"] { padding: 10px 20px; border-radius: 8px; color: #94a3b8; font-weight: 700; transition: all 0.3s; }
     .stTabs [aria-selected="true"] { background-color: rgba(0,242,254,0.15); color: #00f2fe; border: 1px solid rgba(0,242,254,0.3); }
     
-    .premium-card { background: rgba(30, 41, 59, 0.3); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 14px; padding: 18px; box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5); transition: all 0.3s ease; }
+    .premium-card { background: rgba(30, 41, 59, 0.3); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 14px; padding: 18px; box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5); transition: all 0.3s ease; display: flex; flex-direction: column; }
     .premium-card:hover { transform: translateY(-3px); box-shadow: 0 15px 35px -5px rgba(0, 242, 254, 0.15); border-color: rgba(0, 242, 254, 0.3); }
     
     .ihsg-box { text-align: right; display: flex; flex-direction: column; justify-content: center; height: 100%; padding: 12px 18px !important; background: rgba(15,23,42,0.6); }
@@ -121,7 +121,7 @@ if not st.session_state.akses_diberikan:
     st.stop()
 
 # ==========================================
-# 2. CORE ENGINE DATA FETCHING
+# 2. CORE ENGINE DATA FETCHING & UI HELPERS
 # ==========================================
 roster_100_saham = [
     "BBCA", "BBRI", "BMRI", "BBNI", "TLKM", "ASII", "UNTR", "ICBP", "INDF", "AMRT",
@@ -136,6 +136,15 @@ roster_100_saham = [
     "ARNA", "MARK", "INAF", "KAEF", "WOOD", "TAPG", "DSNG", "LSIP", "AALI", "SSMS"
 ]
 daftar_saham = [s.strip().upper() + ".JK" for s in roster_100_saham]
+
+def render_badges(tickers, hex_color):
+    if not tickers: 
+        return "<span style='color:#64748b; font-size:0.8rem; font-style:italic; display:block; margin-top:10px;'>Belum ada emiten terdeteksi di zona ini.</span>"
+    res = "<div style='display:flex; flex-wrap:wrap; gap:8px; margin-top:15px;'>"
+    for t in tickers:
+        res += f"<span style='background:rgba(0,0,0,0.3); border:1px solid {hex_color}60; border-radius:6px; padding:4px 10px; color:{hex_color}; font-size:0.85rem; font-weight:800; box-shadow: 0 2px 4px rgba(0,0,0,0.3); letter-spacing:0.5px;'>{t}</span>"
+    res += "</div>"
+    return res
 
 def get_waktu_wib():
     return datetime.now(pytz.timezone('Asia/Jakarta')).strftime("%d %b %Y - %H:%M:%S WIB")
@@ -380,15 +389,20 @@ def create_locked_plotly_chart(df, color1, color2):
     return fig
 
 # ==========================================
-# 4. FUNGSI RENDER CROSS-VALIDATION UI (AUTO-SYNCED)
+# 4. FUNGSI RENDER CROSS-VALIDATION UI (OVERHAULED)
 # ==========================================
 def render_cross_validation_ui(active_tickers_list):
     st.markdown("---")
-    st.markdown("<h3 style='font-size: 1.5rem;'>🎯 Executive Cross-Validation</h3>", unsafe_allow_html=True)
+    st.markdown("""
+    <div style="margin-top: 15px; margin-bottom: 20px; padding-left: 5px; border-left: 5px solid #00f2fe;">
+        <h3 style="font-size: 1.8rem; font-weight: 900; color: #f8fafc; margin-bottom: 0px; margin-top: 0px; letter-spacing: -0.5px;">🎯 Executive Cross-Validation</h3>
+        <p style="color: #94a3b8; font-size: 0.85rem; font-weight: 400; margin-top: 4px;">Pilih salah satu kode emiten dari tabel di atas untuk membandingkan kalkulasi <strong style="color:#00f2fe;">JIHAN-GHINA AI</strong> dengan <strong style="color:#fbbf24;">Sentimen Analis Global</strong>.</p>
+    </div>
+    """, unsafe_allow_html=True)
     
     if active_tickers_list:
         emiten_signal = st.selectbox(
-            "⚡ Pilih Target Emiten Sesuai Tabel Aktif:", 
+            "Pindai Detil Emiten:", 
             active_tickers_list, 
             key=f"signal_select_{st.session_state.current_tf}"
         )
@@ -414,7 +428,7 @@ def render_cross_validation_ui(active_tickers_list):
                 elif raw_target["STATUS_BANDAR"] == "DISTRIBUSI": skor_algo -= 20
                 else: skor_algo += 5
                 
-                target_skor = 65 if profil_risiko == "Agresif" else (78 if profil_risiko == "Konservatif" else 72)
+                target_skor = 65 if "Agresif" in profil_risiko else (78 if "Konservatif" in profil_risiko else 72)
                 sys_rec_raw = "ACCUMULATE" if skor_algo >= target_skor else ("HOLD" if skor_algo >= 50 else "LIQUIDATE")
                 if vol_target == "🔥 TINGGI" and bandar_target == "DISTRIBUSI": sys_rec_raw = "LIQUIDATE"  
                 elif vol_target == "❄️ RENDAH" and sys_rec_raw == "ACCUMULATE": sys_rec_raw = "HOLD"
@@ -423,7 +437,7 @@ def render_cross_validation_ui(active_tickers_list):
                 if "ACCUMULATE" in sys_rec_raw and risk_per_share > 0:
                     max_lots = int(((modal_trading * (risiko_pct / 100)) / risk_per_share) / 100)
                     lot_rec_target = f"Max {max_lots:,} Lot" if max_lots > 0 else "Beli Minimal"
-                else: lot_rec_target = "Proteksi/Hold"
+                else: lot_rec_target = "Proteksi / Tahan Posisi"
                 
                 analyst_data_signal = fetch_analyst_consensus(emiten_signal)
                 konsensus_raw = analyst_data_signal["Konsensus"].upper()
@@ -471,40 +485,54 @@ def render_cross_validation_ui(active_tickers_list):
                 if is_sleeping and "HOLD" in sys_rec_raw:
                     desc += " (Sistem mengunci di posisi HOLD karena saham sedang 'tidur')."
                     
+                # NEW REFACTORED HTML FOR ELEGANT VALIDATION BOX
                 final_box_html = f"""
-<div class='premium-card' style='border-left: 5px solid {color}; margin-top: 10px; margin-bottom: 25px;'>
-<div style='display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;'>
-<div style='flex: 1.5; min-width: 280px; text-align: center; border-right: 1px solid rgba(255,255,255,0.1); padding-right: 15px;'>
-<span style='color: #94a3b8; font-size: 0.75rem; letter-spacing: 1px; font-weight:700;'>💻 JIHAN-GHINA ALGO</span><br>
-<span style='font-weight: 900; font-size: 1.4rem; color: #f8fafc; display: block; margin-top: 5px;'>{sys_rec_raw}</span>
-<div style='display: flex; justify-content: center; gap: 15px; margin-top: 15px; background: rgba(0,0,0,0.25); padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.03);'>
-<div style='text-align: center; flex: 1;'>
-<span style='color: #94a3b8; font-size: 0.65rem; font-weight: bold; letter-spacing: 0.5px;'>AREA BELI</span><br>
-<span style='color: #38bdf8; font-weight: 900; font-size: 1rem;'>{area_beli}</span>
-</div>
-<div style='text-align: center; flex: 1; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 10px;'>
-<span style='color: #94a3b8; font-size: 0.65rem; font-weight: bold; letter-spacing: 0.5px;'>TARGET (TP)</span><br>
-<span style='color: #10b981; font-weight: 900; font-size: 1rem;'>{target_tp}</span>
-</div>
-<div style='text-align: center; flex: 1; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 10px;'>
-<span style='color: #94a3b8; font-size: 0.65rem; font-weight: bold; letter-spacing: 0.5px;'>STOP LOSS</span><br>
-<span style='color: #f43f5e; font-weight: 900; font-size: 1rem;'>{stop_loss}</span>
-</div>
-</div>
-</div>
-<div style='flex: 1; min-width: 150px; text-align: center; display: flex; flex-direction: column; justify-content: center;'>
-<span style='color: #94a3b8; font-size: 0.75rem; letter-spacing: 1px; font-weight:700;'>🌍 GLOBAL ANALYST</span><br>
-<span style='font-weight: 900; font-size: 1.4rem; color: #f8fafc; margin-top: 5px;'>{konsensus_raw if konsensus_raw != 'N/A' else 'DATA UNAVAILABLE'}</span>
-</div>
-</div>
-<div style='margin-top: 25px; text-align: center; background: rgba(0,0,0,0.4); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.02);'>
-<span style='color: #94a3b8; font-size: 0.75rem; letter-spacing: 2px; font-weight:700;'>🏆 ULTIMATE FINAL DECISION</span><br>
-<span style='color: {color}; font-weight: 900; font-size: 1.5rem; display: block; margin: 8px 0; letter-spacing: -0.5px;'>{final_decision}</span>
-<span style='color: #cbd5e1; font-size: 0.85rem; margin-bottom: 12px; display: block; font-weight: 300;'>{desc}</span>
-<div style='display:flex; justify-content:center; gap:15px; flex-wrap:wrap; margin-top: 15px;'>
-<span style='background: rgba(0,242,254,0.1); border: 1px solid rgba(0,242,254,0.3); padding: 8px 15px; border-radius: 8px; color: #00f2fe; font-size: 0.8rem; font-weight: 800;'>🎯 SIZING: {lot_rec_target}</span>
-</div>
-</div>
+<div style='background: linear-gradient(145deg, rgba(15,23,42,0.8) 0%, rgba(2,6,23,0.9) 100%); border: 1px solid {color}50; border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px -10px {color}40; position: relative; overflow: hidden; margin-top: 10px; margin-bottom: 30px; backdrop-filter: blur(10px);'>
+    <div style='position: absolute; top: 0; left: 0; right: 0; height: 4px; background: {color}; box-shadow: 0 0 20px {color};'></div>
+    
+    <div style='display: flex; flex-wrap: wrap; gap: 20px;'>
+        <div style='flex: 1.5; min-width: 300px; background: rgba(0,0,0,0.4); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.05);'>
+            <div style='display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;'>
+                <span style='background: rgba(0,242,254,0.1); padding: 8px; border-radius: 8px; font-size:1.2rem;'>💻</span>
+                <span style='color: #94a3b8; font-size: 0.85rem; font-weight: 800; letter-spacing: 1.5px;'>JIHAN-GHINA ALGO SCORE</span>
+            </div>
+            <div style='text-align: center; font-size: 1.8rem; font-weight: 900; color: #f8fafc; letter-spacing: -0.5px; margin-bottom: 20px;'>{sys_rec_raw}</div>
+            
+            <div style='display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;'>
+                <div style='text-align: center; background: rgba(56, 189, 248, 0.05); padding: 12px 8px; border-radius: 10px; border: 1px solid rgba(56, 189, 248, 0.15); transition: transform 0.2s;'>
+                    <div style='font-size: 0.65rem; color: #94a3b8; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 4px;'>AREA BELI</div>
+                    <div style='font-size: 1rem; color: #38bdf8; font-weight: 900;'>{area_beli}</div>
+                </div>
+                <div style='text-align: center; background: rgba(16, 185, 129, 0.05); padding: 12px 8px; border-radius: 10px; border: 1px solid rgba(16, 185, 129, 0.15); transition: transform 0.2s;'>
+                    <div style='font-size: 0.65rem; color: #94a3b8; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 4px;'>TARGET (TP)</div>
+                    <div style='font-size: 1rem; color: #10b981; font-weight: 900;'>{target_tp}</div>
+                </div>
+                <div style='text-align: center; background: rgba(244, 63, 94, 0.05); padding: 12px 8px; border-radius: 10px; border: 1px solid rgba(244, 63, 94, 0.15); transition: transform 0.2s;'>
+                    <div style='font-size: 0.65rem; color: #94a3b8; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 4px;'>STOP LOSS</div>
+                    <div style='font-size: 1rem; color: #f43f5e; font-weight: 900;'>{stop_loss}</div>
+                </div>
+            </div>
+        </div>
+
+        <div style='flex: 1; min-width: 250px; background: rgba(0,0,0,0.4); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; justify-content: center; align-items: center;'>
+            <div style='display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;'>
+                <span style='background: rgba(251, 191, 36, 0.1); padding: 8px; border-radius: 8px; font-size:1.2rem;'>🌍</span>
+                <span style='color: #94a3b8; font-size: 0.85rem; font-weight: 800; letter-spacing: 1.5px;'>GLOBAL ANALYST CONSENSUS</span>
+            </div>
+            <div style='text-align: center; font-size: 1.8rem; font-weight: 900; color: #f8fafc; letter-spacing: -0.5px;'>{konsensus_raw if konsensus_raw != 'N/A' else 'DATA UNAVAILABLE'}</div>
+            <div style='margin-top: 15px; font-size: 0.75rem; color: #64748b; text-align: center; max-width: 80%;'>Agregasi data sentimen institusi & analis sekuritas global.</div>
+        </div>
+    </div>
+
+    <div style='margin-top: 20px; background: rgba(0,0,0,0.6); border: 1px solid {color}40; border-radius: 12px; padding: 25px; text-align: center;'>
+        <div style='color: {color}; font-size: 0.8rem; font-weight: 900; letter-spacing: 3px; margin-bottom: 10px; text-transform: uppercase;'>🏆 Ultimate Final Decision</div>
+        <div style='color: {color}; font-size: 2rem; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 12px; text-shadow: 0 0 20px {color}60;'>{final_decision}</div>
+        <div style='color: #cbd5e1; font-size: 0.95rem; font-weight: 300; max-width: 700px; margin: 0 auto; line-height: 1.6;'>{desc}</div>
+        
+        <div style='margin-top: 25px;'>
+            <span style='background: linear-gradient(90deg, rgba(0,242,254,0.1) 0%, rgba(30,58,138,0.2) 100%); border: 1px solid #00f2fe60; padding: 12px 30px; border-radius: 30px; color: #00f2fe; font-size: 0.9rem; font-weight: 900; letter-spacing: 1px; box-shadow: 0 5px 15px rgba(0,242,254,0.15); display: inline-block;'>🎯 LOT SIZING: {lot_rec_target}</span>
+        </div>
+    </div>
 </div>
 """
                 st.markdown(final_box_html, unsafe_allow_html=True)
@@ -517,7 +545,7 @@ def render_cross_validation_ui(active_tickers_list):
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #00f2fe; font-size: 1.25rem; font-weight: 900; margin-bottom: 0px;'>🧬 QUANTUM MATRIX</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #94a3b8; font-size: 0.65rem; letter-spacing: 1.5px; margin-bottom: 25px;'>DUAL-CORE EDITION v12.2</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #94a3b8; font-size: 0.65rem; letter-spacing: 1.5px; margin-bottom: 25px;'>DUAL-CORE EDITION v12.4</p>", unsafe_allow_html=True)
     
     st.markdown("<div style='font-size:0.75rem; color:#facc15; font-weight:800; letter-spacing:1px; border-bottom: 1px solid rgba(250,204,21,0.2); padding-bottom: 5px; margin-bottom: 10px;'>🎛️ CORE ENGINE MODE</div>", unsafe_allow_html=True)
     engine_mode = st.radio("Pilih Mode Analisis:", ["⚔️ TRADING (Momentum & Technical)", "🛡️ INVESTMENT (Value & Fundamental)"])
@@ -527,10 +555,11 @@ with st.sidebar:
     tf_berubah = tf_pilihan != st.session_state.current_tf
     if tf_berubah: st.session_state.current_tf = tf_pilihan
         
-    profil_risiko = st.selectbox("🎯 Profil Risiko:", ["Moderat", "Agresif", "Konservatif"])
+    st.markdown("<div style='font-size:0.7rem; color:#00f2fe; font-weight:800; letter-spacing:1px; margin-top:20px; border-bottom: 1px solid rgba(0,242,254,0.2); padding-bottom: 5px;'>🎯 RISK PROFILE ENGINE</div>", unsafe_allow_html=True)
+    profil_risiko = st.selectbox("Tingkat Agresivitas AI:", ["⚖️ Moderat (Balanced)", "🔥 Agresif (High Signal)", "🛡️ Konservatif (Strict)"], index=0, help="Fungsi SANGAT PENTING. Mengatur seberapa ketat AI memfilter sinyal beli.")
     
-    st.markdown("<div style='font-size:0.7rem; color:#00f2fe; font-weight:800; letter-spacing:1px; margin-top:20px; border-bottom: 1px solid rgba(0,242,254,0.2); padding-bottom: 5px;'>⚙️ POSITION SIZING ENGINE</div>", unsafe_allow_html=True)
-    modal_input_str = st.text_input("💰 Modal (Rp):", value="50.000.000", help="Gunakan titik untuk memisahkan ribuan")
+    st.markdown("<div style='font-size:0.7rem; color:#00f2fe; font-weight:800; letter-spacing:1px; margin-top:20px; border-bottom: 1px solid rgba(0,242,254,0.2); padding-bottom: 5px;'>⚙️ POSITION SIZING</div>", unsafe_allow_html=True)
+    modal_input_str = st.text_input("💰 Modal Trading (Rp):", value="50.000.000", help="Gunakan titik untuk memisahkan ribuan")
     try: modal_trading = int(modal_input_str.replace(".", "").replace(",", ""))
     except: modal_trading = 50000000
     risiko_pct = st.slider("🚨 Batas Risiko /Trade (%):", min_value=0.5, max_value=5.0, value=1.0, step=0.5)
@@ -581,7 +610,7 @@ with st.sidebar:
                 elif raw["STATUS_BANDAR"] == "DISTRIBUSI": skor -= 20
                 else: skor += 5
                 
-                target_skor = 65 if profil_risiko == "Agresif" else (78 if profil_risiko == "Konservatif" else 72)
+                target_skor = 65 if "Agresif" in profil_risiko else (78 if "Konservatif" in profil_risiko else 72)
                 kep = "ACCUMULATE" if skor >= target_skor else ("HOLD" if skor >= 50 else "LIQUIDATE")
                 if raw["VOLATILITAS"] == "🔥 TINGGI" and raw["STATUS_BANDAR"] == "DISTRIBUSI": kep = "LIQUIDATE"  
                 elif raw["VOLATILITAS"] == "❄️ RENDAH" and kep == "ACCUMULATE": kep = "HOLD"
@@ -624,7 +653,7 @@ with col_h2:
         warna_panah = "▲" if ihsg_chg >= 0 else "▼"
         warna_garis = '#10b981' if ihsg_chg >= 0 else '#f43f5e'
         st.markdown(f"""
-        <div class="premium-card ihsg-box" style="border-left: 5px solid {warna_garis};">
+        <div class="premium-card ihsg-box" style="border-left: 5px solid {warna_garis}; height:100%;">
             <span class="ihsg-title">IHSG COMPOSITE</span>
             <span class="ihsg-score">{ihsg_now:,.2f}</span>
             <span style="color: {warna_garis}; font-weight: 800; font-size: 0.95rem;">{warna_panah} {ihsg_chg:+,.2f} ({ihsg_pct:+.2f}%)</span>
@@ -658,7 +687,7 @@ else:
         elif raw["STATUS_BANDAR"] == "DISTRIBUSI": skor_t -= 20
         else: skor_t += 5
         
-        target_skor_t = 65 if profil_risiko == "Agresif" else (78 if profil_risiko == "Konservatif" else 72)
+        target_skor_t = 65 if "Agresif" in profil_risiko else (78 if "Konservatif" in profil_risiko else 72)
         if skor_t >= target_skor_t: kep_t = "🟢 ACCUMULATE"
         elif skor_t >= 50: kep_t = "🟡 HOLD"
         else: kep_t = "🔴 LIQUIDATE"
@@ -721,7 +750,6 @@ else:
     df_trading = pd.DataFrame(hasil_trading).sort_values(by="RAW_RET", ascending=False).reset_index(drop=True).drop(columns=["RAW_RET"])
     df_invest = pd.DataFrame(hasil_invest).sort_values(by="RAW_YIELD", ascending=False).reset_index(drop=True).drop(columns=["RAW_YIELD"])
 
-    # EKSTRAK DAFTAR EMITEN TEPAT SESUAI TABEL AKTIF (TOP 15)
     top_trading_tickers = df_trading.head(15)["TICKER"].tolist()
     top_invest_tickers = df_invest.head(15)["TICKER"].tolist()
 
@@ -766,18 +794,38 @@ else:
             st.dataframe(df_trading.head(15).style.apply(style_trading, axis=1), use_container_width=True, hide_index=True)
             st.markdown("<p style='color:#94a3b8; font-size:0.8rem; text-align:center;'>Menampilkan Top 15 Saham Penggerak Hari Ini.</p>", unsafe_allow_html=True)
             
-            # --- CROSS VALIDATION DISINKRONKAN DENGAN TOP TRADING ---
             render_cross_validation_ui(top_trading_tickers)
 
         with tab2:
             st.markdown("<br><h3 style='font-size: 1.5rem;'>🧬 Behavioral Trading Clusters</h3>", unsafe_allow_html=True)
             c_ara, c_scalp, c_accum = st.columns(3)
             with c_ara:
-                st.markdown(f"""<div class='premium-card' style='border-top: 4px solid #f43f5e;'><div style='color:#f43f5e; font-weight:900;'>🚀 1. ARA HUNTER</div><div style='background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; color:#f8fafc; font-weight:700; margin-top:10px;'>{", ".join(cluster_ara) if cluster_ara else "N/A"}</div></div>""", unsafe_allow_html=True)
+                badges_ara = render_badges(cluster_ara, "#f43f5e")
+                st.markdown(f"""
+                <div class='premium-card' style='border-top: 4px solid #f43f5e; height: 100%;'>
+                    <div style='color:#f43f5e; font-weight:900; font-size:1.1rem; letter-spacing:0.5px;'>🚀 1. ARA HUNTER</div>
+                    <div style='color:#94a3b8; font-size:0.75rem; margin-top:5px; line-height:1.4;'>Lonjakan volume transaksi meledak menembus resisten pendek. Target naik agresif.</div>
+                    {badges_ara}
+                </div>
+                """, unsafe_allow_html=True)
             with c_scalp:
-                st.markdown(f"""<div class='premium-card' style='border-top: 4px solid #00f2fe;'><div style='color:#00f2fe; font-weight:900;'>⚡ 2. SCALPING DAILY</div><div style='background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; color:#f8fafc; font-weight:700; margin-top:10px;'>{", ".join(cluster_scalp) if cluster_scalp else "N/A"}</div></div>""", unsafe_allow_html=True)
+                badges_scalp = render_badges(cluster_scalp, "#00f2fe")
+                st.markdown(f"""
+                <div class='premium-card' style='border-top: 4px solid #00f2fe; height: 100%;'>
+                    <div style='color:#00f2fe; font-weight:900; font-size:1.1rem; letter-spacing:0.5px;'>⚡ 2. SCALPING DAILY</div>
+                    <div style='color:#94a3b8; font-size:0.75rem; margin-top:5px; line-height:1.4;'>Saham lapis dua dengan volatilitas lincah dan perputaran uang miliaran harian.</div>
+                    {badges_scalp}
+                </div>
+                """, unsafe_allow_html=True)
             with c_accum:
-                st.markdown(f"""<div class='premium-card' style='border-top: 4px solid #10b981;'><div style='color:#10b981; font-weight:900;'>🐋 3. BIG ACCUMULATION</div><div style='background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; color:#f8fafc; font-weight:700; margin-top:10px;'>{", ".join(cluster_accum) if cluster_accum else "N/A"}</div></div>""", unsafe_allow_html=True)
+                badges_accum = render_badges(cluster_accum, "#10b981")
+                st.markdown(f"""
+                <div class='premium-card' style='border-top: 4px solid #10b981; height: 100%;'>
+                    <div style='color:#10b981; font-weight:900; font-size:1.1rem; letter-spacing:0.5px;'>🐋 3. BIG ACCUMULATION</div>
+                    <div style='color:#94a3b8; font-size:0.75rem; margin-top:5px; line-height:1.4;'>Jejak paus terdeteksi! Harga ditutup kuat di pucuk disertai volume serok masif.</div>
+                    {badges_accum}
+                </div>
+                """, unsafe_allow_html=True)
 
     else:
         # MODE INVESTMENT
@@ -809,18 +857,38 @@ else:
             st.dataframe(df_invest.head(15).style.apply(style_invest, axis=1), use_container_width=True, hide_index=True)
             st.markdown("<p style='color:#94a3b8; font-size:0.8rem; text-align:center;'>Menampilkan Top 15 Saham dengan Dividend Yield Tertinggi. Cocok untuk strategi Nabung Saham.</p>", unsafe_allow_html=True)
             
-            # --- CROSS VALIDATION DISINKRONKAN DENGAN TOP INVEST ---
             render_cross_validation_ui(top_invest_tickers)
 
         with tab2:
             st.markdown("<br><h3 style='font-size: 1.5rem;'>🏦 Value Investing Clusters</h3>", unsafe_allow_html=True)
             c_div, c_uv, c_blue = st.columns(3)
             with c_div:
-                st.markdown(f"""<div class='premium-card' style='border-top: 4px solid #10b981;'><div style='color:#10b981; font-weight:900;'>💰 1. DIVIDEND HUNTER (>5%)</div><div style='background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; color:#f8fafc; font-weight:700; margin-top:10px;'>{", ".join(cluster_div) if cluster_div else "N/A"}</div></div>""", unsafe_allow_html=True)
+                badges_div = render_badges(cluster_div, "#10b981")
+                st.markdown(f"""
+                <div class='premium-card' style='border-top: 4px solid #10b981; height: 100%;'>
+                    <div style='color:#10b981; font-weight:900; font-size:1.1rem; letter-spacing:0.5px;'>💰 1. DIVIDEND HUNTER</div>
+                    <div style='color:#94a3b8; font-size:0.75rem; margin-top:5px; line-height:1.4;'>Emiten dermawan pencetak pasif income dengan Yield di atas bunga deposito (>5%).</div>
+                    {badges_div}
+                </div>
+                """, unsafe_allow_html=True)
             with c_uv:
-                st.markdown(f"""<div class='premium-card' style='border-top: 4px solid #38bdf8;'><div style='color:#38bdf8; font-weight:900;'>💎 2. DEEP UNDERVALUED</div><div style='background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; color:#f8fafc; font-weight:700; margin-top:10px;'>{", ".join(cluster_undervalued) if cluster_undervalued else "N/A"}</div></div>""", unsafe_allow_html=True)
+                badges_uv = render_badges(cluster_undervalued, "#38bdf8")
+                st.markdown(f"""
+                <div class='premium-card' style='border-top: 4px solid #38bdf8; height: 100%;'>
+                    <div style='color:#38bdf8; font-weight:900; font-size:1.1rem; letter-spacing:0.5px;'>💎 2. DEEP UNDERVALUED</div>
+                    <div style='color:#94a3b8; font-size:0.75rem; margin-top:5px; line-height:1.4;'>Perusahaan salah harga dengan valuasi buku dan laba bersih yang terlampau murah.</div>
+                    {badges_uv}
+                </div>
+                """, unsafe_allow_html=True)
             with c_blue:
-                st.markdown(f"""<div class='premium-card' style='border-top: 4px solid #facc15;'><div style='color:#facc15; font-weight:900;'>🏦 3. BLUECHIP ROSTER</div><div style='background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; color:#f8fafc; font-weight:700; margin-top:10px;'>{", ".join(cluster_bluechip) if cluster_bluechip else "N/A"}</div></div>""", unsafe_allow_html=True)
+                badges_blue = render_badges(cluster_bluechip, "#facc15")
+                st.markdown(f"""
+                <div class='premium-card' style='border-top: 4px solid #facc15; height: 100%;'>
+                    <div style='color:#facc15; font-weight:900; font-size:1.1rem; letter-spacing:0.5px;'>🏦 3. BLUECHIP ROSTER</div>
+                    <div style='color:#94a3b8; font-size:0.75rem; margin-top:5px; line-height:1.4;'>Pilar penggerak IHSG berfundamental baja untuk stabilitas portofolio Anda.</div>
+                    {badges_blue}
+                </div>
+                """, unsafe_allow_html=True)
 
     # ==========================================
     # TAB 3 & 4 (GLOBAL UNTUK KEDUA MODE)
@@ -906,4 +974,4 @@ else:
             """)
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem; font-weight:600; letter-spacing: 1px;'>⚡ JIHAN-GHINA ENGINE • DUAL CORE TERMINAL v12.2</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem; font-weight:600; letter-spacing: 1px;'>⚡ JIHAN-GHINA ENGINE • DUAL CORE TERMINAL v12.4</p>", unsafe_allow_html=True)
