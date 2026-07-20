@@ -50,7 +50,7 @@ if "current_tf" not in st.session_state: st.session_state.current_tf = "1 Hari (
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE (FULL WIDE)
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Ultimate v12.0", page_icon="🧬", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Ultimate v12.1", page_icon="🧬", layout="wide")
 
 st.markdown("""
 <style>
@@ -380,320 +380,9 @@ def create_locked_plotly_chart(df, color1, color2):
     return fig
 
 # ==========================================
-# 4. SIDEBAR (DUAL CORE CONTROL)
+# 4. FUNGSI RENDER CROSS-VALIDATION UI
 # ==========================================
-with st.sidebar:
-    st.markdown("<h2 style='color: #00f2fe; font-size: 1.25rem; font-weight: 900; margin-bottom: 0px;'>🧬 QUANTUM MATRIX</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #94a3b8; font-size: 0.65rem; letter-spacing: 1.5px; margin-bottom: 25px;'>DUAL-CORE EDITION v12.0</p>", unsafe_allow_html=True)
-    
-    st.markdown("<div style='font-size:0.75rem; color:#facc15; font-weight:800; letter-spacing:1px; border-bottom: 1px solid rgba(250,204,21,0.2); padding-bottom: 5px; margin-bottom: 10px;'>🎛️ CORE ENGINE MODE</div>", unsafe_allow_html=True)
-    engine_mode = st.radio("Pilih Mode Analisis:", ["⚔️ TRADING (Momentum & Technical)", "🛡️ INVESTMENT (Value & Fundamental)"])
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    tf_pilihan = st.selectbox("⏱️ Timeframe Analisis:", ["1 Jam", "4 Jam", "1 Hari (Daily)", "1 Minggu (Weekly)"], index=2)
-    tf_berubah = tf_pilihan != st.session_state.current_tf
-    if tf_berubah: st.session_state.current_tf = tf_pilihan
-        
-    profil_risiko = st.selectbox("🎯 Profil Risiko:", ["Moderat", "Agresif", "Konservatif"])
-    
-    st.markdown("<div style='font-size:0.7rem; color:#00f2fe; font-weight:800; letter-spacing:1px; margin-top:20px; border-bottom: 1px solid rgba(0,242,254,0.2); padding-bottom: 5px;'>⚙️ POSITION SIZING ENGINE</div>", unsafe_allow_html=True)
-    modal_input_str = st.text_input("💰 Modal (Rp):", value="50.000.000", help="Gunakan titik untuk memisahkan ribuan")
-    try: modal_trading = int(modal_input_str.replace(".", "").replace(",", ""))
-    except: modal_trading = 50000000
-    risiko_pct = st.slider("🚨 Batas Risiko /Trade (%):", min_value=0.5, max_value=5.0, value=1.0, step=0.5)
-    
-    with st.expander("🤖 Telegram Automation Alert"):
-        st.markdown("<p style='font-size: 0.7rem; color: #10b981;'>Data otomatis tersimpan ke server.</p>", unsafe_allow_html=True)
-        bot_token = st.text_input("Bot Token:", value=app_config["tg_token"], type="password")
-        chat_id = st.text_input("Chat ID:", value=app_config["tg_chat_id"])
-        if bot_token != app_config["tg_token"] or chat_id != app_config["tg_chat_id"]:
-            save_config(bot_token, chat_id)
-            app_config["tg_token"] = bot_token
-            app_config["tg_chat_id"] = chat_id
-            st.success("Config Telegram Tersimpan!")
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    if st.button("🔄 SCAN 100 SAHAM", use_container_width=True) or tf_berubah:
-        st.session_state.scan_clicked = True
-        st.cache_data.clear()
-        st.session_state.page_matrix = 0 
-        st.session_state.raw_stocks = []
-        
-        my_bar = st.progress(0, text=f"Scanning 100 Emiten Terlikuid ({st.session_state.current_tf})...")
-        for i, t in enumerate(daftar_saham):
-            my_bar.progress((i + 1) / len(daftar_saham), text=f"Analyzing {t} ({i+1}/100)")
-            data = fetch_single_stock(t, st.session_state.current_tf)
-            if data: st.session_state.raw_stocks.append(data)
-            gc.collect() 
-            
-        my_bar.empty()
-        st.session_state.last_update = get_waktu_wib()
-        
-        token_aktif = app_config["tg_token"]
-        chat_aktif = app_config["tg_chat_id"]
-        
-        if token_aktif and chat_aktif and len(st.session_state.raw_stocks) > 0:
-            alert_text = f"🤖 *JIHAN-GHINA ALERTS* | {st.session_state.current_tf}\nMode: {engine_mode}\n\n"
-            has_buys = False
-            for raw in st.session_state.raw_stocks:
-                # Trading Score logic
-                skor = 0
-                if raw["UP_EMA20"]: skor += 10
-                if raw.get("UP_SMA50", False): skor += 10 
-                if raw["MACD_GOLDEN"]: skor += 15
-                if raw["RSI"] < 40: skor += 15
-                elif 40 <= raw["RSI"] <= 65: skor += 10
-                elif raw["RSI"] > 70: skor -= 15
-                if raw["STATUS_BANDAR"] == "AKUMULASI": skor += 25
-                elif raw["STATUS_BANDAR"] == "DISTRIBUSI": skor -= 20
-                else: skor += 5
-                
-                target_skor = 65 if profil_risiko == "Agresif" else (78 if profil_risiko == "Konservatif" else 72)
-                kep = "ACCUMULATE" if skor >= target_skor else ("HOLD" if skor >= 50 else "LIQUIDATE")
-                if raw["VOLATILITAS"] == "🔥 TINGGI" and raw["STATUS_BANDAR"] == "DISTRIBUSI": kep = "LIQUIDATE"  
-                elif raw["VOLATILITAS"] == "❄️ RENDAH" and kep == "ACCUMULATE": kep = "HOLD"
-                
-                if kep == "ACCUMULATE":
-                    has_buys = True
-                    alert_text += f"✅ *{raw['TICKER']}* | Hrg: Rp{int(raw['HARGA']):,} | {raw['VOLATILITAS']}\n"
-            
-            if has_buys:
-                try: requests.post(f"https://api.telegram.org/bot{token_aktif}/sendMessage", json={"chat_id": chat_aktif, "text": alert_text[:4000], "parse_mode": "Markdown"})
-                except: pass
-
-        try:
-            with open(CACHE_FILE, "w") as f: json.dump({"raw_stocks": st.session_state.raw_stocks, "last_update": st.session_state.last_update}, f)
-        except: pass
-        if hasattr(st, 'rerun'): st.rerun()
-        else: st.experimental_rerun()
-        
-    st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("🚪 LOGOUT", use_container_width=True):
-        st.session_state.akses_diberikan = False
-        st.session_state.scan_clicked = False
-        if hasattr(st, 'rerun'): st.rerun()
-        else: st.experimental_rerun()
-
-# ==========================================
-# 5. HEADER DASHBOARD & MULTI-TABS
-# ==========================================
-st.markdown("<h1>🌐 Algorithmic Market Intelligence</h1>", unsafe_allow_html=True)
-
-col_h1, col_h2 = st.columns([3.5, 1.5])
-with col_h1:
-    upd_time = st.session_state.last_update if st.session_state.last_update else "Menunggu inisiasi radar..."
-    tema_warna = "#facc15" if "TRADING" in engine_mode else "#10b981"
-    st.markdown(f"<p style='font-size: 0.95rem; margin-top:5px;'>🕒 Last Market Sync: <strong style='color:#00f2fe;'>{upd_time}</strong><br>Sistem Beroperasi Dalam Mode: <strong style='color:{tema_warna};'>{engine_mode}</strong></p>", unsafe_allow_html=True)
-
-df_ihsg_hist, ihsg_now, ihsg_chg, ihsg_pct = fetch_ihsg_data()
-with col_h2:
-    if ihsg_now:
-        warna_panah = "▲" if ihsg_chg >= 0 else "▼"
-        warna_garis = '#10b981' if ihsg_chg >= 0 else '#f43f5e'
-        st.markdown(f"""
-        <div class="premium-card ihsg-box" style="border-left: 5px solid {warna_garis};">
-            <span class="ihsg-title">IHSG COMPOSITE</span>
-            <span class="ihsg-score">{ihsg_now:,.2f}</span>
-            <span style="color: {warna_garis}; font-weight: 800; font-size: 0.95rem;">{warna_panah} {ihsg_chg:+,.2f} ({ihsg_pct:+.2f}%)</span>
-        </div>
-        """, unsafe_allow_html=True)
-
-st.markdown("---")
-
-if not st.session_state.scan_clicked or not st.session_state.raw_stocks:
-    st.info("👈 Sistem terminal siaga. Silakan tekan tombol '🔄 SCAN 100 SAHAM' di panel navigasi kiri.")
-else:
-    # PERSIAPAN DATA ARRAY UNTUK KEDUA MODE
-    hasil_trading = []
-    hasil_invest = []
-    
-    # Cluster Trading
-    cluster_ara = []
-    cluster_scalp = []
-    cluster_accum = []
-    
-    # Cluster Investment
-    cluster_div = []
-    cluster_undervalued = []
-    cluster_bluechip = []
-    
-    for raw in st.session_state.raw_stocks:
-        # LOGIKA TRADING SCORE
-        skor_t = 0
-        if raw["UP_EMA20"]: skor_t += 10
-        if raw.get("UP_SMA50", False): skor_t += 10 
-        if raw["MACD_GOLDEN"]: skor_t += 15
-        if raw["RSI"] < 40: skor_t += 15
-        elif 40 <= raw["RSI"] <= 65: skor_t += 10
-        elif raw["RSI"] > 70: skor_t -= 15
-        if raw["STATUS_BANDAR"] == "AKUMULASI": skor_t += 25
-        elif raw["STATUS_BANDAR"] == "DISTRIBUSI": skor_t -= 20
-        else: skor_t += 5
-        
-        target_skor_t = 65 if profil_risiko == "Agresif" else (78 if profil_risiko == "Konservatif" else 72)
-        if skor_t >= target_skor_t: kep_t = "🟢 ACCUMULATE"
-        elif skor_t >= 50: kep_t = "🟡 HOLD"
-        else: kep_t = "🔴 LIQUIDATE"
-        
-        if raw["VOLATILITAS"] == "🔥 TINGGI" and raw["STATUS_BANDAR"] == "DISTRIBUSI": kep_t = "🔴 LIQUIDATE"  
-        elif raw["VOLATILITAS"] == "❄️ RENDAH" and kep_t == "🟢 ACCUMULATE": kep_t = "🟡 HOLD"       
-        
-        max_loss_money = modal_trading * (risiko_pct / 100)
-        risk_per_share = raw["HARGA"] - raw["STOP LOSS"]
-        if "ACCUMULATE" in kep_t and risk_per_share > 0:
-            max_lots = int((max_loss_money / risk_per_share) / 100)
-            rec_lot_text = f"🔥 Max {max_lots:,} Lot" if max_lots > 0 else "Beli Minimal"
-        else: rec_lot_text = "🔒 Proteksi/Hold"
-
-        # LOGIKA INVESTMENT SCORE
-        skor_i = 0
-        if 0 < raw["PER"] < 15: skor_i += 30
-        if 0 < raw["PBV"] < 1.5: skor_i += 30
-        if raw["DIV_YIELD"] > 4.0: skor_i += 20
-        if raw["UP_SMA50"]: skor_i += 20
-        
-        if skor_i >= 70: kep_i = "💎 UNDERVALUED (BUY)"
-        elif skor_i >= 40: kep_i = "⚖️ FAIR VALUE (HOLD)"
-        else: kep_i = "⚠️ OVERVALUED (AVOID)"
-            
-        # APPEND DATA TRADING
-        hasil_trading.append({
-            "RAW_RET": raw["RET_1D"], # Hidden column for sorting
-            "TICKER": raw["TICKER"], 
-            "HARGA": f"{int(raw['HARGA']):,}".replace(",", "."),
-            "1D GAIN (%)": f"{raw['RET_1D']:+.2f}%",
-            "REKOMENDASI LOT": rec_lot_text,
-            "VOLATILITAS": raw["VOLATILITAS"],
-            "RSI": f"{raw['RSI']:.2f}", 
-            "BANDARMOLOGI": raw["STATUS_BANDAR"], 
-            "REKOMENDASI": kep_t
-        })
-        
-        # APPEND DATA INVEST
-        hasil_invest.append({
-            "RAW_YIELD": raw["DIV_YIELD"], # Hidden column for sorting
-            "TICKER": raw["TICKER"], 
-            "HARGA": f"{int(raw['HARGA']):,}".replace(",", "."),
-            "MARKET CAP": format_market_cap(raw.get("MARKET_CAP", 0)),
-            "PER (x)": f"{raw['PER']:.2f}",
-            "PBV (x)": f"{raw['PBV']:.2f}",
-            "DIV YIELD (%)": f"{raw['DIV_YIELD']:.2f}%",
-            "VALUASI": kep_i
-        })
-        
-        # CLUSTERING TRADING
-        if (raw["PREV_VOL"] > (2 * raw["VOL_SMA20"])) and (raw["TRANS_VAL"] > raw["TRANS_VAL_MA10"]) and (raw["RET_1D"] > 3) and (raw["HIGH"] > raw["SMA5"]) and (raw["LOW"] > raw["SMA50"]):
-            cluster_ara.append(raw["TICKER"])
-        if (1 < raw["RET_1D"] < 10) and (raw["TRANS_VAL"] > 2_000_000_000) and (raw["HARGA"] < 3000) and (raw["VOLUME"] > 50_000_000):
-            cluster_scalp.append(raw["TICKER"])
-        harga_tengah = (raw["HIGH"] + raw["LOW"]) / 2
-        if (raw["VOLUME"] > (1.5 * raw["VOL_SMA20"])) and (raw["HARGA"] > raw["UP_EMA20"]) and (raw["HARGA"] >= harga_tengah):
-            cluster_accum.append(raw["TICKER"])
-            
-        # CLUSTERING INVEST
-        if raw["DIV_YIELD"] >= 5.0: cluster_div.append(raw["TICKER"])
-        if (0 < raw["PBV"] <= 1.2) and (0 < raw["PER"] <= 12): cluster_undervalued.append(raw["TICKER"])
-        if raw["TICKER"] in roster_100_saham[:30]: cluster_bluechip.append(raw["TICKER"])
-
-    # PROSES SORTING (AGAR TOP GAINER DI ATAS UNTUK TRADING)
-    df_trading = pd.DataFrame(hasil_trading).sort_values(by="RAW_RET", ascending=False).reset_index(drop=True).drop(columns=["RAW_RET"])
-    df_invest = pd.DataFrame(hasil_invest).sort_values(by="RAW_YIELD", ascending=False).reset_index(drop=True).drop(columns=["RAW_YIELD"])
-
-    # ------------------------------------------
-    # RENDER TABS BERDASARKAN MODE
-    # ------------------------------------------
-    if "TRADING" in engine_mode:
-        tab1, tab2, tab3, tab4 = st.tabs(["🚀 TRADING SIGNAL (TOP GAINERS)", "🧬 MOMENTUM CLUSTERS", "📊 FUNDAMENTAL CHARTS", "📚 ACADEMY"])
-        
-        with tab1:
-            st.markdown("<br><h3 style='font-size: 1.5rem;'>🛰️ Pro Max Trading Matrix (Sorted by Top Gainers)</h3>", unsafe_allow_html=True)
-            def style_trading(row):
-                styles = []
-                if '🟢' in row['REKOMENDASI']: bg_rek = 'background-color: rgba(16, 185, 129, 0.12); color: #34d399;'
-                elif '🟡' in row['REKOMENDASI']: bg_rek = 'background-color: rgba(245, 158, 11, 0.12); color: #fbbf24;'
-                else: bg_rek = 'background-color: rgba(244, 63, 94, 0.12); color: #fb7185;'
-                
-                for c, val in row.items():
-                    if c == 'TICKER': styles.append('font-weight: 900; font-size: 1.15rem; color: #00f2fe; text-shadow: 0px 0px 10px rgba(0,242,254,0.3); text-align:center;')
-                    elif c == '1D GAIN (%)':
-                        if '+' in str(val): styles.append('color: #10b981; font-weight: 900; background: rgba(16,185,129,0.1);')
-                        elif '-' in str(val) and val != '-0.00%': styles.append('color: #f43f5e; font-weight: 900;')
-                        else: styles.append('color: #94a3b8;')
-                    elif c == 'REKOMENDASI LOT':
-                        if 'Max' in str(val): styles.append('color: #facc15; font-weight: 900; background-color: rgba(250,204,21,0.08);')
-                        else: styles.append('color: #64748b; font-weight: 400;')
-                    elif c in ['BANDARMOLOGI', 'REKOMENDASI']: styles.append(bg_rek)
-                    elif c == 'VOLATILITAS':
-                        if '🔥' in str(val): styles.append('color: #f43f5e; font-weight: 800;')
-                        elif '⚡' in str(val): styles.append('color: #fbbf24; font-weight: 800;')
-                        else: styles.append('color: #38bdf8; font-weight: 800;')
-                    elif c == 'RSI':
-                        try:
-                            rsi_val = float(val)
-                            if rsi_val > 65: styles.append('color: #f43f5e; font-weight: 800;') 
-                            elif rsi_val < 40: styles.append('color: #10b981; font-weight: 800;') 
-                            else: styles.append('')
-                        except: styles.append('')
-                    else: styles.append('')
-                return styles
-
-            st.dataframe(df_trading.head(15).style.apply(style_trading, axis=1), use_container_width=True, hide_index=True)
-            st.markdown("<p style='color:#94a3b8; font-size:0.8rem; text-align:center;'>Menampilkan Top 15 Saham Penggerak Hari Ini. Gunakan Executive Cross-Validation untuk detail per emiten.</p>", unsafe_allow_html=True)
-
-        with tab2:
-            st.markdown("<br><h3 style='font-size: 1.5rem;'>🧬 Behavioral Trading Clusters</h3>", unsafe_allow_html=True)
-            c_ara, c_scalp, c_accum = st.columns(3)
-            with c_ara:
-                st.markdown(f"""<div class='premium-card' style='border-top: 4px solid #f43f5e;'><div style='color:#f43f5e; font-weight:900;'>🚀 1. ARA HUNTER</div><div style='background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; color:#f8fafc; font-weight:700; margin-top:10px;'>{", ".join(cluster_ara) if cluster_ara else "N/A"}</div></div>""", unsafe_allow_html=True)
-            with c_scalp:
-                st.markdown(f"""<div class='premium-card' style='border-top: 4px solid #00f2fe;'><div style='color:#00f2fe; font-weight:900;'>⚡ 2. SCALPING DAILY</div><div style='background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; color:#f8fafc; font-weight:700; margin-top:10px;'>{", ".join(cluster_scalp) if cluster_scalp else "N/A"}</div></div>""", unsafe_allow_html=True)
-            with c_accum:
-                st.markdown(f"""<div class='premium-card' style='border-top: 4px solid #10b981;'><div style='color:#10b981; font-weight:900;'>🐋 3. BIG ACCUMULATION</div><div style='background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; color:#f8fafc; font-weight:700; margin-top:10px;'>{", ".join(cluster_accum) if cluster_accum else "N/A"}</div></div>""", unsafe_allow_html=True)
-
-    else:
-        # MODE INVESTMENT
-        tab1, tab2, tab3, tab4 = st.tabs(["🛡️ VALUE MATRIX (TOP DIVIDEND)", "🏦 FUNDAMENTAL CLUSTERS", "📊 FUNDAMENTAL CHARTS", "📚 ACADEMY"])
-        
-        with tab1:
-            st.markdown("<br><h3 style='font-size: 1.5rem;'>🛡️ Pro Max Investment Matrix (Sorted by Div Yield)</h3>", unsafe_allow_html=True)
-            def style_invest(row):
-                styles = []
-                for c, val in row.items():
-                    if c == 'TICKER': styles.append('font-weight: 900; font-size: 1.15rem; color: #facc15; text-shadow: 0px 0px 10px rgba(250,204,21,0.3); text-align:center;')
-                    elif c == 'DIV YIELD (%)':
-                        if val != '0.00%': styles.append('color: #10b981; font-weight: 900; background: rgba(16,185,129,0.1);')
-                        else: styles.append('color: #64748b;')
-                    elif c in ['PER (x)', 'PBV (x)']:
-                        try:
-                            v = float(val)
-                            if (c == 'PER (x)' and 0 < v < 15) or (c == 'PBV (x)' and 0 < v < 1.2): styles.append('color: #38bdf8; font-weight: 800;')
-                            elif v > 20 or v > 2.5: styles.append('color: #f43f5e; font-weight: 800;')
-                            else: styles.append('color: #cbd5e1;')
-                        except: styles.append('')
-                    elif c == 'VALUASI':
-                        if 'BUY' in val: styles.append('background-color: rgba(16, 185, 129, 0.12); color: #34d399; font-weight:800;')
-                        elif 'HOLD' in val: styles.append('background-color: rgba(245, 158, 11, 0.12); color: #fbbf24; font-weight:800;')
-                        else: styles.append('background-color: rgba(244, 63, 94, 0.12); color: #fb7185; font-weight:800;')
-                    else: styles.append('')
-                return styles
-
-            st.dataframe(df_invest.head(15).style.apply(style_invest, axis=1), use_container_width=True, hide_index=True)
-            st.markdown("<p style='color:#94a3b8; font-size:0.8rem; text-align:center;'>Menampilkan Top 15 Saham dengan Dividend Yield Tertinggi. Cocok untuk strategi Nabung Saham.</p>", unsafe_allow_html=True)
-
-        with tab2:
-            st.markdown("<br><h3 style='font-size: 1.5rem;'>🏦 Value Investing Clusters</h3>", unsafe_allow_html=True)
-            c_div, c_uv, c_blue = st.columns(3)
-            with c_div:
-                st.markdown(f"""<div class='premium-card' style='border-top: 4px solid #10b981;'><div style='color:#10b981; font-weight:900;'>💰 1. DIVIDEND HUNTER (>5%)</div><div style='background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; color:#f8fafc; font-weight:700; margin-top:10px;'>{", ".join(cluster_div) if cluster_div else "N/A"}</div></div>""", unsafe_allow_html=True)
-            with c_uv:
-                st.markdown(f"""<div class='premium-card' style='border-top: 4px solid #38bdf8;'><div style='color:#38bdf8; font-weight:900;'>💎 2. DEEP UNDERVALUED</div><div style='background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; color:#f8fafc; font-weight:700; margin-top:10px;'>{", ".join(cluster_undervalued) if cluster_undervalued else "N/A"}</div></div>""", unsafe_allow_html=True)
-            with c_blue:
-                st.markdown(f"""<div class='premium-card' style='border-top: 4px solid #facc15;'><div style='color:#facc15; font-weight:900;'>🏦 3. BLUECHIP ROSTER</div><div style='background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; color:#f8fafc; font-weight:700; margin-top:10px;'>{", ".join(cluster_bluechip) if cluster_bluechip else "N/A"}</div></div>""", unsafe_allow_html=True)
-
-    # ==========================================
-    # MODUL MASTERPIECE SIGNAL (CROSS-VALIDATION) - SELALU MUNCUL DI BAWAH TAB 1 & 2
-    # ==========================================
+def render_cross_validation_ui():
     st.markdown("---")
     st.markdown("<h3 style='font-size: 1.5rem;'>🎯 Executive Cross-Validation</h3>", unsafe_allow_html=True)
     
@@ -701,12 +390,11 @@ else:
     emiten_signal = None 
     
     if scanned_tickers:
-        emiten_signal = st.selectbox("⚡ Pilih Target Emiten (Algo vs Analyst):", sorted(scanned_tickers), key="signal_select")
+        emiten_signal = st.selectbox("⚡ Pilih Target Emiten (Algo vs Analyst):", sorted(scanned_tickers), key=f"signal_select_{st.session_state.current_tf}")
         
         with st.spinner(f"Mengkalkulasi Konfirmasi Ganda untuk {emiten_signal}..."):
             raw_target = next((item for item in st.session_state.raw_stocks if item["TICKER"] == emiten_signal), None)
             
-            # Tarik Data
             vol_target = raw_target['VOLATILITAS']
             bandar_target = raw_target['STATUS_BANDAR']
             area_beli = f"{int(raw_target['AREA BELI']):,}".replace(",", ".")
@@ -819,15 +507,329 @@ else:
 """
             st.markdown(final_box_html, unsafe_allow_html=True)
 
+
+# ==========================================
+# 5. SIDEBAR (DUAL CORE CONTROL)
+# ==========================================
+with st.sidebar:
+    st.markdown("<h2 style='color: #00f2fe; font-size: 1.25rem; font-weight: 900; margin-bottom: 0px;'>🧬 QUANTUM MATRIX</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #94a3b8; font-size: 0.65rem; letter-spacing: 1.5px; margin-bottom: 25px;'>DUAL-CORE EDITION v12.1</p>", unsafe_allow_html=True)
+    
+    st.markdown("<div style='font-size:0.75rem; color:#facc15; font-weight:800; letter-spacing:1px; border-bottom: 1px solid rgba(250,204,21,0.2); padding-bottom: 5px; margin-bottom: 10px;'>🎛️ CORE ENGINE MODE</div>", unsafe_allow_html=True)
+    engine_mode = st.radio("Pilih Mode Analisis:", ["⚔️ TRADING (Momentum & Technical)", "🛡️ INVESTMENT (Value & Fundamental)"])
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    tf_pilihan = st.selectbox("⏱️ Timeframe Analisis:", ["1 Jam", "4 Jam", "1 Hari (Daily)", "1 Minggu (Weekly)"], index=2)
+    tf_berubah = tf_pilihan != st.session_state.current_tf
+    if tf_berubah: st.session_state.current_tf = tf_pilihan
+        
+    profil_risiko = st.selectbox("🎯 Profil Risiko:", ["Moderat", "Agresif", "Konservatif"])
+    
+    st.markdown("<div style='font-size:0.7rem; color:#00f2fe; font-weight:800; letter-spacing:1px; margin-top:20px; border-bottom: 1px solid rgba(0,242,254,0.2); padding-bottom: 5px;'>⚙️ POSITION SIZING ENGINE</div>", unsafe_allow_html=True)
+    modal_input_str = st.text_input("💰 Modal (Rp):", value="50.000.000", help="Gunakan titik untuk memisahkan ribuan")
+    try: modal_trading = int(modal_input_str.replace(".", "").replace(",", ""))
+    except: modal_trading = 50000000
+    risiko_pct = st.slider("🚨 Batas Risiko /Trade (%):", min_value=0.5, max_value=5.0, value=1.0, step=0.5)
+    
+    with st.expander("🤖 Telegram Automation Alert"):
+        st.markdown("<p style='font-size: 0.7rem; color: #10b981;'>Data otomatis tersimpan ke server.</p>", unsafe_allow_html=True)
+        bot_token = st.text_input("Bot Token:", value=app_config["tg_token"], type="password")
+        chat_id = st.text_input("Chat ID:", value=app_config["tg_chat_id"])
+        if bot_token != app_config["tg_token"] or chat_id != app_config["tg_chat_id"]:
+            save_config(bot_token, chat_id)
+            app_config["tg_token"] = bot_token
+            app_config["tg_chat_id"] = chat_id
+            st.success("Config Telegram Tersimpan!")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    if st.button("🔄 SCAN 100 SAHAM", use_container_width=True) or tf_berubah:
+        st.session_state.scan_clicked = True
+        st.cache_data.clear()
+        st.session_state.page_matrix = 0 
+        st.session_state.raw_stocks = []
+        
+        my_bar = st.progress(0, text=f"Scanning 100 Emiten Terlikuid ({st.session_state.current_tf})...")
+        for i, t in enumerate(daftar_saham):
+            my_bar.progress((i + 1) / len(daftar_saham), text=f"Analyzing {t} ({i+1}/100)")
+            data = fetch_single_stock(t, st.session_state.current_tf)
+            if data: st.session_state.raw_stocks.append(data)
+            gc.collect() 
+            
+        my_bar.empty()
+        st.session_state.last_update = get_waktu_wib()
+        
+        token_aktif = app_config["tg_token"]
+        chat_aktif = app_config["tg_chat_id"]
+        
+        if token_aktif and chat_aktif and len(st.session_state.raw_stocks) > 0:
+            alert_text = f"🤖 *JIHAN-GHINA ALERTS* | {st.session_state.current_tf}\nMode: {engine_mode}\n\n"
+            has_buys = False
+            for raw in st.session_state.raw_stocks:
+                # Trading Score logic
+                skor = 0
+                if raw["UP_EMA20"]: skor += 10
+                if raw.get("UP_SMA50", False): skor += 10 
+                if raw["MACD_GOLDEN"]: skor += 15
+                if raw["RSI"] < 40: skor += 15
+                elif 40 <= raw["RSI"] <= 65: skor += 10
+                elif raw["RSI"] > 70: skor -= 15
+                if raw["STATUS_BANDAR"] == "AKUMULASI": skor += 25
+                elif raw["STATUS_BANDAR"] == "DISTRIBUSI": skor -= 20
+                else: skor += 5
+                
+                target_skor = 65 if profil_risiko == "Agresif" else (78 if profil_risiko == "Konservatif" else 72)
+                kep = "ACCUMULATE" if skor >= target_skor else ("HOLD" if skor >= 50 else "LIQUIDATE")
+                if raw["VOLATILITAS"] == "🔥 TINGGI" and raw["STATUS_BANDAR"] == "DISTRIBUSI": kep = "LIQUIDATE"  
+                elif raw["VOLATILITAS"] == "❄️ RENDAH" and kep == "ACCUMULATE": kep = "HOLD"
+                
+                if kep == "ACCUMULATE":
+                    has_buys = True
+                    alert_text += f"✅ *{raw['TICKER']}* | Hrg: Rp{int(raw['HARGA']):,} | {raw['VOLATILITAS']}\n"
+            
+            if has_buys:
+                try: requests.post(f"https://api.telegram.org/bot{token_aktif}/sendMessage", json={"chat_id": chat_aktif, "text": alert_text[:4000], "parse_mode": "Markdown"})
+                except: pass
+
+        try:
+            with open(CACHE_FILE, "w") as f: json.dump({"raw_stocks": st.session_state.raw_stocks, "last_update": st.session_state.last_update}, f)
+        except: pass
+        if hasattr(st, 'rerun'): st.rerun()
+        else: st.experimental_rerun()
+        
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("🚪 LOGOUT", use_container_width=True):
+        st.session_state.akses_diberikan = False
+        st.session_state.scan_clicked = False
+        if hasattr(st, 'rerun'): st.rerun()
+        else: st.experimental_rerun()
+
+# ==========================================
+# 6. HEADER DASHBOARD & MULTI-TABS
+# ==========================================
+st.markdown("<h1>🌐 Algorithmic Market Intelligence</h1>", unsafe_allow_html=True)
+
+col_h1, col_h2 = st.columns([3.5, 1.5])
+with col_h1:
+    upd_time = st.session_state.last_update if st.session_state.last_update else "Menunggu inisiasi radar..."
+    tema_warna = "#facc15" if "TRADING" in engine_mode else "#10b981"
+    st.markdown(f"<p style='font-size: 0.95rem; margin-top:5px;'>🕒 Last Market Sync: <strong style='color:#00f2fe;'>{upd_time}</strong><br>Sistem Beroperasi Dalam Mode: <strong style='color:{tema_warna};'>{engine_mode}</strong></p>", unsafe_allow_html=True)
+
+df_ihsg_hist, ihsg_now, ihsg_chg, ihsg_pct = fetch_ihsg_data()
+with col_h2:
+    if ihsg_now:
+        warna_panah = "▲" if ihsg_chg >= 0 else "▼"
+        warna_garis = '#10b981' if ihsg_chg >= 0 else '#f43f5e'
+        st.markdown(f"""
+        <div class="premium-card ihsg-box" style="border-left: 5px solid {warna_garis};">
+            <span class="ihsg-title">IHSG COMPOSITE</span>
+            <span class="ihsg-score">{ihsg_now:,.2f}</span>
+            <span style="color: {warna_garis}; font-weight: 800; font-size: 0.95rem;">{warna_panah} {ihsg_chg:+,.2f} ({ihsg_pct:+.2f}%)</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+st.markdown("---")
+
+if not st.session_state.scan_clicked or not st.session_state.raw_stocks:
+    st.info("👈 Sistem terminal siaga. Silakan tekan tombol '🔄 SCAN 100 SAHAM' di panel navigasi kiri.")
+else:
+    hasil_trading = []
+    hasil_invest = []
+    
+    cluster_ara = []
+    cluster_scalp = []
+    cluster_accum = []
+    cluster_div = []
+    cluster_undervalued = []
+    cluster_bluechip = []
+    
+    for raw in st.session_state.raw_stocks:
+        skor_t = 0
+        if raw["UP_EMA20"]: skor_t += 10
+        if raw.get("UP_SMA50", False): skor_t += 10 
+        if raw["MACD_GOLDEN"]: skor_t += 15
+        if raw["RSI"] < 40: skor_t += 15
+        elif 40 <= raw["RSI"] <= 65: skor_t += 10
+        elif raw["RSI"] > 70: skor_t -= 15
+        if raw["STATUS_BANDAR"] == "AKUMULASI": skor_t += 25
+        elif raw["STATUS_BANDAR"] == "DISTRIBUSI": skor_t -= 20
+        else: skor_t += 5
+        
+        target_skor_t = 65 if profil_risiko == "Agresif" else (78 if profil_risiko == "Konservatif" else 72)
+        if skor_t >= target_skor_t: kep_t = "🟢 ACCUMULATE"
+        elif skor_t >= 50: kep_t = "🟡 HOLD"
+        else: kep_t = "🔴 LIQUIDATE"
+        
+        if raw["VOLATILITAS"] == "🔥 TINGGI" and raw["STATUS_BANDAR"] == "DISTRIBUSI": kep_t = "🔴 LIQUIDATE"  
+        elif raw["VOLATILITAS"] == "❄️ RENDAH" and kep_t == "🟢 ACCUMULATE": kep_t = "🟡 HOLD"       
+        
+        max_loss_money = modal_trading * (risiko_pct / 100)
+        risk_per_share = raw["HARGA"] - raw["STOP LOSS"]
+        if "ACCUMULATE" in kep_t and risk_per_share > 0:
+            max_lots = int((max_loss_money / risk_per_share) / 100)
+            rec_lot_text = f"🔥 Max {max_lots:,} Lot" if max_lots > 0 else "Beli Minimal"
+        else: rec_lot_text = "🔒 Proteksi/Hold"
+
+        skor_i = 0
+        if 0 < raw["PER"] < 15: skor_i += 30
+        if 0 < raw["PBV"] < 1.5: skor_i += 30
+        if raw["DIV_YIELD"] > 4.0: skor_i += 20
+        if raw["UP_SMA50"]: skor_i += 20
+        
+        if skor_i >= 70: kep_i = "💎 UNDERVALUED (BUY)"
+        elif skor_i >= 40: kep_i = "⚖️ FAIR VALUE (HOLD)"
+        else: kep_i = "⚠️ OVERVALUED (AVOID)"
+            
+        hasil_trading.append({
+            "RAW_RET": raw["RET_1D"], 
+            "TICKER": raw["TICKER"], 
+            "HARGA": f"{int(raw['HARGA']):,}".replace(",", "."),
+            "1D GAIN (%)": f"{raw['RET_1D']:+.2f}%",
+            "REKOMENDASI LOT": rec_lot_text,
+            "VOLATILITAS": raw["VOLATILITAS"],
+            "RSI": f"{raw['RSI']:.2f}", 
+            "BANDARMOLOGI": raw["STATUS_BANDAR"], 
+            "REKOMENDASI": kep_t
+        })
+        
+        hasil_invest.append({
+            "RAW_YIELD": raw["DIV_YIELD"], 
+            "TICKER": raw["TICKER"], 
+            "HARGA": f"{int(raw['HARGA']):,}".replace(",", "."),
+            "MARKET CAP": format_market_cap(raw.get("MARKET_CAP", 0)),
+            "PER (x)": f"{raw['PER']:.2f}",
+            "PBV (x)": f"{raw['PBV']:.2f}",
+            "DIV YIELD (%)": f"{raw['DIV_YIELD']:.2f}%",
+            "VALUASI": kep_i
+        })
+        
+        if (raw["PREV_VOL"] > (2 * raw["VOL_SMA20"])) and (raw["TRANS_VAL"] > raw["TRANS_VAL_MA10"]) and (raw["RET_1D"] > 3) and (raw["HIGH"] > raw["SMA5"]) and (raw["LOW"] > raw["SMA50"]):
+            cluster_ara.append(raw["TICKER"])
+        if (1 < raw["RET_1D"] < 10) and (raw["TRANS_VAL"] > 2_000_000_000) and (raw["HARGA"] < 3000) and (raw["VOLUME"] > 50_000_000):
+            cluster_scalp.append(raw["TICKER"])
+        harga_tengah = (raw["HIGH"] + raw["LOW"]) / 2
+        if (raw["VOLUME"] > (1.5 * raw["VOL_SMA20"])) and (raw["HARGA"] > raw["UP_EMA20"]) and (raw["HARGA"] >= harga_tengah):
+            cluster_accum.append(raw["TICKER"])
+            
+        if raw["DIV_YIELD"] >= 5.0: cluster_div.append(raw["TICKER"])
+        if (0 < raw["PBV"] <= 1.2) and (0 < raw["PER"] <= 12): cluster_undervalued.append(raw["TICKER"])
+        if raw["TICKER"] in roster_100_saham[:30]: cluster_bluechip.append(raw["TICKER"])
+
+    df_trading = pd.DataFrame(hasil_trading).sort_values(by="RAW_RET", ascending=False).reset_index(drop=True).drop(columns=["RAW_RET"])
+    df_invest = pd.DataFrame(hasil_invest).sort_values(by="RAW_YIELD", ascending=False).reset_index(drop=True).drop(columns=["RAW_YIELD"])
+
+    # ------------------------------------------
+    # RENDER TABS BERDASARKAN MODE
+    # ------------------------------------------
+    if "TRADING" in engine_mode:
+        tab1, tab2, tab3, tab4 = st.tabs(["🚀 TRADING SIGNAL (TOP GAINERS)", "🧬 MOMENTUM CLUSTERS", "📊 FUNDAMENTAL CHARTS", "📚 ACADEMY"])
+        
+        # TAB 1 - TRADING MATRIX & CROSS VALIDATION
+        with tab1:
+            st.markdown("<br><h3 style='font-size: 1.5rem;'>🛰️ Pro Max Trading Matrix (Sorted by Top Gainers)</h3>", unsafe_allow_html=True)
+            def style_trading(row):
+                styles = []
+                if '🟢' in row['REKOMENDASI']: bg_rek = 'background-color: rgba(16, 185, 129, 0.12); color: #34d399;'
+                elif '🟡' in row['REKOMENDASI']: bg_rek = 'background-color: rgba(245, 158, 11, 0.12); color: #fbbf24;'
+                else: bg_rek = 'background-color: rgba(244, 63, 94, 0.12); color: #fb7185;'
+                
+                for c, val in row.items():
+                    if c == 'TICKER': styles.append('font-weight: 900; font-size: 1.15rem; color: #00f2fe; text-shadow: 0px 0px 10px rgba(0,242,254,0.3); text-align:center;')
+                    elif c == '1D GAIN (%)':
+                        if '+' in str(val): styles.append('color: #10b981; font-weight: 900; background: rgba(16,185,129,0.1);')
+                        elif '-' in str(val) and val != '-0.00%': styles.append('color: #f43f5e; font-weight: 900;')
+                        else: styles.append('color: #94a3b8;')
+                    elif c == 'REKOMENDASI LOT':
+                        if 'Max' in str(val): styles.append('color: #facc15; font-weight: 900; background-color: rgba(250,204,21,0.08);')
+                        else: styles.append('color: #64748b; font-weight: 400;')
+                    elif c in ['BANDARMOLOGI', 'REKOMENDASI']: styles.append(bg_rek)
+                    elif c == 'VOLATILITAS':
+                        if '🔥' in str(val): styles.append('color: #f43f5e; font-weight: 800;')
+                        elif '⚡' in str(val): styles.append('color: #fbbf24; font-weight: 800;')
+                        else: styles.append('color: #38bdf8; font-weight: 800;')
+                    elif c == 'RSI':
+                        try:
+                            rsi_val = float(val)
+                            if rsi_val > 65: styles.append('color: #f43f5e; font-weight: 800;') 
+                            elif rsi_val < 40: styles.append('color: #10b981; font-weight: 800;') 
+                            else: styles.append('')
+                        except: styles.append('')
+                    else: styles.append('')
+                return styles
+
+            st.dataframe(df_trading.head(15).style.apply(style_trading, axis=1), use_container_width=True, hide_index=True)
+            st.markdown("<p style='color:#94a3b8; font-size:0.8rem; text-align:center;'>Menampilkan Top 15 Saham Penggerak Hari Ini.</p>", unsafe_allow_html=True)
+            
+            # --- CROSS VALIDATION KHUSUS DI TAB 1 (TRADING) ---
+            render_cross_validation_ui()
+
+        # TAB 2 - CLUSTERS TRADING
+        with tab2:
+            st.markdown("<br><h3 style='font-size: 1.5rem;'>🧬 Behavioral Trading Clusters</h3>", unsafe_allow_html=True)
+            c_ara, c_scalp, c_accum = st.columns(3)
+            with c_ara:
+                st.markdown(f"""<div class='premium-card' style='border-top: 4px solid #f43f5e;'><div style='color:#f43f5e; font-weight:900;'>🚀 1. ARA HUNTER</div><div style='background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; color:#f8fafc; font-weight:700; margin-top:10px;'>{", ".join(cluster_ara) if cluster_ara else "N/A"}</div></div>""", unsafe_allow_html=True)
+            with c_scalp:
+                st.markdown(f"""<div class='premium-card' style='border-top: 4px solid #00f2fe;'><div style='color:#00f2fe; font-weight:900;'>⚡ 2. SCALPING DAILY</div><div style='background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; color:#f8fafc; font-weight:700; margin-top:10px;'>{", ".join(cluster_scalp) if cluster_scalp else "N/A"}</div></div>""", unsafe_allow_html=True)
+            with c_accum:
+                st.markdown(f"""<div class='premium-card' style='border-top: 4px solid #10b981;'><div style='color:#10b981; font-weight:900;'>🐋 3. BIG ACCUMULATION</div><div style='background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; color:#f8fafc; font-weight:700; margin-top:10px;'>{", ".join(cluster_accum) if cluster_accum else "N/A"}</div></div>""", unsafe_allow_html=True)
+
+    else:
+        # MODE INVESTMENT
+        tab1, tab2, tab3, tab4 = st.tabs(["🛡️ VALUE MATRIX (TOP DIVIDEND)", "🏦 FUNDAMENTAL CLUSTERS", "📊 FUNDAMENTAL CHARTS", "📚 ACADEMY"])
+        
+        # TAB 1 - INVEST MATRIX & CROSS VALIDATION
+        with tab1:
+            st.markdown("<br><h3 style='font-size: 1.5rem;'>🛡️ Pro Max Investment Matrix (Sorted by Div Yield)</h3>", unsafe_allow_html=True)
+            def style_invest(row):
+                styles = []
+                for c, val in row.items():
+                    if c == 'TICKER': styles.append('font-weight: 900; font-size: 1.15rem; color: #facc15; text-shadow: 0px 0px 10px rgba(250,204,21,0.3); text-align:center;')
+                    elif c == 'DIV YIELD (%)':
+                        if val != '0.00%': styles.append('color: #10b981; font-weight: 900; background: rgba(16,185,129,0.1);')
+                        else: styles.append('color: #64748b;')
+                    elif c in ['PER (x)', 'PBV (x)']:
+                        try:
+                            v = float(val)
+                            if (c == 'PER (x)' and 0 < v < 15) or (c == 'PBV (x)' and 0 < v < 1.2): styles.append('color: #38bdf8; font-weight: 800;')
+                            elif v > 20 or v > 2.5: styles.append('color: #f43f5e; font-weight: 800;')
+                            else: styles.append('color: #cbd5e1;')
+                        except: styles.append('')
+                    elif c == 'VALUASI':
+                        if 'BUY' in val: styles.append('background-color: rgba(16, 185, 129, 0.12); color: #34d399; font-weight:800;')
+                        elif 'HOLD' in val: styles.append('background-color: rgba(245, 158, 11, 0.12); color: #fbbf24; font-weight:800;')
+                        else: styles.append('background-color: rgba(244, 63, 94, 0.12); color: #fb7185; font-weight:800;')
+                    else: styles.append('')
+                return styles
+
+            st.dataframe(df_invest.head(15).style.apply(style_invest, axis=1), use_container_width=True, hide_index=True)
+            st.markdown("<p style='color:#94a3b8; font-size:0.8rem; text-align:center;'>Menampilkan Top 15 Saham dengan Dividend Yield Tertinggi. Cocok untuk strategi Nabung Saham.</p>", unsafe_allow_html=True)
+            
+            # --- CROSS VALIDATION KHUSUS DI TAB 1 (INVEST) ---
+            render_cross_validation_ui()
+
+        # TAB 2 - CLUSTERS INVEST
+        with tab2:
+            st.markdown("<br><h3 style='font-size: 1.5rem;'>🏦 Value Investing Clusters</h3>", unsafe_allow_html=True)
+            c_div, c_uv, c_blue = st.columns(3)
+            with c_div:
+                st.markdown(f"""<div class='premium-card' style='border-top: 4px solid #10b981;'><div style='color:#10b981; font-weight:900;'>💰 1. DIVIDEND HUNTER (>5%)</div><div style='background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; color:#f8fafc; font-weight:700; margin-top:10px;'>{", ".join(cluster_div) if cluster_div else "N/A"}</div></div>""", unsafe_allow_html=True)
+            with c_uv:
+                st.markdown(f"""<div class='premium-card' style='border-top: 4px solid #38bdf8;'><div style='color:#38bdf8; font-weight:900;'>💎 2. DEEP UNDERVALUED</div><div style='background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; color:#f8fafc; font-weight:700; margin-top:10px;'>{", ".join(cluster_undervalued) if cluster_undervalued else "N/A"}</div></div>""", unsafe_allow_html=True)
+            with c_blue:
+                st.markdown(f"""<div class='premium-card' style='border-top: 4px solid #facc15;'><div style='color:#facc15; font-weight:900;'>🏦 3. BLUECHIP ROSTER</div><div style='background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; color:#f8fafc; font-weight:700; margin-top:10px;'>{", ".join(cluster_bluechip) if cluster_bluechip else "N/A"}</div></div>""", unsafe_allow_html=True)
+
     # ==========================================
-    # TAB 3 & 4 (TETAP)
+    # TAB 3 & 4 (GLOBAL UNTUK KEDUA MODE)
     # ==========================================
     with tab3:
-        if emiten_signal: 
+        # Untuk TAB 3, kita ambil emiten yang sama dengan yang dipilih di TAB 1 agar match.
+        emiten_terpilih = st.session_state.get(f"signal_select_{st.session_state.current_tf}")
+        if emiten_terpilih: 
             st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown(f"<h3 style='font-size: 1.5rem;'>📊 Quarterly Financial Matrix : {emiten_signal}</h3>", unsafe_allow_html=True)
-            with st.spinner(f"Sinkronisasi Data Finansial (QoQ) {emiten_signal}..."):
-                analyst_data = fetch_analyst_consensus(emiten_signal)
+            st.markdown(f"<h3 style='font-size: 1.5rem;'>📊 Quarterly Financial Matrix : {emiten_terpilih}</h3>", unsafe_allow_html=True)
+            with st.spinner(f"Sinkronisasi Data Finansial (QoQ) {emiten_terpilih}..."):
+                analyst_data = fetch_analyst_consensus(emiten_terpilih)
                 st.markdown(f"""
                 <div style='display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom: 20px;'>
                     <div class='premium-card' style='flex:1; min-width:140px; text-align:center; padding:15px; border-left: 4px solid #00f2fe;'>
@@ -849,7 +851,7 @@ else:
                 </div>
                 """, unsafe_allow_html=True)
                 
-                df_inc, df_bs, df_cf = fetch_financial_charts(emiten_signal)
+                df_inc, df_bs, df_cf = fetch_financial_charts(emiten_terpilih)
                 status_text, color_hex, reason_list = analyze_financial_health(df_inc, df_bs, df_cf)
                 reasons_html = "".join([f"<li style='margin-bottom: 4px;'>{r}</li>" for r in reason_list])
                 
@@ -877,6 +879,8 @@ else:
                     st.markdown("<h5 style='color: #8b5cf6; text-align:center; font-size: 0.9rem; font-weight:700; margin-bottom: 5px;'>💵 Cash Flow</h5>", unsafe_allow_html=True)
                     if not df_cf.empty: st.plotly_chart(create_locked_plotly_chart(df_cf, "#8b5cf6", "#f59e0b"), use_container_width=True, config=lock_config)
                     else: st.warning("No Data")
+        else:
+            st.info("Pilih emiten di bagian Executive Cross-Validation (Tab 1) terlebih dahulu.")
 
     with tab4:
         st.markdown("<br><h3 style='font-size: 1.5rem; text-align: center;'>📚 Jihan-Ghina Academy & User Guide</h3>", unsafe_allow_html=True)
@@ -900,4 +904,4 @@ else:
             """)
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem; font-weight:600; letter-spacing: 1px;'>⚡ JIHAN-GHINA ENGINE • DUAL CORE TERMINAL v12.0</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem; font-weight:600; letter-spacing: 1px;'>⚡ JIHAN-GHINA ENGINE • DUAL CORE TERMINAL v12.1</p>", unsafe_allow_html=True)
