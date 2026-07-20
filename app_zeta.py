@@ -50,7 +50,7 @@ if "current_tf" not in st.session_state: st.session_state.current_tf = "1 Hari (
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE (FULL WIDE)
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Ultimate v12.1", page_icon="🧬", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Ultimate v12.2", page_icon="🧬", layout="wide")
 
 st.markdown("""
 <style>
@@ -380,96 +380,98 @@ def create_locked_plotly_chart(df, color1, color2):
     return fig
 
 # ==========================================
-# 4. FUNGSI RENDER CROSS-VALIDATION UI
+# 4. FUNGSI RENDER CROSS-VALIDATION UI (AUTO-SYNCED)
 # ==========================================
-def render_cross_validation_ui():
+def render_cross_validation_ui(active_tickers_list):
     st.markdown("---")
     st.markdown("<h3 style='font-size: 1.5rem;'>🎯 Executive Cross-Validation</h3>", unsafe_allow_html=True)
     
-    scanned_tickers = [x["TICKER"] for x in st.session_state.raw_stocks]
-    emiten_signal = None 
-    
-    if scanned_tickers:
-        emiten_signal = st.selectbox("⚡ Pilih Target Emiten (Algo vs Analyst):", sorted(scanned_tickers), key=f"signal_select_{st.session_state.current_tf}")
+    if active_tickers_list:
+        emiten_signal = st.selectbox(
+            "⚡ Pilih Target Emiten Sesuai Tabel Aktif:", 
+            active_tickers_list, 
+            key=f"signal_select_{st.session_state.current_tf}"
+        )
         
         with st.spinner(f"Mengkalkulasi Konfirmasi Ganda untuk {emiten_signal}..."):
             raw_target = next((item for item in st.session_state.raw_stocks if item["TICKER"] == emiten_signal), None)
             
-            vol_target = raw_target['VOLATILITAS']
-            bandar_target = raw_target['STATUS_BANDAR']
-            area_beli = f"{int(raw_target['AREA BELI']):,}".replace(",", ".")
-            target_tp = f"{int(raw_target['TARGET (TP)']):,}".replace(",", ".")
-            stop_loss = f"{int(raw_target['STOP LOSS']):,}".replace(",", ".")
-            
-            skor_algo = 0
-            if raw_target["UP_EMA20"]: skor_algo += 10
-            if raw_target.get("UP_SMA50", False): skor_algo += 10 
-            if raw_target["MACD_GOLDEN"]: skor_algo += 15
-            if raw_target["RSI"] < 40: skor_algo += 15
-            elif 40 <= raw_target["RSI"] <= 65: skor_algo += 10
-            elif raw_target["RSI"] > 70: skor_algo -= 15
-            if raw_target["STATUS_BANDAR"] == "AKUMULASI": skor_algo += 25
-            elif raw_target["STATUS_BANDAR"] == "DISTRIBUSI": skor_algo -= 20
-            else: skor_algo += 5
-            
-            target_skor = 65 if profil_risiko == "Agresif" else (78 if profil_risiko == "Konservatif" else 72)
-            sys_rec_raw = "ACCUMULATE" if skor_algo >= target_skor else ("HOLD" if skor_algo >= 50 else "LIQUIDATE")
-            if vol_target == "🔥 TINGGI" and bandar_target == "DISTRIBUSI": sys_rec_raw = "LIQUIDATE"  
-            elif vol_target == "❄️ RENDAH" and sys_rec_raw == "ACCUMULATE": sys_rec_raw = "HOLD"
-            
-            risk_per_share = raw_target["HARGA"] - raw_target["STOP LOSS"]
-            if "ACCUMULATE" in sys_rec_raw and risk_per_share > 0:
-                max_lots = int(((modal_trading * (risiko_pct / 100)) / risk_per_share) / 100)
-                lot_rec_target = f"Max {max_lots:,} Lot" if max_lots > 0 else "Beli Minimal"
-            else: lot_rec_target = "Proteksi/Hold"
-            
-            analyst_data_signal = fetch_analyst_consensus(emiten_signal)
-            konsensus_raw = analyst_data_signal["Konsensus"].upper()
-            
-            sys_is_buy = "ACCUMULATE" in sys_rec_raw
-            sys_is_sell = "LIQUIDATE" in sys_rec_raw
-            sys_is_hold = "HOLD" in sys_rec_raw
-            
-            ana_is_buy = any(x in konsensus_raw for x in ["BUY", "OUTPERFORM", "OVERWEIGHT"])
-            ana_is_sell = any(x in konsensus_raw for x in ["SELL", "UNDERPERFORM", "UNDERWEIGHT"])
-            ana_is_hold = "HOLD" in konsensus_raw or "NEUTRAL" in konsensus_raw
-            
-            is_trap = "🔥 TINGGI" in vol_target and "DISTRIBUSI" in bandar_target
-            is_sleeping = "❄️ RENDAH" in vol_target
-            
-            if is_trap:
-                final_decision = "🚨 CRITICAL WARNING (BULL TRAP FILTERED)"
-                color = "#f43f5e"
-                desc = "PROTEKSI DIALIRKAN: Saham mengalami volatilitas tinggi dengan distribusi bandar masif. Sistem memblokir sinyal beli."
-            elif sys_is_buy and ana_is_buy:
-                final_decision = "🚀 STRONG BUY (DOUBLE CONFIRMED)"
-                color = "#10b981"
-                desc = "Sistem Kuantitatif dan Analis Global SEPAKAT. Saham berada dalam zona akumulasi dengan probabilitas kemenangan tinggi."
-            elif sys_is_sell and ana_is_sell:
-                final_decision = "🩸 STRONG SELL (DOUBLE CONFIRMED)"
-                color = "#f43f5e"
-                desc = "Sistem Kuantitatif dan Analis Global SEPAKAT. Risiko koreksi tinggi, segera lakukan proteksi likuiditas."
-            elif sys_is_buy and not ana_is_buy:
-                final_decision = "🟢 CAUTIOUS BUY (ALGO-DRIVEN)"
-                color = "#34d399"
-                desc = "Bandarmologi mendeteksi pergerakan beli, namun Analis belum menaikkan rating. Akumulasi bertahap."
-            elif sys_is_sell and not ana_is_sell:
-                final_decision = "🟠 CAUTIOUS SELL (ALGO-DRIVEN)"
-                color = "#fb923c"
-                desc = "Mesin mendeteksi pelemahan tren, meskipun Analis masih optimis. Pasang Trailing Stop ketat."
-            elif sys_is_hold and ana_is_hold:
-                final_decision = "⚖️ SOLID HOLD"
-                color = "#fbbf24"
-                desc = "Konsolidasi market. Tidak ada tekanan jual/beli signifikan. Tahan posisi (Hold)."
-            else:
-                final_decision = "🔍 MIXED SIGNAL (MONITOR)"
-                color = "#a855f7"
-                desc = "Terdapat deviasi antara data algoritma dan konsensus analis. Disarankan memantau ketat pergerakan harga."
-
-            if is_sleeping and "HOLD" in sys_rec_raw:
-                desc += " (Sistem mengunci di posisi HOLD karena saham sedang 'tidur')."
+            if raw_target:
+                vol_target = raw_target['VOLATILITAS']
+                bandar_target = raw_target['STATUS_BANDAR']
+                area_beli = f"{int(raw_target['AREA BELI']):,}".replace(",", ".")
+                target_tp = f"{int(raw_target['TARGET (TP)']):,}".replace(",", ".")
+                stop_loss = f"{int(raw_target['STOP LOSS']):,}".replace(",", ".")
                 
-            final_box_html = f"""
+                skor_algo = 0
+                if raw_target["UP_EMA20"]: skor_algo += 10
+                if raw_target.get("UP_SMA50", False): skor_algo += 10 
+                if raw_target["MACD_GOLDEN"]: skor_algo += 15
+                if raw_target["RSI"] < 40: skor_algo += 15
+                elif 40 <= raw_target["RSI"] <= 65: skor_algo += 10
+                elif raw_target["RSI"] > 70: skor_algo -= 15
+                if raw_target["STATUS_BANDAR"] == "AKUMULASI": skor_algo += 25
+                elif raw_target["STATUS_BANDAR"] == "DISTRIBUSI": skor_algo -= 20
+                else: skor_algo += 5
+                
+                target_skor = 65 if profil_risiko == "Agresif" else (78 if profil_risiko == "Konservatif" else 72)
+                sys_rec_raw = "ACCUMULATE" if skor_algo >= target_skor else ("HOLD" if skor_algo >= 50 else "LIQUIDATE")
+                if vol_target == "🔥 TINGGI" and bandar_target == "DISTRIBUSI": sys_rec_raw = "LIQUIDATE"  
+                elif vol_target == "❄️ RENDAH" and sys_rec_raw == "ACCUMULATE": sys_rec_raw = "HOLD"
+                
+                risk_per_share = raw_target["HARGA"] - raw_target["STOP LOSS"]
+                if "ACCUMULATE" in sys_rec_raw and risk_per_share > 0:
+                    max_lots = int(((modal_trading * (risiko_pct / 100)) / risk_per_share) / 100)
+                    lot_rec_target = f"Max {max_lots:,} Lot" if max_lots > 0 else "Beli Minimal"
+                else: lot_rec_target = "Proteksi/Hold"
+                
+                analyst_data_signal = fetch_analyst_consensus(emiten_signal)
+                konsensus_raw = analyst_data_signal["Konsensus"].upper()
+                
+                sys_is_buy = "ACCUMULATE" in sys_rec_raw
+                sys_is_sell = "LIQUIDATE" in sys_rec_raw
+                sys_is_hold = "HOLD" in sys_rec_raw
+                
+                ana_is_buy = any(x in konsensus_raw for x in ["BUY", "OUTPERFORM", "OVERWEIGHT"])
+                ana_is_sell = any(x in konsensus_raw for x in ["SELL", "UNDERPERFORM", "UNDERWEIGHT"])
+                ana_is_hold = "HOLD" in konsensus_raw or "NEUTRAL" in konsensus_raw
+                
+                is_trap = "🔥 TINGGI" in vol_target and "DISTRIBUSI" in bandar_target
+                is_sleeping = "❄️ RENDAH" in vol_target
+                
+                if is_trap:
+                    final_decision = "🚨 CRITICAL WARNING (BULL TRAP FILTERED)"
+                    color = "#f43f5e"
+                    desc = "PROTEKSI DIALIRKAN: Saham mengalami volatilitas tinggi dengan distribusi bandar masif. Sistem memblokir sinyal beli."
+                elif sys_is_buy and ana_is_buy:
+                    final_decision = "🚀 STRONG BUY (DOUBLE CONFIRMED)"
+                    color = "#10b981"
+                    desc = "Sistem Kuantitatif dan Analis Global SEPAKAT. Saham berada dalam zona akumulasi dengan probabilitas kemenangan tinggi."
+                elif sys_is_sell and ana_is_sell:
+                    final_decision = "🩸 STRONG SELL (DOUBLE CONFIRMED)"
+                    color = "#f43f5e"
+                    desc = "Sistem Kuantitatif dan Analis Global SEPAKAT. Risiko koreksi tinggi, segera lakukan proteksi likuiditas."
+                elif sys_is_buy and not ana_is_buy:
+                    final_decision = "🟢 CAUTIOUS BUY (ALGO-DRIVEN)"
+                    color = "#34d399"
+                    desc = "Bandarmologi mendeteksi pergerakan beli, namun Analis belum menaikkan rating. Akumulasi bertahap."
+                elif sys_is_sell and not ana_is_sell:
+                    final_decision = "🟠 CAUTIOUS SELL (ALGO-DRIVEN)"
+                    color = "#fb923c"
+                    desc = "Mesin mendeteksi pelemahan tren, meskipun Analis masih optimis. Pasang Trailing Stop ketat."
+                elif sys_is_hold and ana_is_hold:
+                    final_decision = "⚖️ SOLID HOLD"
+                    color = "#fbbf24"
+                    desc = "Konsolidasi market. Tidak ada tekanan jual/beli signifikan. Tahan posisi (Hold)."
+                else:
+                    final_decision = "🔍 MIXED SIGNAL (MONITOR)"
+                    color = "#a855f7"
+                    desc = "Terdapat deviasi antara data algoritma dan konsensus analis. Disarankan memantau ketat pergerakan harga."
+
+                if is_sleeping and "HOLD" in sys_rec_raw:
+                    desc += " (Sistem mengunci di posisi HOLD karena saham sedang 'tidur')."
+                    
+                final_box_html = f"""
 <div class='premium-card' style='border-left: 5px solid {color}; margin-top: 10px; margin-bottom: 25px;'>
 <div style='display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;'>
 <div style='flex: 1.5; min-width: 280px; text-align: center; border-right: 1px solid rgba(255,255,255,0.1); padding-right: 15px;'>
@@ -505,7 +507,9 @@ def render_cross_validation_ui():
 </div>
 </div>
 """
-            st.markdown(final_box_html, unsafe_allow_html=True)
+                st.markdown(final_box_html, unsafe_allow_html=True)
+    else:
+        st.info("Belum ada data emiten untuk disinkronkan.")
 
 
 # ==========================================
@@ -513,7 +517,7 @@ def render_cross_validation_ui():
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #00f2fe; font-size: 1.25rem; font-weight: 900; margin-bottom: 0px;'>🧬 QUANTUM MATRIX</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #94a3b8; font-size: 0.65rem; letter-spacing: 1.5px; margin-bottom: 25px;'>DUAL-CORE EDITION v12.1</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #94a3b8; font-size: 0.65rem; letter-spacing: 1.5px; margin-bottom: 25px;'>DUAL-CORE EDITION v12.2</p>", unsafe_allow_html=True)
     
     st.markdown("<div style='font-size:0.75rem; color:#facc15; font-weight:800; letter-spacing:1px; border-bottom: 1px solid rgba(250,204,21,0.2); padding-bottom: 5px; margin-bottom: 10px;'>🎛️ CORE ENGINE MODE</div>", unsafe_allow_html=True)
     engine_mode = st.radio("Pilih Mode Analisis:", ["⚔️ TRADING (Momentum & Technical)", "🛡️ INVESTMENT (Value & Fundamental)"])
@@ -566,7 +570,6 @@ with st.sidebar:
             alert_text = f"🤖 *JIHAN-GHINA ALERTS* | {st.session_state.current_tf}\nMode: {engine_mode}\n\n"
             has_buys = False
             for raw in st.session_state.raw_stocks:
-                # Trading Score logic
                 skor = 0
                 if raw["UP_EMA20"]: skor += 10
                 if raw.get("UP_SMA50", False): skor += 10 
@@ -718,13 +721,16 @@ else:
     df_trading = pd.DataFrame(hasil_trading).sort_values(by="RAW_RET", ascending=False).reset_index(drop=True).drop(columns=["RAW_RET"])
     df_invest = pd.DataFrame(hasil_invest).sort_values(by="RAW_YIELD", ascending=False).reset_index(drop=True).drop(columns=["RAW_YIELD"])
 
+    # EKSTRAK DAFTAR EMITEN TEPAT SESUAI TABEL AKTIF (TOP 15)
+    top_trading_tickers = df_trading.head(15)["TICKER"].tolist()
+    top_invest_tickers = df_invest.head(15)["TICKER"].tolist()
+
     # ------------------------------------------
     # RENDER TABS BERDASARKAN MODE
     # ------------------------------------------
     if "TRADING" in engine_mode:
         tab1, tab2, tab3, tab4 = st.tabs(["🚀 TRADING SIGNAL (TOP GAINERS)", "🧬 MOMENTUM CLUSTERS", "📊 FUNDAMENTAL CHARTS", "📚 ACADEMY"])
         
-        # TAB 1 - TRADING MATRIX & CROSS VALIDATION
         with tab1:
             st.markdown("<br><h3 style='font-size: 1.5rem;'>🛰️ Pro Max Trading Matrix (Sorted by Top Gainers)</h3>", unsafe_allow_html=True)
             def style_trading(row):
@@ -760,10 +766,9 @@ else:
             st.dataframe(df_trading.head(15).style.apply(style_trading, axis=1), use_container_width=True, hide_index=True)
             st.markdown("<p style='color:#94a3b8; font-size:0.8rem; text-align:center;'>Menampilkan Top 15 Saham Penggerak Hari Ini.</p>", unsafe_allow_html=True)
             
-            # --- CROSS VALIDATION KHUSUS DI TAB 1 (TRADING) ---
-            render_cross_validation_ui()
+            # --- CROSS VALIDATION DISINKRONKAN DENGAN TOP TRADING ---
+            render_cross_validation_ui(top_trading_tickers)
 
-        # TAB 2 - CLUSTERS TRADING
         with tab2:
             st.markdown("<br><h3 style='font-size: 1.5rem;'>🧬 Behavioral Trading Clusters</h3>", unsafe_allow_html=True)
             c_ara, c_scalp, c_accum = st.columns(3)
@@ -778,7 +783,6 @@ else:
         # MODE INVESTMENT
         tab1, tab2, tab3, tab4 = st.tabs(["🛡️ VALUE MATRIX (TOP DIVIDEND)", "🏦 FUNDAMENTAL CLUSTERS", "📊 FUNDAMENTAL CHARTS", "📚 ACADEMY"])
         
-        # TAB 1 - INVEST MATRIX & CROSS VALIDATION
         with tab1:
             st.markdown("<br><h3 style='font-size: 1.5rem;'>🛡️ Pro Max Investment Matrix (Sorted by Div Yield)</h3>", unsafe_allow_html=True)
             def style_invest(row):
@@ -805,10 +809,9 @@ else:
             st.dataframe(df_invest.head(15).style.apply(style_invest, axis=1), use_container_width=True, hide_index=True)
             st.markdown("<p style='color:#94a3b8; font-size:0.8rem; text-align:center;'>Menampilkan Top 15 Saham dengan Dividend Yield Tertinggi. Cocok untuk strategi Nabung Saham.</p>", unsafe_allow_html=True)
             
-            # --- CROSS VALIDATION KHUSUS DI TAB 1 (INVEST) ---
-            render_cross_validation_ui()
+            # --- CROSS VALIDATION DISINKRONKAN DENGAN TOP INVEST ---
+            render_cross_validation_ui(top_invest_tickers)
 
-        # TAB 2 - CLUSTERS INVEST
         with tab2:
             st.markdown("<br><h3 style='font-size: 1.5rem;'>🏦 Value Investing Clusters</h3>", unsafe_allow_html=True)
             c_div, c_uv, c_blue = st.columns(3)
@@ -823,7 +826,6 @@ else:
     # TAB 3 & 4 (GLOBAL UNTUK KEDUA MODE)
     # ==========================================
     with tab3:
-        # Untuk TAB 3, kita ambil emiten yang sama dengan yang dipilih di TAB 1 agar match.
         emiten_terpilih = st.session_state.get(f"signal_select_{st.session_state.current_tf}")
         if emiten_terpilih: 
             st.markdown("<br>", unsafe_allow_html=True)
@@ -904,4 +906,4 @@ else:
             """)
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem; font-weight:600; letter-spacing: 1px;'>⚡ JIHAN-GHINA ENGINE • DUAL CORE TERMINAL v12.1</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem; font-weight:600; letter-spacing: 1px;'>⚡ JIHAN-GHINA ENGINE • DUAL CORE TERMINAL v12.2</p>", unsafe_allow_html=True)
