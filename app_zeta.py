@@ -50,7 +50,7 @@ if "current_tf" not in st.session_state: st.session_state.current_tf = "1 Hari (
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE (FULL WIDE)
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Ultimate v12.4", page_icon="🧬", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Ultimate v12.5", page_icon="🧬", layout="wide")
 
 st.markdown("""
 <style>
@@ -389,9 +389,9 @@ def create_locked_plotly_chart(df, color1, color2):
     return fig
 
 # ==========================================
-# 4. FUNGSI RENDER CROSS-VALIDATION UI (OVERHAULED)
+# 4. FUNGSI RENDER CROSS-VALIDATION UI (BUG FIX TUPLE)
 # ==========================================
-def render_cross_validation_ui(active_tickers_list):
+def render_cross_validation_ui(active_tickers_tuple):
     st.markdown("---")
     st.markdown("""
     <div style="margin-top: 15px; margin-bottom: 20px; padding-left: 5px; border-left: 5px solid #00f2fe;">
@@ -400,11 +400,14 @@ def render_cross_validation_ui(active_tickers_list):
     </div>
     """, unsafe_allow_html=True)
     
-    if active_tickers_list:
+    if active_tickers_tuple:
+        # PENGGUNAAN KEY BARU UNTUK MERESET MEMORI CACHE STREAMLIT
+        safe_key = f"cv_target_v125_{st.session_state.current_tf}"
+        
         emiten_signal = st.selectbox(
             "Pindai Detil Emiten:", 
-            active_tickers_list, 
-            key=f"signal_select_{st.session_state.current_tf}"
+            options=active_tickers_tuple, 
+            key=safe_key
         )
         
         with st.spinner(f"Mengkalkulasi Konfirmasi Ganda untuk {emiten_signal}..."):
@@ -485,11 +488,9 @@ def render_cross_validation_ui(active_tickers_list):
                 if is_sleeping and "HOLD" in sys_rec_raw:
                     desc += " (Sistem mengunci di posisi HOLD karena saham sedang 'tidur')."
                     
-                # NEW REFACTORED HTML FOR ELEGANT VALIDATION BOX
                 final_box_html = f"""
 <div style='background: linear-gradient(145deg, rgba(15,23,42,0.8) 0%, rgba(2,6,23,0.9) 100%); border: 1px solid {color}50; border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px -10px {color}40; position: relative; overflow: hidden; margin-top: 10px; margin-bottom: 30px; backdrop-filter: blur(10px);'>
     <div style='position: absolute; top: 0; left: 0; right: 0; height: 4px; background: {color}; box-shadow: 0 0 20px {color};'></div>
-    
     <div style='display: flex; flex-wrap: wrap; gap: 20px;'>
         <div style='flex: 1.5; min-width: 300px; background: rgba(0,0,0,0.4); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.05);'>
             <div style='display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;'>
@@ -513,7 +514,6 @@ def render_cross_validation_ui(active_tickers_list):
                 </div>
             </div>
         </div>
-
         <div style='flex: 1; min-width: 250px; background: rgba(0,0,0,0.4); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; justify-content: center; align-items: center;'>
             <div style='display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;'>
                 <span style='background: rgba(251, 191, 36, 0.1); padding: 8px; border-radius: 8px; font-size:1.2rem;'>🌍</span>
@@ -523,12 +523,10 @@ def render_cross_validation_ui(active_tickers_list):
             <div style='margin-top: 15px; font-size: 0.75rem; color: #64748b; text-align: center; max-width: 80%;'>Agregasi data sentimen institusi & analis sekuritas global.</div>
         </div>
     </div>
-
     <div style='margin-top: 20px; background: rgba(0,0,0,0.6); border: 1px solid {color}40; border-radius: 12px; padding: 25px; text-align: center;'>
         <div style='color: {color}; font-size: 0.8rem; font-weight: 900; letter-spacing: 3px; margin-bottom: 10px; text-transform: uppercase;'>🏆 Ultimate Final Decision</div>
         <div style='color: {color}; font-size: 2rem; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 12px; text-shadow: 0 0 20px {color}60;'>{final_decision}</div>
         <div style='color: #cbd5e1; font-size: 0.95rem; font-weight: 300; max-width: 700px; margin: 0 auto; line-height: 1.6;'>{desc}</div>
-        
         <div style='margin-top: 25px;'>
             <span style='background: linear-gradient(90deg, rgba(0,242,254,0.1) 0%, rgba(30,58,138,0.2) 100%); border: 1px solid #00f2fe60; padding: 12px 30px; border-radius: 30px; color: #00f2fe; font-size: 0.9rem; font-weight: 900; letter-spacing: 1px; box-shadow: 0 5px 15px rgba(0,242,254,0.15); display: inline-block;'>🎯 LOT SIZING: {lot_rec_target}</span>
         </div>
@@ -545,18 +543,18 @@ def render_cross_validation_ui(active_tickers_list):
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #00f2fe; font-size: 1.25rem; font-weight: 900; margin-bottom: 0px;'>🧬 QUANTUM MATRIX</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #94a3b8; font-size: 0.65rem; letter-spacing: 1.5px; margin-bottom: 25px;'>DUAL-CORE EDITION v12.4</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #94a3b8; font-size: 0.65rem; letter-spacing: 1.5px; margin-bottom: 25px;'>DUAL-CORE EDITION v12.5</p>", unsafe_allow_html=True)
     
     st.markdown("<div style='font-size:0.75rem; color:#facc15; font-weight:800; letter-spacing:1px; border-bottom: 1px solid rgba(250,204,21,0.2); padding-bottom: 5px; margin-bottom: 10px;'>🎛️ CORE ENGINE MODE</div>", unsafe_allow_html=True)
-    engine_mode = st.radio("Pilih Mode Analisis:", ["⚔️ TRADING (Momentum & Technical)", "🛡️ INVESTMENT (Value & Fundamental)"])
+    engine_mode = st.radio("Pilih Mode Analisis:", ("⚔️ TRADING (Momentum & Technical)", "🛡️ INVESTMENT (Value & Fundamental)"))
     st.markdown("<br>", unsafe_allow_html=True)
 
-    tf_pilihan = st.selectbox("⏱️ Timeframe Analisis:", ["1 Jam", "4 Jam", "1 Hari (Daily)", "1 Minggu (Weekly)"], index=2)
+    tf_pilihan = st.selectbox("⏱️ Timeframe Analisis:", ("1 Jam", "4 Jam", "1 Hari (Daily)", "1 Minggu (Weekly)"), index=2)
     tf_berubah = tf_pilihan != st.session_state.current_tf
     if tf_berubah: st.session_state.current_tf = tf_pilihan
         
     st.markdown("<div style='font-size:0.7rem; color:#00f2fe; font-weight:800; letter-spacing:1px; margin-top:20px; border-bottom: 1px solid rgba(0,242,254,0.2); padding-bottom: 5px;'>🎯 RISK PROFILE ENGINE</div>", unsafe_allow_html=True)
-    profil_risiko = st.selectbox("Tingkat Agresivitas AI:", ["⚖️ Moderat (Balanced)", "🔥 Agresif (High Signal)", "🛡️ Konservatif (Strict)"], index=0, help="Fungsi SANGAT PENTING. Mengatur seberapa ketat AI memfilter sinyal beli.")
+    profil_risiko = st.selectbox("Tingkat Agresivitas AI:", ("⚖️ Moderat (Balanced)", "🔥 Agresif (High Signal)", "🛡️ Konservatif (Strict)"), index=0, help="Fungsi SANGAT PENTING. Mengatur seberapa ketat AI memfilter sinyal beli.")
     
     st.markdown("<div style='font-size:0.7rem; color:#00f2fe; font-weight:800; letter-spacing:1px; margin-top:20px; border-bottom: 1px solid rgba(0,242,254,0.2); padding-bottom: 5px;'>⚙️ POSITION SIZING</div>", unsafe_allow_html=True)
     modal_input_str = st.text_input("💰 Modal Trading (Rp):", value="50.000.000", help="Gunakan titik untuk memisahkan ribuan")
@@ -750,8 +748,9 @@ else:
     df_trading = pd.DataFrame(hasil_trading).sort_values(by="RAW_RET", ascending=False).reset_index(drop=True).drop(columns=["RAW_RET"])
     df_invest = pd.DataFrame(hasil_invest).sort_values(by="RAW_YIELD", ascending=False).reset_index(drop=True).drop(columns=["RAW_YIELD"])
 
-    top_trading_tickers = df_trading.head(15)["TICKER"].tolist()
-    top_invest_tickers = df_invest.head(15)["TICKER"].tolist()
+    # EKSTRAKSI DATA MENGGUNAKAN TUPLE UNTUK MENGHINDARI BUG UNHASHABLE LIST DI STREAMLIT
+    top_trading_tickers = tuple(str(x) for x in df_trading.head(15)["TICKER"].tolist())
+    top_invest_tickers = tuple(str(x) for x in df_invest.head(15)["TICKER"].tolist())
 
     # ------------------------------------------
     # RENDER TABS BERDASARKAN MODE
@@ -894,7 +893,7 @@ else:
     # TAB 3 & 4 (GLOBAL UNTUK KEDUA MODE)
     # ==========================================
     with tab3:
-        emiten_terpilih = st.session_state.get(f"signal_select_{st.session_state.current_tf}")
+        emiten_terpilih = st.session_state.get(f"cv_target_v125_{st.session_state.current_tf}")
         if emiten_terpilih: 
             st.markdown("<br>", unsafe_allow_html=True)
             st.markdown(f"<h3 style='font-size: 1.5rem;'>📊 Quarterly Financial Matrix : {emiten_terpilih}</h3>", unsafe_allow_html=True)
@@ -974,4 +973,4 @@ else:
             """)
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem; font-weight:600; letter-spacing: 1px;'>⚡ JIHAN-GHINA ENGINE • DUAL CORE TERMINAL v12.4</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem; font-weight:600; letter-spacing: 1px;'>⚡ JIHAN-GHINA ENGINE • DUAL CORE TERMINAL v12.5</p>", unsafe_allow_html=True)
