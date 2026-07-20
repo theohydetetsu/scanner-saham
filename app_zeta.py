@@ -50,7 +50,7 @@ if "current_tf" not in st.session_state: st.session_state.current_tf = "1 Hari (
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE (FULL WIDE)
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Ultimate v12.5", page_icon="🧬", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Ultimate v12.6", page_icon="🧬", layout="wide")
 
 st.markdown("""
 <style>
@@ -389,7 +389,7 @@ def create_locked_plotly_chart(df, color1, color2):
     return fig
 
 # ==========================================
-# 4. FUNGSI RENDER CROSS-VALIDATION UI (BUG FIX TUPLE)
+# 4. FUNGSI RENDER CROSS-VALIDATION UI (SAFE GUARDED)
 # ==========================================
 def render_cross_validation_ui(active_tickers_tuple):
     st.markdown("---")
@@ -400,16 +400,19 @@ def render_cross_validation_ui(active_tickers_tuple):
     </div>
     """, unsafe_allow_html=True)
     
-    if active_tickers_tuple:
-        # PENGGUNAAN KEY BARU UNTUK MERESET MEMORI CACHE STREAMLIT
-        safe_key = f"cv_target_v125_{st.session_state.current_tf}"
-        
-        emiten_signal = st.selectbox(
-            "Pindai Detil Emiten:", 
-            options=active_tickers_tuple, 
-            key=safe_key
-        )
-        
+    # AMAN DARI ERROR KOSONG (MENGGUNAKAN FALLBACK TUPLE)
+    if not active_tickers_tuple or len(active_tickers_tuple) == 0:
+        active_tickers_tuple = ("BBCA", "BBRI", "BMRI")
+    
+    safe_key = f"cv_target_v126_{st.session_state.current_tf}"
+    
+    emiten_signal = st.selectbox(
+        "Pindai Detil Emiten:", 
+        options=active_tickers_tuple, 
+        key=safe_key
+    )
+    
+    if emiten_signal:
         with st.spinner(f"Mengkalkulasi Konfirmasi Ganda untuk {emiten_signal}..."):
             raw_target = next((item for item in st.session_state.raw_stocks if item["TICKER"] == emiten_signal), None)
             
@@ -500,15 +503,15 @@ def render_cross_validation_ui(active_tickers_tuple):
             <div style='text-align: center; font-size: 1.8rem; font-weight: 900; color: #f8fafc; letter-spacing: -0.5px; margin-bottom: 20px;'>{sys_rec_raw}</div>
             
             <div style='display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;'>
-                <div style='text-align: center; background: rgba(56, 189, 248, 0.05); padding: 12px 8px; border-radius: 10px; border: 1px solid rgba(56, 189, 248, 0.15); transition: transform 0.2s;'>
+                <div style='text-align: center; background: rgba(56, 189, 248, 0.05); padding: 12px 8px; border-radius: 10px; border: 1px solid rgba(56, 189, 248, 0.15);'>
                     <div style='font-size: 0.65rem; color: #94a3b8; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 4px;'>AREA BELI</div>
                     <div style='font-size: 1rem; color: #38bdf8; font-weight: 900;'>{area_beli}</div>
                 </div>
-                <div style='text-align: center; background: rgba(16, 185, 129, 0.05); padding: 12px 8px; border-radius: 10px; border: 1px solid rgba(16, 185, 129, 0.15); transition: transform 0.2s;'>
+                <div style='text-align: center; background: rgba(16, 185, 129, 0.05); padding: 12px 8px; border-radius: 10px; border: 1px solid rgba(16, 185, 129, 0.15);'>
                     <div style='font-size: 0.65rem; color: #94a3b8; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 4px;'>TARGET (TP)</div>
                     <div style='font-size: 1rem; color: #10b981; font-weight: 900;'>{target_tp}</div>
                 </div>
-                <div style='text-align: center; background: rgba(244, 63, 94, 0.05); padding: 12px 8px; border-radius: 10px; border: 1px solid rgba(244, 63, 94, 0.15); transition: transform 0.2s;'>
+                <div style='text-align: center; background: rgba(244, 63, 94, 0.05); padding: 12px 8px; border-radius: 10px; border: 1px solid rgba(244, 63, 94, 0.15);'>
                     <div style='font-size: 0.65rem; color: #94a3b8; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 4px;'>STOP LOSS</div>
                     <div style='font-size: 1rem; color: #f43f5e; font-weight: 900;'>{stop_loss}</div>
                 </div>
@@ -534,8 +537,6 @@ def render_cross_validation_ui(active_tickers_tuple):
 </div>
 """
                 st.markdown(final_box_html, unsafe_allow_html=True)
-    else:
-        st.info("Belum ada data emiten untuk disinkronkan.")
 
 
 # ==========================================
@@ -543,7 +544,7 @@ def render_cross_validation_ui(active_tickers_tuple):
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #00f2fe; font-size: 1.25rem; font-weight: 900; margin-bottom: 0px;'>🧬 QUANTUM MATRIX</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #94a3b8; font-size: 0.65rem; letter-spacing: 1.5px; margin-bottom: 25px;'>DUAL-CORE EDITION v12.5</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #94a3b8; font-size: 0.65rem; letter-spacing: 1.5px; margin-bottom: 25px;'>DUAL-CORE EDITION v12.6</p>", unsafe_allow_html=True)
     
     st.markdown("<div style='font-size:0.75rem; color:#facc15; font-weight:800; letter-spacing:1px; border-bottom: 1px solid rgba(250,204,21,0.2); padding-bottom: 5px; margin-bottom: 10px;'>🎛️ CORE ENGINE MODE</div>", unsafe_allow_html=True)
     engine_mode = st.radio("Pilih Mode Analisis:", ("⚔️ TRADING (Momentum & Technical)", "🛡️ INVESTMENT (Value & Fundamental)"))
@@ -748,7 +749,6 @@ else:
     df_trading = pd.DataFrame(hasil_trading).sort_values(by="RAW_RET", ascending=False).reset_index(drop=True).drop(columns=["RAW_RET"])
     df_invest = pd.DataFrame(hasil_invest).sort_values(by="RAW_YIELD", ascending=False).reset_index(drop=True).drop(columns=["RAW_YIELD"])
 
-    # EKSTRAKSI DATA MENGGUNAKAN TUPLE UNTUK MENGHINDARI BUG UNHASHABLE LIST DI STREAMLIT
     top_trading_tickers = tuple(str(x) for x in df_trading.head(15)["TICKER"].tolist())
     top_invest_tickers = tuple(str(x) for x in df_invest.head(15)["TICKER"].tolist())
 
@@ -893,7 +893,7 @@ else:
     # TAB 3 & 4 (GLOBAL UNTUK KEDUA MODE)
     # ==========================================
     with tab3:
-        emiten_terpilih = st.session_state.get(f"cv_target_v125_{st.session_state.current_tf}")
+        emiten_terpilih = st.session_state.get(f"cv_target_v126_{st.session_state.current_tf}")
         if emiten_terpilih: 
             st.markdown("<br>", unsafe_allow_html=True)
             st.markdown(f"<h3 style='font-size: 1.5rem;'>📊 Quarterly Financial Matrix : {emiten_terpilih}</h3>", unsafe_allow_html=True)
@@ -973,4 +973,4 @@ else:
             """)
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem; font-weight:600; letter-spacing: 1px;'>⚡ JIHAN-GHINA ENGINE • DUAL CORE TERMINAL v12.5</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem; font-weight:600; letter-spacing: 1px;'>⚡ JIHAN-GHINA ENGINE • DUAL CORE TERMINAL v12.6</p>", unsafe_allow_html=True)
