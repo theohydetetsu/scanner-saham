@@ -14,7 +14,7 @@ import requests
 warnings.filterwarnings('ignore')
 
 # ==========================================
-# 0. SISTEM CACHE, CONFIG & TRACKING (AUTO-HEAL)
+# 0. SISTEM CACHE, CONFIG & TRACKING
 # ==========================================
 CACHE_FILE = "jihan_ghina_saham_cache.json"
 CONFIG_FILE = "jihan_ghina_config.json" 
@@ -33,13 +33,11 @@ def save_config(token, chat_id):
 app_config = load_config()
 
 def load_smart_cache():
-    # Membaca cache dan otomatis menghancurkan cache lama jika tidak kompatibel dengan v12.8
     if os.path.exists(CACHE_FILE):
         try:
             with open(CACHE_FILE, "r") as f:
                 cache_data = json.load(f)
                 loaded_stocks = cache_data.get("raw_stocks", [])
-                # Auto-Heal: Jika cache lama tidak punya fitur RSI_STATUS, nuke cache!
                 if loaded_stocks and isinstance(loaded_stocks, list):
                     if "RSI_STATUS" not in loaded_stocks[0]:
                         return [], None
@@ -58,9 +56,9 @@ if "current_tf" not in st.session_state:
     st.session_state.current_tf = "1 Hari (Daily)"
 
 # ==========================================
-# 1. KONFIGURASI HALAMAN & UI STYLE (FULL WIDE)
+# 1. KONFIGURASI HALAMAN & UI STYLE
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Ultimate v12.8", page_icon="🧬", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Ultimate v12.9", page_icon="🧬", layout="wide")
 
 st.markdown("""
 <style>
@@ -423,7 +421,7 @@ def create_locked_plotly_chart(df, color1, color2):
     return fig
 
 # ==========================================
-# 4. FUNGSI RENDER CROSS-VALIDATION UI (BULLETPROOF)
+# 4. FUNGSI RENDER CROSS-VALIDATION UI (STREAMLIT NATIVE SAFE)
 # ==========================================
 def render_cross_validation_ui(active_tickers_tuple):
     st.markdown("---")
@@ -435,7 +433,7 @@ def render_cross_validation_ui(active_tickers_tuple):
     """, unsafe_allow_html=True)
     
     if active_tickers_tuple and len(active_tickers_tuple) > 0:
-        safe_key = f"cv_target_v128_{st.session_state.current_tf}_{engine_mode[:3]}"
+        safe_key = f"cv_target_v129_{st.session_state.current_tf}_{engine_mode[:3]}"
         
         if safe_key in st.session_state and st.session_state[safe_key] not in active_tickers_tuple:
             del st.session_state[safe_key]
@@ -450,7 +448,6 @@ def render_cross_validation_ui(active_tickers_tuple):
             raw_target = next((item for item in st.session_state.raw_stocks if item.get("TICKER") == emiten_signal), None)
             
             if raw_target:
-                # SAFE EXTRACTION (Mencegah KeyError apapun yang terjadi)
                 vol_target = raw_target.get('VOLATILITAS', '❄️ RENDAH')
                 bd_status = raw_target.get("STATUS_BANDAR", "➖ NEUTRAL")
                 rs_status = raw_target.get("RSI_STATUS", "➖ NEUTRAL")
@@ -511,7 +508,7 @@ def render_cross_validation_ui(active_tickers_tuple):
                 if is_trap:
                     final_decision = "🚨 CRITICAL WARNING (BULL TRAP FILTERED)"
                     color = "#f43f5e"
-                    desc = "PROTEKSI DIALIRKAN: Harga terlihat bergerak agresif namun mesin mendeteksi Guyuran Bandar / Distribusi Pucuk. Jangan tertipu!"
+                    desc = "PROTEKSI DIALIRKAN: Harga bergerak agresif namun mesin mendeteksi Guyuran Bandar / Distribusi Pucuk. Jangan tertipu!"
                 elif sys_is_buy and ana_is_buy:
                     final_decision = "🚀 STRONG BUY (DOUBLE CONFIRMED)"
                     color = "#10b981"
@@ -531,7 +528,7 @@ def render_cross_validation_ui(active_tickers_tuple):
                 elif sys_is_hold and ana_is_hold:
                     final_decision = "⚖️ SOLID HOLD"
                     color = "#fbbf24"
-                    desc = "Market sedang berkonsolidasi (Sideways). Tidak ada dominasi Supply maupun Demand. Tahan amunisi."
+                    desc = "Market sedang berkonsolidasi (Sideways). Tidak ada tekanan jual/beli signifikan. Tahan amunisi."
                 else:
                     final_decision = "🔍 MIXED SIGNAL (MONITOR)"
                     color = "#a855f7"
@@ -540,52 +537,61 @@ def render_cross_validation_ui(active_tickers_tuple):
                 if is_sleeping and "HOLD" in sys_rec_raw:
                     desc += " (Sistem mengunci ke HOLD karena volatilitas sedang rendah alias 'saham tidur')."
                     
-                final_box_html = f"""
-<div style='background: linear-gradient(145deg, rgba(15,23,42,0.8) 0%, rgba(2,6,23,0.9) 100%); border: 1px solid {color}50; border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px -10px {color}40; position: relative; overflow: hidden; margin-top: 10px; margin-bottom: 30px; backdrop-filter: blur(10px);'>
-    <div style='position: absolute; top: 0; left: 0; right: 0; height: 4px; background: {color}; box-shadow: 0 0 20px {color};'></div>
-    <div style='display: flex; flex-wrap: wrap; gap: 20px;'>
-        <div style='flex: 1.5; min-width: 300px; background: rgba(0,0,0,0.4); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.05);'>
-            <div style='display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;'>
-                <span style='background: rgba(0,242,254,0.1); padding: 8px; border-radius: 8px; font-size:1.2rem;'>💻</span>
-                <span style='color: #94a3b8; font-size: 0.85rem; font-weight: 800; letter-spacing: 1.5px;'>JIHAN-GHINA ALGO SCORE</span>
-            </div>
-            <div style='text-align: center; font-size: 1.8rem; font-weight: 900; color: #f8fafc; letter-spacing: -0.5px; margin-bottom: 20px;'>{sys_rec_raw}</div>
-            
-            <div style='display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;'>
-                <div style='text-align: center; background: rgba(56, 189, 248, 0.05); padding: 12px 8px; border-radius: 10px; border: 1px solid rgba(56, 189, 248, 0.15); transition: transform 0.2s;'>
-                    <div style='font-size: 0.65rem; color: #94a3b8; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 4px;'>AREA BELI</div>
-                    <div style='font-size: 1rem; color: #38bdf8; font-weight: 900;'>{area_beli}</div>
+                # ==========================================
+                # RENDER MENGGUNAKAN STREAMLIT NATIVE LAYOUT (100% BUG-FREE)
+                # ==========================================
+                col_res1, col_res2 = st.columns([1.5, 1])
+                
+                with col_res1:
+                    st.markdown(f"""
+                    <div style='background: rgba(30,41,59,0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 20px;'>
+                        <div style='text-align: center; color: #94a3b8; font-size: 0.8rem; font-weight: 800; letter-spacing: 1px;'>💻 JIHAN-GHINA ALGO SCORE</div>
+                        <div style='text-align: center; font-size: 1.8rem; font-weight: 900; color: #f8fafc; margin-top: 5px; margin-bottom: 15px;'>{sys_rec_raw}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    sub1, sub2, sub3 = st.columns(3)
+                    with sub1:
+                        st.markdown(f"""
+                        <div style='background: rgba(56, 189, 248, 0.05); padding: 12px; border-radius: 10px; border: 1px solid rgba(56, 189, 248, 0.15); text-align: center;'>
+                            <div style='font-size: 0.65rem; color: #94a3b8; font-weight: 800;'>AREA BELI</div>
+                            <div style='font-size: 1rem; color: #38bdf8; font-weight: 900; margin-top: 4px;'>{area_beli}</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    with sub2:
+                        st.markdown(f"""
+                        <div style='background: rgba(16, 185, 129, 0.05); padding: 12px; border-radius: 10px; border: 1px solid rgba(16, 185, 129, 0.15); text-align: center;'>
+                            <div style='font-size: 0.65rem; color: #94a3b8; font-weight: 800;'>TARGET (TP)</div>
+                            <div style='font-size: 1rem; color: #10b981; font-weight: 900; margin-top: 4px;'>{target_tp}</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    with sub3:
+                        st.markdown(f"""
+                        <div style='background: rgba(244, 63, 94, 0.05); padding: 12px; border-radius: 10px; border: 1px solid rgba(244, 63, 94, 0.15); text-align: center;'>
+                            <div style='font-size: 0.65rem; color: #94a3b8; font-weight: 800;'>STOP LOSS</div>
+                            <div style='font-size: 1rem; color: #f43f5e; font-weight: 900; margin-top: 4px;'>{stop_loss}</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                with col_res2:
+                    st.markdown(f"""
+                    <div style='background: rgba(30,41,59,0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;'>
+                        <div style='text-align: center; color: #94a3b8; font-size: 0.8rem; font-weight: 800; letter-spacing: 1px;'>🌍 GLOBAL ANALYST</div>
+                        <div style='text-align: center; font-size: 1.6rem; font-weight: 900; color: #f8fafc; margin-top: 5px;'>{konsensus_raw if konsensus_raw != 'N/A' else 'UNAVAILABLE'}</div>
+                        <div style='font-size: 0.7rem; color: #64748b; text-align: center; margin-top: 8px;'>Agregasi data institusi global.</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                st.markdown(f"""
+                <div style='margin-top: 20px; background: rgba(15, 23, 42, 0.8); border: 1px solid {color}50; border-radius: 14px; padding: 25px; text-align: center; box-shadow: 0 10px 30px -10px {color}30;'>
+                    <div style='color: {color}; font-size: 0.8rem; font-weight: 900; letter-spacing: 3px; margin-bottom: 8px; text-transform: uppercase;'>🏆 Ultimate Final Decision</div>
+                    <div style='color: {color}; font-size: 1.8rem; font-weight: 900; margin-bottom: 12px; text-shadow: 0 0 15px {color}60;'>{final_decision}</div>
+                    <div style='color: #cbd5e1; font-size: 0.95rem; font-weight: 300; max-width: 750px; margin: 0 auto; line-height: 1.6;'>{desc}</div>
+                    <div style='margin-top: 20px;'>
+                        <span style='background: linear-gradient(90deg, rgba(0,242,254,0.1) 0%, rgba(30,58,138,0.2) 100%); border: 1px solid #00f2fe60; padding: 10px 25px; border-radius: 30px; color: #00f2fe; font-size: 0.85rem; font-weight: 900; display: inline-block;'>🎯 LOT SIZING: {lot_rec_target}</span>
+                    </div>
                 </div>
-                <div style='text-align: center; background: rgba(16, 185, 129, 0.05); padding: 12px 8px; border-radius: 10px; border: 1px solid rgba(16, 185, 129, 0.15); transition: transform 0.2s;'>
-                    <div style='font-size: 0.65rem; color: #94a3b8; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 4px;'>TARGET (TP)</div>
-                    <div style='font-size: 1rem; color: #10b981; font-weight: 900;'>{target_tp}</div>
-                </div>
-                <div style='text-align: center; background: rgba(244, 63, 94, 0.05); padding: 12px 8px; border-radius: 10px; border: 1px solid rgba(244, 63, 94, 0.15); transition: transform 0.2s;'>
-                    <div style='font-size: 0.65rem; color: #94a3b8; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 4px;'>STOP LOSS</div>
-                    <div style='font-size: 1rem; color: #f43f5e; font-weight: 900;'>{stop_loss}</div>
-                </div>
-            </div>
-        </div>
-        <div style='flex: 1; min-width: 250px; background: rgba(0,0,0,0.4); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; justify-content: center; align-items: center;'>
-            <div style='display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;'>
-                <span style='background: rgba(251, 191, 36, 0.1); padding: 8px; border-radius: 8px; font-size:1.2rem;'>🌍</span>
-                <span style='color: #94a3b8; font-size: 0.85rem; font-weight: 800; letter-spacing: 1.5px;'>GLOBAL ANALYST CONSENSUS</span>
-            </div>
-            <div style='text-align: center; font-size: 1.8rem; font-weight: 900; color: #f8fafc; letter-spacing: -0.5px;'>{konsensus_raw if konsensus_raw != 'N/A' else 'DATA UNAVAILABLE'}</div>
-            <div style='margin-top: 15px; font-size: 0.75rem; color: #64748b; text-align: center; max-width: 80%;'>Agregasi data sentimen institusi & analis sekuritas global.</div>
-        </div>
-    </div>
-    <div style='margin-top: 20px; background: rgba(0,0,0,0.6); border: 1px solid {color}40; border-radius: 12px; padding: 25px; text-align: center;'>
-        <div style='color: {color}; font-size: 0.8rem; font-weight: 900; letter-spacing: 3px; margin-bottom: 10px; text-transform: uppercase;'>🏆 Ultimate Final Decision</div>
-        <div style='color: {color}; font-size: 1.8rem; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 12px; text-shadow: 0 0 20px {color}60;'>{final_decision}</div>
-        <div style='color: #cbd5e1; font-size: 0.95rem; font-weight: 300; max-width: 700px; margin: 0 auto; line-height: 1.6;'>{desc}</div>
-        <div style='margin-top: 25px;'>
-            <span style='background: linear-gradient(90deg, rgba(0,242,254,0.1) 0%, rgba(30,58,138,0.2) 100%); border: 1px solid #00f2fe60; padding: 12px 30px; border-radius: 30px; color: #00f2fe; font-size: 0.9rem; font-weight: 900; letter-spacing: 1px; box-shadow: 0 5px 15px rgba(0,242,254,0.15); display: inline-block;'>🎯 LOT SIZING: {lot_rec_target}</span>
-        </div>
-    </div>
-</div>
-"""
-                st.markdown(final_box_html, unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
     else:
         st.warning("⚠️ Menunggu inisiasi data... Silakan jalankan 'SCAN 100 SAHAM' di sidebar.")
 
@@ -594,7 +600,7 @@ def render_cross_validation_ui(active_tickers_tuple):
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #00f2fe; font-size: 1.25rem; font-weight: 900; margin-bottom: 0px;'>🧬 QUANTUM MATRIX</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #94a3b8; font-size: 0.65rem; letter-spacing: 1.5px; margin-bottom: 25px;'>DUAL-CORE EDITION v12.8</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #94a3b8; font-size: 0.65rem; letter-spacing: 1.5px; margin-bottom: 25px;'>DUAL-CORE EDITION v12.9</p>", unsafe_allow_html=True)
     
     st.markdown("<div style='font-size:0.75rem; color:#facc15; font-weight:800; letter-spacing:1px; border-bottom: 1px solid rgba(250,204,21,0.2); padding-bottom: 5px; margin-bottom: 10px;'>🎛️ CORE ENGINE MODE</div>", unsafe_allow_html=True)
     engine_mode = st.radio("Pilih Mode Analisis:", ("⚔️ TRADING (Momentum & Technical)", "🛡️ INVESTMENT (Value & Fundamental)"))
@@ -605,23 +611,22 @@ with st.sidebar:
     if tf_berubah: st.session_state.current_tf = tf_pilihan
         
     st.markdown("<div style='font-size:0.7rem; color:#00f2fe; font-weight:800; letter-spacing:1px; margin-top:20px; border-bottom: 1px solid rgba(0,242,254,0.2); padding-bottom: 5px;'>🎯 RISK PROFILE ENGINE</div>", unsafe_allow_html=True)
-    profil_risiko = st.selectbox("Tingkat Agresivitas AI:", ("⚖️ Moderat (Balanced)", "🔥 Agresif (High Signal)", "🛡️ Konservatif (Strict)"), index=0, help="Fungsi SANGAT PENTING. Mengatur seberapa ketat AI memfilter sinyal beli.")
+    profil_risiko = st.selectbox("Tingkat Agresivitas AI:", ("⚖️ Moderat (Balanced)", "🔥 Agresif (High Signal)", "🛡️ Konservatif (Strict)"), index=0)
     
     st.markdown("<div style='font-size:0.7rem; color:#00f2fe; font-weight:800; letter-spacing:1px; margin-top:20px; border-bottom: 1px solid rgba(0,242,254,0.2); padding-bottom: 5px;'>⚙️ POSITION SIZING</div>", unsafe_allow_html=True)
-    modal_input_str = st.text_input("💰 Modal Trading (Rp):", value="50.000.000", help="Gunakan titik untuk memisahkan ribuan")
+    modal_input_str = st.text_input("💰 Modal Trading (Rp):", value="50.000.000")
     try: modal_trading = int(modal_input_str.replace(".", "").replace(",", ""))
     except: modal_trading = 50000000
     risiko_pct = st.slider("🚨 Batas Risiko /Trade (%):", min_value=0.5, max_value=5.0, value=1.0, step=0.5)
     
     with st.expander("🤖 Telegram Automation Alert"):
-        st.markdown("<p style='font-size: 0.7rem; color: #10b981;'>Data otomatis tersimpan ke server.</p>", unsafe_allow_html=True)
         bot_token = st.text_input("Bot Token:", value=app_config["tg_token"], type="password")
         chat_id = st.text_input("Chat ID:", value=app_config["tg_chat_id"])
         if bot_token != app_config["tg_token"] or chat_id != app_config["tg_chat_id"]:
             save_config(bot_token, chat_id)
             app_config["tg_token"] = bot_token
             app_config["tg_chat_id"] = chat_id
-            st.success("Config Telegram Tersimpan!")
+            st.success("Config Tersimpan!")
 
     st.markdown("<br>", unsafe_allow_html=True)
     
@@ -736,7 +741,6 @@ else:
     cluster_bluechip = []
     
     for raw in st.session_state.raw_stocks:
-        # SAFE EXTRACTION (Mencegah KeyError dari cache yang korup)
         up_ema20 = raw.get("UP_EMA20", False)
         up_sma50 = raw.get("UP_SMA50", False)
         macd_golden = raw.get("MACD_GOLDEN", False)
@@ -763,9 +767,6 @@ else:
         sma50 = raw.get("SMA50", 0)
         volume = raw.get("VOLUME", 0)
 
-        # ==================================
-        # SCORING ALGO V12.8 (Trading)
-        # ==================================
         skor_t = 0
         if up_ema20: skor_t += 10
         if up_sma50: skor_t += 10 
@@ -837,7 +838,6 @@ else:
             cluster_scalp.append(ticker)
             
         harga_tengah = (high_skg + low_skg) / 2
-        # Bug Fix: Pastikan hanya memproses saham yang uptrend (di atas EMA20)
         if (volume > (1.5 * vol_sma20)) and up_ema20 and (harga >= harga_tengah):
             cluster_accum.append(ticker)
             
@@ -856,9 +856,6 @@ else:
     top_trading_tickers = tuple(str(x) for x in df_trading.head(15)["TICKER"].tolist()) if not df_trading.empty else ()
     top_invest_tickers = tuple(str(x) for x in df_invest.head(15)["TICKER"].tolist()) if not df_invest.empty else ()
 
-    # ------------------------------------------
-    # RENDER TABS BERDASARKAN MODE
-    # ------------------------------------------
     if "TRADING" in engine_mode:
         tab1, tab2, tab3, tab4 = st.tabs(["🚀 TRADING SIGNAL (TOP GAINERS)", "🧬 MOMENTUM CLUSTERS", "📊 FUNDAMENTAL CHARTS", "📚 ACADEMY"])
         
@@ -896,7 +893,6 @@ else:
                 return styles
 
             if not df_trading.empty:
-                # COMPATIBILITY UPDATE: hide_index=True dihilangkan untuk support Streamlit versi jadul
                 st.dataframe(df_trading.head(15).style.apply(style_trading, axis=1), use_container_width=True)
             st.markdown("<p style='color:#94a3b8; font-size:0.8rem; text-align:center;'>Menampilkan Top 15 Saham Penggerak Hari Ini.</p>", unsafe_allow_html=True)
             
@@ -934,7 +930,6 @@ else:
                 """, unsafe_allow_html=True)
 
     else:
-        # MODE INVESTMENT
         tab1, tab2, tab3, tab4 = st.tabs(["🛡️ VALUE MATRIX (TOP DIVIDEND)", "🏦 FUNDAMENTAL CLUSTERS", "📊 FUNDAMENTAL CHARTS", "📚 ACADEMY"])
         
         with tab1:
@@ -997,11 +992,8 @@ else:
                 </div>
                 """, unsafe_allow_html=True)
 
-    # ==========================================
-    # TAB 3 & 4 (GLOBAL UNTUK KEDUA MODE)
-    # ==========================================
     with tab3:
-        safe_key = f"cv_target_v128_{st.session_state.current_tf}_{engine_mode[:3]}"
+        safe_key = f"cv_target_v129_{st.session_state.current_tf}_{engine_mode[:3]}"
         emiten_terpilih = st.session_state.get(safe_key)
         
         if emiten_terpilih: 
@@ -1064,23 +1056,23 @@ else:
     with tab4:
         st.markdown("<br><h3 style='font-size: 1.5rem; text-align: center;'>📚 Jihan-Ghina Academy & User Guide</h3>", unsafe_allow_html=True)
         st.markdown("<p style='text-align: center; color: #94a3b8; font-size: 0.85rem; margin-bottom: 20px;'>Panduan analitika level institusi di dalam terminal.</p>", unsafe_allow_html=True)
-        with st.expander("📖 1. Apa yang Baru di v12.7 & v12.8 (Sniper Reversal Engine)?"):
+        with st.expander("📖 1. Apa yang Baru di v12.9 (Sniper Reversal Engine)?"):
             st.markdown("""
-            * **RSI Dinamis:** Mesin kini mendeteksi **Reversal Dasar** (Momen persis saat RSI mulai menikung naik dari area Oversold) untuk ketepatan "Bottom Fishing". Serta **Reversal Pucuk** (Momen RSI jatuh dari Overbought) agar Anda bisa "Jual di Pucuk".
-            * **Anatomi Lilin (Shadow Rejection):** Mesin memadukan volume dan bentuk lilin. **Akumulasi Dasar** tercetak jika harga jatuh, tapi di-buyback bandar secara masif (membentuk ekor bawah panjang). **Distribusi Pucuk** terjadi saat harga diguyur di atas.
-            * **Auto-Healing Cache:** Tidak akan pernah terjadi bentrok *error* memori lagi!
+            * **RSI Dinamis:** Membaca Reversal Dasar (pantulan support) dan Reversal Pucuk (overbought/jenuh beli).
+            * **Anatomi Lilin (Shadow Rejection):** Deteksi akumulasi paus di dasar (ekor panjang bawah) dan distribusi pucuk (ekor panjang atas).
+            * **Streamlit Native Layout:** Memperbaiki bug render HTML panjang sehingga kotak Executive Cross-Validation tampil sempurna tanpa teks mentah.
             """)
         with st.expander("📖 2. Dual-Core Mode (Trading vs Investment)"):
             st.markdown("""
-            * **Mode Trading:** Dirancang untuk mencari cuan cepat berdasarkan momentum, volatilitas, dan akumulasi bandar.
-            * **Mode Investment:** Dirancang untuk menabung saham jangka panjang (Dividend Yield).
+            * **Mode Trading:** Mencari momentum harian dan akumulasi bandar.
+            * **Mode Investment:** Mencari dividen dan emiten undervalued jangka panjang.
             """)
-        with st.expander("📖 3. Position Sizing (Manajemen Risiko Kuantitatif)"):
+        with st.expander("📖 3. Position Sizing"):
             st.markdown("""
-            1. Isi modal asli Anda di panel kiri.
-            2. Set toleransi rugi di `1.0%` (Sangat disarankan).
-            3. Mesin otomatis akan menghitung maksimal Lot yang aman untuk Anda beli berdasarkan jarak Target Stop Loss.
+            1. Masukkan modal Anda di panel kiri.
+            2. Sesuaikan batas risiko 1.0%.
+            3. Ikuti rekomendasi Lot Sizing untuk mengontrol risiko secara ketat.
             """)
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem; font-weight:600; letter-spacing: 1px;'>⚡ JIHAN-GHINA ENGINE • DUAL CORE TERMINAL v12.8 (Auto-Heal Bulletproof)</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem; font-weight:600; letter-spacing: 1px;'>⚡ JIHAN-GHINA ENGINE • DUAL CORE TERMINAL v12.9 (Native Render Safe)</p>", unsafe_allow_html=True)
