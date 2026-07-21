@@ -50,7 +50,7 @@ if "current_tf" not in st.session_state: st.session_state.current_tf = "1 Hari (
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE (FULL WIDE)
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Ultimate v12.6", page_icon="🧬", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Ultimate v12.7", page_icon="🧬", layout="wide")
 
 st.markdown("""
 <style>
@@ -233,11 +233,43 @@ def fetch_single_stock(emiten, mode_tf):
         elif volatilitas_pct >= 1.5: volatilitas_stat = "⚡ MODERAT"
         else: volatilitas_stat = "❄️ RENDAH"
         
-        is_bullish_candle = harga_skg >= open_skg
-        if (vol_skg > (vol_sma20 * 1.2)) and is_bullish_candle and (harga_skg > ema20_skg): status_bandar = "AKUMULASI" 
-        elif (vol_skg > (vol_sma20 * 1.2)) and not is_bullish_candle: status_bandar = "DISTRIBUSI" 
-        else: status_bandar = "NEUTRAL"
+        # ===============================================
+        # 1. RSI REVERSAL ALGORITHM (NEW UPGRADE v12.7)
+        # ===============================================
+        rsi_skg = float(df['RSI'].iloc[-1])
+        rsi_lalu = float(df['RSI'].iloc[-2])
         
+        if rsi_lalu < 35 and rsi_skg > rsi_lalu: rsi_status = "🟢 REVERSAL DASAR"
+        elif rsi_skg <= 35: rsi_status = "📉 DEEP OVERSOLD"
+        elif rsi_lalu > 65 and rsi_skg < rsi_lalu: rsi_status = "🔴 REVERSAL PUCUK"
+        elif rsi_skg >= 65: rsi_status = "📈 OVERBOUGHT"
+        elif rsi_skg > rsi_lalu: rsi_status = "↗️ MOMENTUM NAIK"
+        else: rsi_status = "↘️ MOMENTUM TURUN"
+
+        # ===============================================
+        # 2. CANDLESTICK & BANDAR REJECTION (NEW UPGRADE v12.7)
+        # ===============================================
+        is_bullish = harga_skg >= open_skg
+        lower_shadow = (open_skg if is_bullish else harga_skg) - low_skg
+        upper_shadow = high_skg - (harga_skg if is_bullish else open_skg)
+        body_size = abs(open_skg - harga_skg)
+        
+        is_vol_spike = vol_skg > (vol_sma20 * 1.3)
+        
+        if is_vol_spike:
+            # Jika volume tinggi dan ekor bawah sangat panjang + RSI rendah -> Paus Serok Bawah
+            if lower_shadow > (body_size * 1.2) and rsi_skg < 45:
+                status_bandar = "🐋 AKUMULASI DASAR"
+            # Jika volume tinggi dan ekor atas sangat panjang + RSI tinggi -> Paus Buang Barang
+            elif upper_shadow > (body_size * 1.2) and rsi_skg > 60:
+                status_bandar = "🩸 DISTRIBUSI PUCUK"
+            elif is_bullish:
+                status_bandar = "🚀 MARK-UP (AKUMULASI)"
+            else:
+                status_bandar = "💥 MARK-DOWN (DISTRIBUSI)"
+        else:
+            status_bandar = "➖ SEPI / NEUTRAL"
+            
         high_history = float(df['High'].tail(20).max())
         low_history = float(df['Low'].tail(20).min())
         
@@ -265,8 +297,10 @@ def fetch_single_stock(emiten, mode_tf):
             "AREA BELI": ema20_skg if harga_skg > ema20_skg else (low_history + (harga_skg - low_history)*0.3), 
             "TARGET (TP)": harga_skg * 1.05 if high_history <= harga_skg else high_history,
             "STOP LOSS": harga_skg * 0.96 if low_history >= harga_skg else low_history,
-            "VOLATILITAS": volatilitas_stat, "RSI": round(float(df['RSI'].iloc[-1]), 2),
-            "STATUS_BANDAR": status_bandar,
+            "VOLATILITAS": volatilitas_stat, 
+            "RSI": round(float(df['RSI'].iloc[-1]), 2),
+            "RSI_STATUS": rsi_status,          # Kunci Data Baru v12.7
+            "STATUS_BANDAR": status_bandar,    # Overhauled v12.7
             "UP_EMA20": harga_skg > ema20_skg, 
             "UP_SMA50": harga_skg > sma50_skg,
             "MACD_GOLDEN": float(df['MACD'].iloc[-1]) > float(df['Signal'].iloc[-1]),
@@ -389,7 +423,7 @@ def create_locked_plotly_chart(df, color1, color2):
     return fig
 
 # ==========================================
-# 4. FUNGSI RENDER CROSS-VALIDATION UI (SAFE GUARDED)
+# 4. FUNGSI RENDER CROSS-VALIDATION UI (FALLBACK STATE SECURE)
 # ==========================================
 def render_cross_validation_ui(active_tickers_tuple):
     st.markdown("---")
@@ -400,43 +434,58 @@ def render_cross_validation_ui(active_tickers_tuple):
     </div>
     """, unsafe_allow_html=True)
     
-    # AMAN DARI ERROR KOSONG (MENGGUNAKAN FALLBACK TUPLE)
-    if not active_tickers_tuple or len(active_tickers_tuple) == 0:
-        active_tickers_tuple = ("BBCA", "BBRI", "BMRI")
-    
-    safe_key = f"cv_target_v126_{st.session_state.current_tf}"
-    
-    emiten_signal = st.selectbox(
-        "Pindai Detil Emiten:", 
-        options=active_tickers_tuple, 
-        key=safe_key
-    )
-    
-    if emiten_signal:
+    if active_tickers_tuple and len(active_tickers_tuple) > 0:
+        safe_key = f"cv_target_v127_{st.session_state.current_tf}_{engine_mode[:3]}"
+        
+        if safe_key in st.session_state and st.session_state[safe_key] not in active_tickers_tuple:
+            del st.session_state[safe_key]
+            
+        emiten_signal = st.selectbox(
+            "Pindai Detil Emiten:", 
+            options=active_tickers_tuple, 
+            key=safe_key
+        )
+        
         with st.spinner(f"Mengkalkulasi Konfirmasi Ganda untuk {emiten_signal}..."):
             raw_target = next((item for item in st.session_state.raw_stocks if item["TICKER"] == emiten_signal), None)
             
             if raw_target:
                 vol_target = raw_target['VOLATILITAS']
-                bandar_target = raw_target['STATUS_BANDAR']
+                
+                # Menggunakan fallback get() agar tidak crash dengan cache versi lama
+                bd_status = raw_target.get("STATUS_BANDAR", "")
+                rs_status = raw_target.get("RSI_STATUS", "")
+                
                 area_beli = f"{int(raw_target['AREA BELI']):,}".replace(",", ".")
                 target_tp = f"{int(raw_target['TARGET (TP)']):,}".replace(",", ".")
                 stop_loss = f"{int(raw_target['STOP LOSS']):,}".replace(",", ".")
                 
+                # ===========================================
+                # ALGORITMA PENILAIAN BARU (V12.7)
+                # ===========================================
                 skor_algo = 0
                 if raw_target["UP_EMA20"]: skor_algo += 10
                 if raw_target.get("UP_SMA50", False): skor_algo += 10 
                 if raw_target["MACD_GOLDEN"]: skor_algo += 15
-                if raw_target["RSI"] < 40: skor_algo += 15
-                elif 40 <= raw_target["RSI"] <= 65: skor_algo += 10
-                elif raw_target["RSI"] > 70: skor_algo -= 15
-                if raw_target["STATUS_BANDAR"] == "AKUMULASI": skor_algo += 25
-                elif raw_target["STATUS_BANDAR"] == "DISTRIBUSI": skor_algo -= 20
+                
+                # Scoring RSI Reversal (Mendeteksi dasar & pucuk secara presisi)
+                if "REVERSAL DASAR" in rs_status: skor_algo += 25
+                elif "DEEP OVERSOLD" in rs_status: skor_algo += 15
+                elif "MOMENTUM NAIK" in rs_status: skor_algo += 5
+                elif "REVERSAL PUCUK" in rs_status: skor_algo -= 30
+                elif "OVERBOUGHT" in rs_status: skor_algo -= 20
+                elif "MOMENTUM TURUN" in rs_status: skor_algo -= 5
+                
+                # Scoring Candlestick Rejection (Supply/Demand Paus)
+                if "AKUMULASI DASAR" in bd_status: skor_algo += 30
+                elif "MARK-UP" in bd_status: skor_algo += 20
+                elif "DISTRIBUSI PUCUK" in bd_status: skor_algo -= 30
+                elif "MARK-DOWN" in bd_status: skor_algo -= 25
                 else: skor_algo += 5
                 
                 target_skor = 65 if "Agresif" in profil_risiko else (78 if "Konservatif" in profil_risiko else 72)
                 sys_rec_raw = "ACCUMULATE" if skor_algo >= target_skor else ("HOLD" if skor_algo >= 50 else "LIQUIDATE")
-                if vol_target == "🔥 TINGGI" and bandar_target == "DISTRIBUSI": sys_rec_raw = "LIQUIDATE"  
+                if vol_target == "🔥 TINGGI" and "DISTRIBUSI" in bd_status: sys_rec_raw = "LIQUIDATE"  
                 elif vol_target == "❄️ RENDAH" and sys_rec_raw == "ACCUMULATE": sys_rec_raw = "HOLD"
                 
                 risk_per_share = raw_target["HARGA"] - raw_target["STOP LOSS"]
@@ -456,40 +505,40 @@ def render_cross_validation_ui(active_tickers_tuple):
                 ana_is_sell = any(x in konsensus_raw for x in ["SELL", "UNDERPERFORM", "UNDERWEIGHT"])
                 ana_is_hold = "HOLD" in konsensus_raw or "NEUTRAL" in konsensus_raw
                 
-                is_trap = "🔥 TINGGI" in vol_target and "DISTRIBUSI" in bandar_target
+                is_trap = "🔥 TINGGI" in vol_target and "DISTRIBUSI" in bd_status
                 is_sleeping = "❄️ RENDAH" in vol_target
                 
                 if is_trap:
                     final_decision = "🚨 CRITICAL WARNING (BULL TRAP FILTERED)"
                     color = "#f43f5e"
-                    desc = "PROTEKSI DIALIRKAN: Saham mengalami volatilitas tinggi dengan distribusi bandar masif. Sistem memblokir sinyal beli."
+                    desc = "PROTEKSI DIALIRKAN: Harga terlihat bergerak agresif namun mesin mendeteksi Guyuran Bandar / Distribusi Pucuk. Jangan tertipu!"
                 elif sys_is_buy and ana_is_buy:
                     final_decision = "🚀 STRONG BUY (DOUBLE CONFIRMED)"
                     color = "#10b981"
-                    desc = "Sistem Kuantitatif dan Analis Global SEPAKAT. Saham berada dalam zona akumulasi dengan probabilitas kemenangan tinggi."
+                    desc = "Mesin mendeteksi REVERSAL DASAR (harga memantul dari support) & didukung rating Analis Global. Beli dan pasang sabuk pengaman!"
                 elif sys_is_sell and ana_is_sell:
                     final_decision = "🩸 STRONG SELL (DOUBLE CONFIRMED)"
                     color = "#f43f5e"
-                    desc = "Sistem Kuantitatif dan Analis Global SEPAKAT. Risiko koreksi tinggi, segera lakukan proteksi likuiditas."
+                    desc = "Mesin mendeteksi REVERSAL PUCUK. Supply dari Bandar mendominasi dan Analis meminta jual. Amankan keuntungan Anda (Take Profit)!"
                 elif sys_is_buy and not ana_is_buy:
                     final_decision = "🟢 CAUTIOUS BUY (ALGO-DRIVEN)"
                     color = "#34d399"
-                    desc = "Bandarmologi mendeteksi pergerakan beli, namun Analis belum menaikkan rating. Akumulasi bertahap."
+                    desc = "Paus (Bandar) diam-diam menyerok di dasar (Akumulasi Rejection), meskipun institusi global belum sadar. Peluang Bottom Fishing."
                 elif sys_is_sell and not ana_is_sell:
                     final_decision = "🟠 CAUTIOUS SELL (ALGO-DRIVEN)"
                     color = "#fb923c"
-                    desc = "Mesin mendeteksi pelemahan tren, meskipun Analis masih optimis. Pasang Trailing Stop ketat."
+                    desc = "WASPADA: Harga menembus Overbought dan ada indikasi buang barang, meski Analis masih bilang aman. Siapkan Trailing Stop!"
                 elif sys_is_hold and ana_is_hold:
                     final_decision = "⚖️ SOLID HOLD"
                     color = "#fbbf24"
-                    desc = "Konsolidasi market. Tidak ada tekanan jual/beli signifikan. Tahan posisi (Hold)."
+                    desc = "Market sedang berkonsolidasi (Sideways). Tidak ada dominasi Supply maupun Demand. Tahan amunisi."
                 else:
                     final_decision = "🔍 MIXED SIGNAL (MONITOR)"
                     color = "#a855f7"
                     desc = "Terdapat deviasi antara data algoritma dan konsensus analis. Disarankan memantau ketat pergerakan harga."
 
                 if is_sleeping and "HOLD" in sys_rec_raw:
-                    desc += " (Sistem mengunci di posisi HOLD karena saham sedang 'tidur')."
+                    desc += " (Sistem mengunci ke HOLD karena volatilitas sedang rendah alias 'saham tidur')."
                     
                 final_box_html = f"""
 <div style='background: linear-gradient(145deg, rgba(15,23,42,0.8) 0%, rgba(2,6,23,0.9) 100%); border: 1px solid {color}50; border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px -10px {color}40; position: relative; overflow: hidden; margin-top: 10px; margin-bottom: 30px; backdrop-filter: blur(10px);'>
@@ -503,15 +552,15 @@ def render_cross_validation_ui(active_tickers_tuple):
             <div style='text-align: center; font-size: 1.8rem; font-weight: 900; color: #f8fafc; letter-spacing: -0.5px; margin-bottom: 20px;'>{sys_rec_raw}</div>
             
             <div style='display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;'>
-                <div style='text-align: center; background: rgba(56, 189, 248, 0.05); padding: 12px 8px; border-radius: 10px; border: 1px solid rgba(56, 189, 248, 0.15);'>
+                <div style='text-align: center; background: rgba(56, 189, 248, 0.05); padding: 12px 8px; border-radius: 10px; border: 1px solid rgba(56, 189, 248, 0.15); transition: transform 0.2s;'>
                     <div style='font-size: 0.65rem; color: #94a3b8; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 4px;'>AREA BELI</div>
                     <div style='font-size: 1rem; color: #38bdf8; font-weight: 900;'>{area_beli}</div>
                 </div>
-                <div style='text-align: center; background: rgba(16, 185, 129, 0.05); padding: 12px 8px; border-radius: 10px; border: 1px solid rgba(16, 185, 129, 0.15);'>
+                <div style='text-align: center; background: rgba(16, 185, 129, 0.05); padding: 12px 8px; border-radius: 10px; border: 1px solid rgba(16, 185, 129, 0.15); transition: transform 0.2s;'>
                     <div style='font-size: 0.65rem; color: #94a3b8; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 4px;'>TARGET (TP)</div>
                     <div style='font-size: 1rem; color: #10b981; font-weight: 900;'>{target_tp}</div>
                 </div>
-                <div style='text-align: center; background: rgba(244, 63, 94, 0.05); padding: 12px 8px; border-radius: 10px; border: 1px solid rgba(244, 63, 94, 0.15);'>
+                <div style='text-align: center; background: rgba(244, 63, 94, 0.05); padding: 12px 8px; border-radius: 10px; border: 1px solid rgba(244, 63, 94, 0.15); transition: transform 0.2s;'>
                     <div style='font-size: 0.65rem; color: #94a3b8; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 4px;'>STOP LOSS</div>
                     <div style='font-size: 1rem; color: #f43f5e; font-weight: 900;'>{stop_loss}</div>
                 </div>
@@ -528,7 +577,7 @@ def render_cross_validation_ui(active_tickers_tuple):
     </div>
     <div style='margin-top: 20px; background: rgba(0,0,0,0.6); border: 1px solid {color}40; border-radius: 12px; padding: 25px; text-align: center;'>
         <div style='color: {color}; font-size: 0.8rem; font-weight: 900; letter-spacing: 3px; margin-bottom: 10px; text-transform: uppercase;'>🏆 Ultimate Final Decision</div>
-        <div style='color: {color}; font-size: 2rem; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 12px; text-shadow: 0 0 20px {color}60;'>{final_decision}</div>
+        <div style='color: {color}; font-size: 1.8rem; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 12px; text-shadow: 0 0 20px {color}60;'>{final_decision}</div>
         <div style='color: #cbd5e1; font-size: 0.95rem; font-weight: 300; max-width: 700px; margin: 0 auto; line-height: 1.6;'>{desc}</div>
         <div style='margin-top: 25px;'>
             <span style='background: linear-gradient(90deg, rgba(0,242,254,0.1) 0%, rgba(30,58,138,0.2) 100%); border: 1px solid #00f2fe60; padding: 12px 30px; border-radius: 30px; color: #00f2fe; font-size: 0.9rem; font-weight: 900; letter-spacing: 1px; box-shadow: 0 5px 15px rgba(0,242,254,0.15); display: inline-block;'>🎯 LOT SIZING: {lot_rec_target}</span>
@@ -537,6 +586,8 @@ def render_cross_validation_ui(active_tickers_tuple):
 </div>
 """
                 st.markdown(final_box_html, unsafe_allow_html=True)
+    else:
+        st.warning("⚠️ Memproses data... Silakan jalankan ulang 'SCAN 100 SAHAM' di sidebar jika data emiten tidak muncul.")
 
 
 # ==========================================
@@ -544,7 +595,7 @@ def render_cross_validation_ui(active_tickers_tuple):
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #00f2fe; font-size: 1.25rem; font-weight: 900; margin-bottom: 0px;'>🧬 QUANTUM MATRIX</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #94a3b8; font-size: 0.65rem; letter-spacing: 1.5px; margin-bottom: 25px;'>DUAL-CORE EDITION v12.6</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #94a3b8; font-size: 0.65rem; letter-spacing: 1.5px; margin-bottom: 25px;'>DUAL-CORE EDITION v12.7</p>", unsafe_allow_html=True)
     
     st.markdown("<div style='font-size:0.75rem; color:#facc15; font-weight:800; letter-spacing:1px; border-bottom: 1px solid rgba(250,204,21,0.2); padding-bottom: 5px; margin-bottom: 10px;'>🎛️ CORE ENGINE MODE</div>", unsafe_allow_html=True)
     engine_mode = st.radio("Pilih Mode Analisis:", ("⚔️ TRADING (Momentum & Technical)", "🛡️ INVESTMENT (Value & Fundamental)"))
@@ -602,21 +653,31 @@ with st.sidebar:
                 if raw["UP_EMA20"]: skor += 10
                 if raw.get("UP_SMA50", False): skor += 10 
                 if raw["MACD_GOLDEN"]: skor += 15
-                if raw["RSI"] < 40: skor += 15
-                elif 40 <= raw["RSI"] <= 65: skor += 10
-                elif raw["RSI"] > 70: skor -= 15
-                if raw["STATUS_BANDAR"] == "AKUMULASI": skor += 25
-                elif raw["STATUS_BANDAR"] == "DISTRIBUSI": skor -= 20
+                
+                # Logic baru untuk notifikasi Telegram
+                rs_notif = raw.get("RSI_STATUS", "")
+                if "REVERSAL DASAR" in rs_notif: skor += 25
+                elif "DEEP OVERSOLD" in rs_notif: skor += 15
+                elif "MOMENTUM NAIK" in rs_notif: skor += 5
+                elif "REVERSAL PUCUK" in rs_notif: skor -= 30
+                elif "OVERBOUGHT" in rs_notif: skor -= 20
+                elif "MOMENTUM TURUN" in rs_notif: skor -= 5
+                
+                bd_notif = raw.get("STATUS_BANDAR", "")
+                if "AKUMULASI DASAR" in bd_notif: skor += 30
+                elif "MARK-UP" in bd_notif: skor += 20
+                elif "DISTRIBUSI PUCUK" in bd_notif: skor -= 30
+                elif "MARK-DOWN" in bd_notif: skor -= 25
                 else: skor += 5
                 
                 target_skor = 65 if "Agresif" in profil_risiko else (78 if "Konservatif" in profil_risiko else 72)
                 kep = "ACCUMULATE" if skor >= target_skor else ("HOLD" if skor >= 50 else "LIQUIDATE")
-                if raw["VOLATILITAS"] == "🔥 TINGGI" and raw["STATUS_BANDAR"] == "DISTRIBUSI": kep = "LIQUIDATE"  
+                if raw["VOLATILITAS"] == "🔥 TINGGI" and "DISTRIBUSI" in bd_notif: kep = "LIQUIDATE"  
                 elif raw["VOLATILITAS"] == "❄️ RENDAH" and kep == "ACCUMULATE": kep = "HOLD"
                 
                 if kep == "ACCUMULATE":
                     has_buys = True
-                    alert_text += f"✅ *{raw['TICKER']}* | Hrg: Rp{int(raw['HARGA']):,} | {raw['VOLATILITAS']}\n"
+                    alert_text += f"✅ *{raw['TICKER']}* | Rp{int(raw['HARGA']):,} | {bd_notif}\n"
             
             if has_buys:
                 try: requests.post(f"https://api.telegram.org/bot{token_aktif}/sendMessage", json={"chat_id": chat_aktif, "text": alert_text[:4000], "parse_mode": "Markdown"})
@@ -675,15 +736,35 @@ else:
     cluster_bluechip = []
     
     for raw in st.session_state.raw_stocks:
+        # PENGAMANAN CACHE LAMA (Jika belum di rescan, hindari error)
+        rs_status = raw.get("RSI_STATUS", "")
+        if not rs_status:
+            r_val = raw.get("RSI", 50)
+            if r_val < 35: rs_status = "📉 DEEP OVERSOLD"
+            elif r_val > 65: rs_status = "📈 OVERBOUGHT"
+            else: rs_status = "➖ NEUTRAL"
+            
+        bd_status = raw.get("STATUS_BANDAR", "➖ NEUTRAL")
+        
+        # ==================================
+        # SCORING ALGO V12.7 (Trading)
+        # ==================================
         skor_t = 0
         if raw["UP_EMA20"]: skor_t += 10
         if raw.get("UP_SMA50", False): skor_t += 10 
         if raw["MACD_GOLDEN"]: skor_t += 15
-        if raw["RSI"] < 40: skor_t += 15
-        elif 40 <= raw["RSI"] <= 65: skor_t += 10
-        elif raw["RSI"] > 70: skor_t -= 15
-        if raw["STATUS_BANDAR"] == "AKUMULASI": skor_t += 25
-        elif raw["STATUS_BANDAR"] == "DISTRIBUSI": skor_t -= 20
+        
+        if "REVERSAL DASAR" in rs_status: skor_t += 25
+        elif "DEEP OVERSOLD" in rs_status: skor_t += 15
+        elif "MOMENTUM NAIK" in rs_status: skor_t += 5
+        elif "REVERSAL PUCUK" in rs_status: skor_t -= 30
+        elif "OVERBOUGHT" in rs_status: skor_t -= 20
+        elif "MOMENTUM TURUN" in rs_status: skor_t -= 5
+        
+        if "AKUMULASI DASAR" in bd_status: skor_t += 30
+        elif "MARK-UP" in bd_status: skor_t += 20
+        elif "DISTRIBUSI PUCUK" in bd_status: skor_t -= 30
+        elif "MARK-DOWN" in bd_status: skor_t -= 25
         else: skor_t += 5
         
         target_skor_t = 65 if "Agresif" in profil_risiko else (78 if "Konservatif" in profil_risiko else 72)
@@ -691,7 +772,7 @@ else:
         elif skor_t >= 50: kep_t = "🟡 HOLD"
         else: kep_t = "🔴 LIQUIDATE"
         
-        if raw["VOLATILITAS"] == "🔥 TINGGI" and raw["STATUS_BANDAR"] == "DISTRIBUSI": kep_t = "🔴 LIQUIDATE"  
+        if raw["VOLATILITAS"] == "🔥 TINGGI" and "DISTRIBUSI" in bd_status: kep_t = "🔴 LIQUIDATE"  
         elif raw["VOLATILITAS"] == "❄️ RENDAH" and kep_t == "🟢 ACCUMULATE": kep_t = "🟡 HOLD"       
         
         max_loss_money = modal_trading * (risiko_pct / 100)
@@ -717,9 +798,8 @@ else:
             "HARGA": f"{int(raw['HARGA']):,}".replace(",", "."),
             "1D GAIN (%)": f"{raw['RET_1D']:+.2f}%",
             "REKOMENDASI LOT": rec_lot_text,
-            "VOLATILITAS": raw["VOLATILITAS"],
-            "RSI": f"{raw['RSI']:.2f}", 
-            "BANDARMOLOGI": raw["STATUS_BANDAR"], 
+            "RSI & DYNAMIC ZONE": f"{raw['RSI']:.1f} | {rs_status}", 
+            "BANDARMOLOGI (SUPPLY/DEMAND)": bd_status, 
             "REKOMENDASI": kep_t
         })
         
@@ -749,8 +829,8 @@ else:
     df_trading = pd.DataFrame(hasil_trading).sort_values(by="RAW_RET", ascending=False).reset_index(drop=True).drop(columns=["RAW_RET"])
     df_invest = pd.DataFrame(hasil_invest).sort_values(by="RAW_YIELD", ascending=False).reset_index(drop=True).drop(columns=["RAW_YIELD"])
 
-    top_trading_tickers = tuple(str(x) for x in df_trading.head(15)["TICKER"].tolist())
-    top_invest_tickers = tuple(str(x) for x in df_invest.head(15)["TICKER"].tolist())
+    top_trading_tickers = tuple(str(x) for x in df_trading.head(15)["TICKER"].tolist()) if not df_trading.empty else ()
+    top_invest_tickers = tuple(str(x) for x in df_invest.head(15)["TICKER"].tolist()) if not df_invest.empty else ()
 
     # ------------------------------------------
     # RENDER TABS BERDASARKAN MODE
@@ -775,18 +855,19 @@ else:
                     elif c == 'REKOMENDASI LOT':
                         if 'Max' in str(val): styles.append('color: #facc15; font-weight: 900; background-color: rgba(250,204,21,0.08);')
                         else: styles.append('color: #64748b; font-weight: 400;')
-                    elif c in ['BANDARMOLOGI', 'REKOMENDASI']: styles.append(bg_rek)
-                    elif c == 'VOLATILITAS':
-                        if '🔥' in str(val): styles.append('color: #f43f5e; font-weight: 800;')
-                        elif '⚡' in str(val): styles.append('color: #fbbf24; font-weight: 800;')
-                        else: styles.append('color: #38bdf8; font-weight: 800;')
-                    elif c == 'RSI':
-                        try:
-                            rsi_val = float(val)
-                            if rsi_val > 65: styles.append('color: #f43f5e; font-weight: 800;') 
-                            elif rsi_val < 40: styles.append('color: #10b981; font-weight: 800;') 
-                            else: styles.append('')
-                        except: styles.append('')
+                    elif c == 'REKOMENDASI': styles.append(bg_rek)
+                    elif c == 'BANDARMOLOGI (SUPPLY/DEMAND)':
+                        if 'AKUMULASI DASAR' in str(val): styles.append('color: #00f2fe; font-weight: 800; background: rgba(0,242,254,0.1);')
+                        elif 'DISTRIBUSI PUCUK' in str(val): styles.append('color: #f43f5e; font-weight: 800; background: rgba(244,63,94,0.1);')
+                        elif 'MARK-UP' in str(val): styles.append('color: #10b981; font-weight: 800;')
+                        elif 'MARK-DOWN' in str(val): styles.append('color: #fb923c; font-weight: 800;')
+                        else: styles.append('color: #94a3b8;')
+                    elif c == 'RSI & DYNAMIC ZONE':
+                        if '🟢' in str(val): styles.append('color: #10b981; font-weight: 900; background: rgba(16,185,129,0.1);')
+                        elif '🔴' in str(val): styles.append('color: #f43f5e; font-weight: 900; background: rgba(244,63,94,0.1);')
+                        elif '📉' in str(val): styles.append('color: #38bdf8; font-weight: 800;')
+                        elif '📈' in str(val): styles.append('color: #fb923c; font-weight: 800;')
+                        else: styles.append('color: #94a3b8;')
                     else: styles.append('')
                 return styles
 
@@ -893,7 +974,9 @@ else:
     # TAB 3 & 4 (GLOBAL UNTUK KEDUA MODE)
     # ==========================================
     with tab3:
-        emiten_terpilih = st.session_state.get(f"cv_target_v126_{st.session_state.current_tf}")
+        safe_key = f"cv_target_v127_{st.session_state.current_tf}_{engine_mode[:3]}"
+        emiten_terpilih = st.session_state.get(safe_key)
+        
         if emiten_terpilih: 
             st.markdown("<br>", unsafe_allow_html=True)
             st.markdown(f"<h3 style='font-size: 1.5rem;'>📊 Quarterly Financial Matrix : {emiten_terpilih}</h3>", unsafe_allow_html=True)
@@ -954,16 +1037,15 @@ else:
     with tab4:
         st.markdown("<br><h3 style='font-size: 1.5rem; text-align: center;'>📚 Jihan-Ghina Academy & User Guide</h3>", unsafe_allow_html=True)
         st.markdown("<p style='text-align: center; color: #94a3b8; font-size: 0.85rem; margin-bottom: 20px;'>Panduan analitika level institusi di dalam terminal.</p>", unsafe_allow_html=True)
-        with st.expander("📖 1. Dual-Core Mode (Trading vs Investment)"):
+        with st.expander("📖 1. Apa yang Baru di v12.7 (Sniper Reversal Engine)?"):
             st.markdown("""
-            * **Mode Trading:** Dirancang untuk mencari cuan cepat berdasarkan momentum, volatilitas, dan akumulasi bandar. Matriks utama otomatis mengurutkan saham dari *Top Gainers* hari ini.
-            * **Mode Investment:** Dirancang untuk menabung saham jangka panjang. Matriks utama otomatis mengurutkan saham berdasarkan peraih *Dividend Yield* terbesar, PER murah, dan kesehatan perusahaan.
+            * **RSI Dinamis:** Mesin kini mendeteksi **Reversal Dasar** (Momen persis saat RSI mulai menikung naik dari area Oversold) untuk ketepatan "Bottom Fishing". Serta **Reversal Pucuk** (Momen RSI jatuh dari Overbought) agar Anda bisa "Jual di Pucuk".
+            * **Anatomi Lilin (Shadow Rejection):** Mesin memadukan volume dan bentuk lilin. **Akumulasi Dasar** tercetak jika harga jatuh, tapi di-buyback bandar secara masif (membentuk ekor bawah panjang). **Distribusi Pucuk** terjadi saat harga diguyur di atas.
             """)
-        with st.expander("📖 2. Clustering Matrix (Proxy Logics)"):
+        with st.expander("📖 2. Dual-Core Mode (Trading vs Investment)"):
             st.markdown("""
-            * **ARA Hunter:** Mengekstrak saham dengan volume harian meledak 2x lipat dan menembus resisten pendek MA5.
-            * **Scalping Daily:** Melacak saham *second liner* dengan omset miliaran rupiah per hari namun harga di bawah batas psikologis 3000.
-            * **Big Accumulation:** Melacak jejak akumulasi dengan memastikan penutupan hari tersebut berada di area pucuk (*high*) tanpa jarum atas (*upper shadow*).
+            * **Mode Trading:** Dirancang untuk mencari cuan cepat berdasarkan momentum, volatilitas, dan akumulasi bandar.
+            * **Mode Investment:** Dirancang untuk menabung saham jangka panjang (Dividend Yield).
             """)
         with st.expander("📖 3. Position Sizing (Manajemen Risiko Kuantitatif)"):
             st.markdown("""
@@ -973,4 +1055,4 @@ else:
             """)
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem; font-weight:600; letter-spacing: 1px;'>⚡ JIHAN-GHINA ENGINE • DUAL CORE TERMINAL v12.6</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem; font-weight:600; letter-spacing: 1px;'>⚡ JIHAN-GHINA ENGINE • DUAL CORE TERMINAL v12.7 (Sniper Edition)</p>", unsafe_allow_html=True)
