@@ -39,7 +39,7 @@ if "current_tf" not in st.session_state: st.session_state.current_tf = "1 Hari (
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Ultimate v15.0", page_icon="🧬", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Ultimate v15.1", page_icon="🧬", layout="wide")
 
 st.markdown("""
 <style>
@@ -107,6 +107,14 @@ def render_badges(tickers, hex_color):
 
 def get_waktu_wib():
     return datetime.now(pytz.timezone('Asia/Jakarta')).strftime("%d %b %Y - %H:%M:%S WIB")
+
+def export_df_to_csv(df_source, scan_time):
+    # Menyalin dataframe agar tidak merusak UI tabel asli
+    df_export = df_source.copy()
+    # Menambahkan kolom WAKTU_SCAN di paling belakang untuk logger
+    df_export['WAKTU_SCAN'] = scan_time
+    # Convert ke CSV (index=True memastikan TICKER ikut masuk)
+    return df_export.to_csv(index=True).encode('utf-8')
 
 @st.cache_data(ttl=300, show_spinner=False)
 def fetch_ihsg_data():
@@ -194,7 +202,6 @@ def fetch_single_stock(emiten, mode_tf):
         df['ATR'] = hitung_atr(df)
         df['Vol_SMA20'] = df['Volume'].rolling(window=20).mean()
         
-        # Chandelier Exit
         df['Chandelier_Exit'] = df['High'].rolling(22).max() - (df['ATR'] * 3.0)
         
         df_higher_tf = df.resample('W').agg({'Close':'last'}).dropna() if "Hari" in mode_tf or "Jam" in mode_tf else df
@@ -211,7 +218,7 @@ def fetch_single_stock(emiten, mode_tf):
         
         atr_skg = float(df['ATR'].iloc[-1])
         trailing_stop = float(df['Chandelier_Exit'].iloc[-1])
-        if pd.isna(trailing_stop) or trailing_stop >= harga_skg: trailing_stop = harga_skg - (atr_skg * 2) # SAFEGUARD
+        if pd.isna(trailing_stop) or trailing_stop >= harga_skg: trailing_stop = harga_skg - (atr_skg * 2) 
         
         prev_close = float(df['Close'].iloc[-2])
         ret_1d = ((harga_skg - prev_close) / prev_close * 100) if prev_close > 0 else 0
@@ -267,12 +274,11 @@ def fetch_single_stock(emiten, mode_tf):
         elif setup_score >= 4: setup_grade = "✔️ SETUP B (NORMAL)"
         else: setup_grade = "⚠️ SETUP C (WEAK)"
 
-        # V15.0 FEATURE: Fetch PEG Ratio & Advance Financials
         tkr = yf.Ticker(emiten)
         info = tkr.info if tkr.info else {}
         per_val = info.get('trailingPE', 0.0)
         pbv_val = info.get('priceToBook', 1.0)
-        peg_val = info.get('pegRatio') or 0.0  # Menarik rasio Harga terhadap Pertumbuhan Laba
+        peg_val = info.get('pegRatio') or 0.0  
         
         div_rate = info.get('trailingAnnualDividendRate', 0)
         div_yield = (div_rate / harga_skg * 100) if (div_rate and harga_skg > 0) else 0.0
@@ -333,13 +339,13 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult):
     st.markdown("---")
     st.markdown("""
     <div style="margin-top: 15px; margin-bottom: 20px; padding-left: 5px; border-left: 5px solid #00f2fe;">
-        <h3 style="font-size: 1.8rem; font-weight: 900; color: #f8fafc; margin-bottom: 0px; margin-top: 0px; letter-spacing: -0.5px;">🎯 Sniper Cross-Validation (v15)</h3>
+        <h3 style="font-size: 1.8rem; font-weight: 900; color: #f8fafc; margin-bottom: 0px; margin-top: 0px; letter-spacing: -0.5px;">🎯 Sniper Cross-Validation (v15.1)</h3>
         <p style="color: #94a3b8; font-size: 0.85rem; font-weight: 400; margin-top: 4px;">Analisis mendalam dengan <strong style="color:#10b981;">Macro-Climate Auto-Brake</strong> & Trailing Stop.</p>
     </div>
     """, unsafe_allow_html=True)
     
     if active_tickers_tuple and len(active_tickers_tuple) > 0:
-        safe_key = f"cv_target_v15_{st.session_state.current_tf}_{engine_mode[:3]}"
+        safe_key = f"cv_target_v151_{st.session_state.current_tf}_{engine_mode[:3]}"
         if safe_key in st.session_state and st.session_state[safe_key] not in active_tickers_tuple:
             del st.session_state[safe_key]
             
@@ -385,7 +391,6 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult):
                 if is_volcano and "ACCUM" in sys_rec_raw:
                     desc += "<br><br>🌋 <b>VOLCANO ERUPTION:</b> Saham menembus masa tidurnya dengan volume raksasa!"
 
-                # V15 AUTO-BRAKE SYSTEM INJECTION
                 final_risk_pct = risiko_pct * risk_multiplier * market_climate_mult
                 risk_per_share = harga_tgt - trailing_stop_val
                 
@@ -461,7 +466,7 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult):
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #00f2fe; font-size: 1.25rem; font-weight: 900; margin-bottom: 0px;'>🧬 QUANTUM MATRIX</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #94a3b8; font-size: 0.65rem; letter-spacing: 1.5px; margin-bottom: 25px;'>INSTITUTIONAL EDITION v15.0</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #94a3b8; font-size: 0.65rem; letter-spacing: 1.5px; margin-bottom: 25px;'>DATA LOGGER EDITION v15.1</p>", unsafe_allow_html=True)
     
     st.markdown("<div style='font-size:0.75rem; color:#facc15; font-weight:800; letter-spacing:1px; border-bottom: 1px solid rgba(250,204,21,0.2); padding-bottom: 5px; margin-bottom: 10px;'>🎛️ CORE ENGINE MODE</div>", unsafe_allow_html=True)
     engine_mode = st.radio("Pilih Mode Analisis:", ("⚔️ TRADING (Momentum & Technical)", "🛡️ INVESTMENT (Value & Fundamental)"))
@@ -520,17 +525,35 @@ with st.sidebar:
 # ==========================================
 st.markdown("<h1>🌐 Algorithmic Market Intelligence</h1>", unsafe_allow_html=True)
 
-# V15.0 FEATURE: Menghitung Macro Market Climate
+# V15.1 FEATURE: TIME-ZONE INTELLIGENCE (ZONA WAKTU API)
+now_wib_check = datetime.now(pytz.timezone('Asia/Jakarta'))
+jam_sekarang = now_wib_check.hour
+hari_sekarang = now_wib_check.weekday()
+file_timestamp = now_wib_check.strftime("%H_%d_%b_%Y") # Format csv: hh_dd_MMM_yyyy
+
+if hari_sekarang >= 5 or jam_sekarang >= 16 or jam_sekarang < 9:
+    alert_msg = "🟢 **ZONA SCAN TERAKURAT (END OF DAY):** Market tutup. Data 100% akurat dan final. Waktu terbaik menyaring saham (Watchlist) untuk eksekusi esok hari."
+    alert_color = "rgba(16, 185, 129, 0.2)"
+    alert_border = "#10b981"
+elif 9 <= jam_sekarang < 10:
+    alert_msg = "🔴 **ZONA RAWAN (API DELAY / MORNING DUMP):** Market baru buka! Data API memiliki delay 15-30 menit. DILARANG mengeksekusi rekomendasi secara buta, selalu validasi dengan chart broker Anda!"
+    alert_color = "rgba(244, 63, 94, 0.2)"
+    alert_border = "#f43f5e"
+else:
+    alert_msg = "🟡 **ZONA LIVE MARKET:** Market sedang berjalan. Data cukup stabil namun mungkin memiliki delay minor. Tetap waspada dan disiplin patuhi angka Trailing Stop."
+    alert_color = "rgba(251, 191, 36, 0.2)"
+    alert_border = "#fbbf24"
+
+st.markdown(f"<div style='border-left: 5px solid {alert_border}; padding: 12px 18px; background: {alert_color}; border-radius: 8px; margin-top: 10px; margin-bottom: 20px; color: #f8fafc; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.5px;'>{alert_msg}</div>", unsafe_allow_html=True)
+
+# Menghitung Macro Market Climate
 uptrend_count = sum(1 for s in st.session_state.raw_stocks if s.get("UP_SMA50", False)) if "raw_stocks" in st.session_state and st.session_state.raw_stocks else 0
 total_scanned = len(st.session_state.raw_stocks) if "raw_stocks" in st.session_state and st.session_state.raw_stocks else 1
 breadth_pct = (uptrend_count / total_scanned) * 100
 
-if breadth_pct >= 55:
-    climate_status, climate_icon, climate_color, climate_mult = "RISK ON (BULLISH)", "🌞", "#10b981", 1.0
-elif breadth_pct >= 40:
-    climate_status, climate_icon, climate_color, climate_mult = "NEUTRAL (SIDEWAYS)", "⚖️", "#fbbf24", 1.0
-else:
-    climate_status, climate_icon, climate_color, climate_mult = "RISK OFF (BEARISH)", "⛈️", "#f43f5e", 0.5 # Potong Lot 50%
+if breadth_pct >= 55: climate_status, climate_icon, climate_color, climate_mult = "RISK ON (BULLISH)", "🌞", "#10b981", 1.0
+elif breadth_pct >= 40: climate_status, climate_icon, climate_color, climate_mult = "NEUTRAL (SIDEWAYS)", "⚖️", "#fbbf24", 1.0
+else: climate_status, climate_icon, climate_color, climate_mult = "RISK OFF (BEARISH)", "⛈️", "#f43f5e", 0.5
 
 col_h1, col_h2, col_h3 = st.columns([2.5, 1.25, 1.25])
 with col_h1:
@@ -588,7 +611,7 @@ else:
         ret_1d = raw.get("RET_1D", 0.0)
         per_val = raw.get("PER", 0.0)
         pbv_val = raw.get("PBV", 1.0)
-        peg_val = raw.get("PEG", 0.0) # V15.0 Fetch PEG
+        peg_val = raw.get("PEG", 0.0) 
         div_yield = raw.get("DIV_YIELD", 0.0)
         div_date = raw.get("DIVIDEND_DATE", "-")
         mcap = raw.get("MARKET_CAP", 0)
@@ -606,20 +629,18 @@ else:
         risk_per_share = harga - trailing_stop_val
         if ("ACCUM" in kep_t) and risk_per_share > 0:
             multiplier = 2.0 if "A+" in setup_grade else 1.0
-            # V15: Climate multiplier applied
             final_risk = risiko_pct * multiplier * climate_mult
             max_lots = int(((modal_trading * (final_risk / 100)) / risk_per_share) / 100)
             if climate_mult < 1.0: rec_lot_text = f"⚠️ Max {max_lots:,} Lot (Brake)"
             else: rec_lot_text = f"Max {max_lots:,} Lot"
         else: rec_lot_text = "🔒 Proteksi/Hold"
 
-        # V15.0 Refined Investment Score with PEG
         skor_i = 0
         if 0 < per_val < 15: skor_i += 20
         if 0 < pbv_val < 1.5: skor_i += 20
         if div_yield > 4.0: skor_i += 20
         if up_sma50: skor_i += 15
-        if 0 < peg_val <= 1.0: skor_i += 25 # Canslim / Growth value
+        if 0 < peg_val <= 1.0: skor_i += 25 
         
         if skor_i >= 70: kep_i = "💎 UNDERVALUED (GROWTH)" if (0 < peg_val <= 1.0) else "💎 UNDERVALUED"
         elif skor_i >= 40: kep_i = "⚖️ FAIR VALUE"
@@ -688,6 +709,15 @@ else:
 
             if not df_trading.empty:
                 st.dataframe(df_trading.head(20).style.apply(style_trading, axis=1), use_container_width=True)
+                
+                # V15.1 CSV Exporter
+                csv_data_trading = export_df_to_csv(df_trading.head(100), st.session_state.last_update)
+                st.download_button(
+                    label="📥 Export Data Matrix (CSV)",
+                    data=csv_data_trading,
+                    file_name=f"{file_timestamp}_Trading.csv",
+                    mime="text/csv"
+                )
             
             render_cross_validation_ui(top_trading_tickers, climate_mult)
 
@@ -753,38 +783,46 @@ else:
 
             if not df_invest.empty:
                 st.dataframe(df_invest.head(20).style.apply(style_invest, axis=1), use_container_width=True)
+                
+                # V15.1 CSV Exporter
+                csv_data_invest = export_df_to_csv(df_invest.head(100), st.session_state.last_update)
+                st.download_button(
+                    label="📥 Export Data Matrix (CSV)",
+                    data=csv_data_invest,
+                    file_name=f"{file_timestamp}_Investment.csv",
+                    mime="text/csv"
+                )
             
             render_cross_validation_ui(top_invest_tickers, climate_mult)
 
     with (tab3 if "TRADING" in engine_mode else tab2):
-        st.markdown("<br><h3 style='font-size: 1.5rem; text-align: center;'>📚 Institutional Academy v15.0</h3>", unsafe_allow_html=True)
+        st.markdown("<br><h3 style='font-size: 1.5rem; text-align: center;'>📚 Institutional Academy v15.1</h3>", unsafe_allow_html=True)
         st.markdown("<p style='text-align: center; color: #94a3b8; font-size: 0.85rem; margin-bottom: 20px;'>Panduan fitur-fitur level pro-trader Wall Street.</p>", unsafe_allow_html=True)
         
-        with st.expander("📖 1. Sistem Auto-Brake (Kesehatan Pasar / Breadth) — BARU"):
+        with st.expander("📖 1. Sistem Auto-Brake (Kesehatan Pasar / Breadth)"):
             st.markdown("""
             **Lihat Kotak 'MARKET CLIMATE' di Atas Kanan!**
             *   Jika pasar berstatus **🌞 RISK ON (BULLISH)**: Berarti IHSG sedang sehat. Mesin mengizinkan Anda menggunakan 100% dari Lot Sizing Anda. Gas penuh!
             *   Jika pasar berstatus **⛈️ RISK OFF (BEARISH)**: Mayoritas saham di bursa sedang hancur. Mesin akan mengaktifkan *Auto-Brake* dan memangkas ukuran lot rekomendasi Anda **sebanyak 50%**. Jangan melawan pasar, selamatkan modal Anda!
             """)
-        with st.expander("📖 2. Misteri PEG Ratio (Growth Investing) — BARU"):
+        with st.expander("📖 2. Analisis Zona Waktu (Peringatan Keterlambatan Data) — BARU"):
+            st.markdown("""
+            **Perhatikan Indikator Warna di Bawah Header!**
+            Aplikasi kita menggunakan data API yfinance yang rawan *delay* saat pembukaan market. 
+            *   **Zona Merah (09:00 - 10:00 WIB):** Jangan pernah melakukan eksekusi langsung berdasarkan tabel ini. Gunakan untuk referensi silang dengan broker Anda.
+            *   **Zona Hijau (>16:00 WIB):** Waktu paling sempurna (100% akurat) untuk menyusun Watchlist dan mengatur formasi Lot Sizing untuk esok pagi.
+            """)
+        with st.expander("📖 3. Export Jurnal Trading ke CSV — BARU"):
+            st.markdown("""
+            **Klik tombol '📥 Export Data Matrix (CSV)' di bawah tabel!**
+            Sebagai pro-trader, Anda harus memiliki jurnal. File CSV yang diunduh akan otomatis menempelkan stempel **WAKTU SCAN** (Jam dan Tanggal) sehingga Anda bisa merekam jejak pergerakan sistem algoritma dari hari ke hari di Excel.
+            """)
+        with st.expander("📖 4. Misteri PEG Ratio (Growth Investing)"):
             st.markdown("""
             **Murah saja tidak cukup. Saham murah yang labanya turun = Value Trap.**
             Kini, di Tab Investment, Anda akan melihat kolom **PEG (Price/Earnings-to-Growth)**.
-            *   **PEG < 1.0 (Warna Biru):** Ini adalah permata tersembunyi! Harganya murah, DAN labanya sedang bertumbuh pesat.
-            *   Jika mesin mendeteksi ini, ia akan memberi gelar eksklusif: **💎 UNDERVALUED (GROWTH)**. Beli dan simpan!
-            """)
-        with st.expander("📖 3. Studi Kasus: Fundamental Bagus tapi Sinyal HOLD/WEAK?"):
-            st.markdown("""
-            **Kenapa di tabel Investment statusnya 'Fair Value / Undervalued', tapi di Sniper statusnya 'HOLD / SETUP C (Weak)'?**
-            *   **Otak Fundamental:** Menilai apakah harga saham wajar berdasarkan laporan keuangan.
-            *   **Otak Technical & Bandarmologi:** Menilai apakah *hari ini* ada **uang besar (Paus)** yang menggerakkan harga.
-            **Kesimpulan:** Jika saham Undervalued tapi statusnya HOLD, artinya saham itu **Bagus, tapi bandar belum masuk**. Tunggu sampai mesin mendeteksi momentum (berubah menjadi SETUP B atau A+), barulah kita serok! 
-            """)
-        with st.expander("📖 4. Cara Kerja Trailing Stop (Let Your Profits Run)"):
-            st.markdown("""
-            **Jangan buang barang Anda jika saham sedang uptrend gila-gilaan!** 
-            Target TP statis sudah dibuang. Selama harga saham hari ini *masih di atas* angka Trailing Stop (garis merah), **HOLD TERUS**. Anda baru boleh Take Profit/Cut Loss saat harga ditutup menjebol Trailing Stop tersebut.
+            *   **PEG < 1.0 (Warna Biru):** Ini adalah permata tersembunyi! Harganya murah, DAN labanya sedang bertumbuh pesat. Beli dan simpan!
             """)
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem; font-weight:600; letter-spacing: 1px;'>⚡ JIHAN-GHINA ENGINE • INSTITUTIONAL MASTERPIECE v15.0</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem; font-weight:600; letter-spacing: 1px;'>⚡ JIHAN-GHINA ENGINE • INSTITUTIONAL MASTERPIECE v15.1 (Data Logger Edition)</p>", unsafe_allow_html=True)
