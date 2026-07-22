@@ -39,7 +39,7 @@ if "current_tf" not in st.session_state: st.session_state.current_tf = "1 Hari (
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Ultimate v15.2", page_icon="🧬", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Ultimate v15.4", page_icon="🧬", layout="wide")
 
 st.markdown("""
 <style>
@@ -74,7 +74,54 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. CORE ENGINE DATA FETCHING & EXPORT UTILS
+# 2. DATABASE QUOTES OF THE DAY (ROTASI HARIAN)
+# ==========================================
+QUOTES_DATABASE = [
+    {
+        "quote": "Jangan pernah menangkap pisau yang sedang jatuh (Catching a Falling Knife). Biarkan bandar menghentikan kejatuhan harga, lalu kita beli saat tren naik terkonfirmasi.",
+        "author": "The Institutional Way",
+        "theme": "Disiplin & Risk Management"
+    },
+    {
+        "quote": "Risiko datang dari ketidaktahuan Anda akan apa yang sedang Anda lakukan.",
+        "author": "Warren Buffett",
+        "theme": "Valuasi & Fundamental"
+    },
+    {
+        "quote": "Elemen kunci dalam trading yang sukses adalah disiplin dan manajemen risiko. Tanpa keduanya, modal Anda hanyalah tiket menuju kebangkrutan.",
+        "author": "Mark Douglas",
+        "theme": "Psikologi Trading"
+    },
+    {
+        "quote": "Pasar dirancang untuk mentransfer kekayaan dari orang yang tidak sabar kepada orang yang sabar.",
+        "author": "Jesse Livermore",
+        "theme": "Sabar & Timing"
+    },
+    {
+        "quote": "Di dalam investasi, apa yang terasa nyaman jarang sekali menguntungkan.",
+        "author": "Robert Arnott",
+        "theme": "Kontrarian & Logika"
+    },
+    {
+        "quote": "Jangan fokus pada berapa banyak uang yang bisa Anda hasilkan. Fokuslah pada berapa banyak modal yang bisa Anda lindungi.",
+        "author": "Paul Tudor Jones",
+        "theme": "Capital Protection"
+    },
+    {
+        "quote": "Tren adalah teman Anda, kecuali di tikungan terakhir saat tren itu berbalik. Selalu patuhi Trailing Stop!",
+        "author": "Quantum Matrix Philosophy",
+        "theme": "Trend Following"
+    }
+]
+
+def get_quote_of_the_day():
+    # Mengambil indeks berdasarkan hari dalam tahun (Day of Year) agar berotasi otomatis setiap hari
+    day_of_year = datetime.now(pytz.timezone('Asia/Jakarta')).timetuple().tm_yday
+    index = day_of_year % len(QUOTES_DATABASE)
+    return QUOTES_DATABASE[index]
+
+# ==========================================
+# 3. CORE ENGINE DATA FETCHING & EXPORT UTILS
 # ==========================================
 MASTER_UNIVERSE = [
     "BBCA", "BBRI", "BMRI", "BBNI", "TLKM", "ASII", "UNTR", "ICBP", "INDF", "AMRT", "GOTO", "PGAS", "PTBA", "ITMG", 
@@ -108,31 +155,13 @@ def render_badges(tickers, hex_color):
 def get_waktu_wib():
     return datetime.now(pytz.timezone('Asia/Jakarta')).strftime("%d %b %Y - %H:%M:%S WIB")
 
-# V15.2 EXCEL UTILITIES
 def export_df_to_excel_buffer(df_source, scan_time, sheet_name="Data_Saham"):
     df_export = df_source.copy()
     df_export['WAKTU_SCAN'] = scan_time
     buffer = io.BytesIO()
     with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-        df_export.to_excel(writer, index=True, sheet_name=sheet_name[:31]) # Max 31 chars
+        df_export.to_excel(writer, index=True, sheet_name=sheet_name[:31])
     return buffer.getvalue()
-
-def save_to_local_master(df_source, scan_time, sheet_name):
-    try:
-        df_export = df_source.copy()
-        df_export['WAKTU_SCAN'] = scan_time
-        master_file = "Master_Jurnal_Quantum.xlsx"
-        sheet_name_clean = sheet_name[:31] 
-
-        if os.path.exists(master_file):
-            with pd.ExcelWriter(master_file, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
-                df_export.to_excel(writer, index=True, sheet_name=sheet_name_clean)
-        else:
-            with pd.ExcelWriter(master_file, engine='openpyxl', mode='w') as writer:
-                df_export.to_excel(writer, index=True, sheet_name=sheet_name_clean)
-        return True, master_file
-    except Exception as e:
-        return False, str(e)
 
 @st.cache_data(ttl=300, show_spinner=False)
 def fetch_ihsg_data():
@@ -357,13 +386,13 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult):
     st.markdown("---")
     st.markdown("""
     <div style="margin-top: 15px; margin-bottom: 20px; padding-left: 5px; border-left: 5px solid #00f2fe;">
-        <h3 style="font-size: 1.8rem; font-weight: 900; color: #f8fafc; margin-bottom: 0px; margin-top: 0px; letter-spacing: -0.5px;">🎯 Sniper Cross-Validation (v15.2)</h3>
+        <h3 style="font-size: 1.8rem; font-weight: 900; color: #f8fafc; margin-bottom: 0px; margin-top: 0px; letter-spacing: -0.5px;">🎯 Sniper Cross-Validation (v15.4)</h3>
         <p style="color: #94a3b8; font-size: 0.85rem; font-weight: 400; margin-top: 4px;">Analisis mendalam dengan <strong style="color:#10b981;">Macro-Climate Auto-Brake</strong> & Trailing Stop.</p>
     </div>
     """, unsafe_allow_html=True)
     
     if active_tickers_tuple and len(active_tickers_tuple) > 0:
-        safe_key = f"cv_target_v152_{st.session_state.current_tf}_{engine_mode[:3]}"
+        safe_key = f"cv_target_v154_{st.session_state.current_tf}_{engine_mode[:3]}"
         if safe_key in st.session_state and st.session_state[safe_key] not in active_tickers_tuple:
             del st.session_state[safe_key]
             
@@ -484,7 +513,7 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult):
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #00f2fe; font-size: 1.25rem; font-weight: 900; margin-bottom: 0px;'>🧬 QUANTUM MATRIX</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #94a3b8; font-size: 0.65rem; letter-spacing: 1.5px; margin-bottom: 25px;'>DATA VAULT EDITION v15.2</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #94a3b8; font-size: 0.65rem; letter-spacing: 1.5px; margin-bottom: 25px;'>QOTD EDITION v15.4</p>", unsafe_allow_html=True)
     
     st.markdown("<div style='font-size:0.75rem; color:#facc15; font-weight:800; letter-spacing:1px; border-bottom: 1px solid rgba(250,204,21,0.2); padding-bottom: 5px; margin-bottom: 10px;'>🎛️ CORE ENGINE MODE</div>", unsafe_allow_html=True)
     engine_mode = st.radio("Pilih Mode Analisis:", ("⚔️ TRADING (Momentum & Technical)", "🛡️ INVESTMENT (Value & Fundamental)"))
@@ -543,6 +572,19 @@ with st.sidebar:
 # ==========================================
 st.markdown("<h1>🌐 Algorithmic Market Intelligence</h1>", unsafe_allow_html=True)
 
+# V15.4 FEATURE: QUOTE OF THE DAY (INSPIRASI HARIAN)
+qotd = get_quote_of_the_day()
+st.markdown(f"""
+<div style="background: linear-gradient(135deg, rgba(0,242,254,0.08) 0%, rgba(30,58,138,0.15) 100%); border: 1px solid rgba(0,242,254,0.3); border-radius: 12px; padding: 15px 22px; margin-top: 15px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <span style="color: #00f2fe; font-size: 0.7rem; font-weight: 900; letter-spacing: 2px; text-transform: uppercase;">💡 QUOTE OF THE DAY • {qotd['theme']}</span>
+        <span style="color: #64748b; font-size: 0.7rem; font-weight: 700;">Rotasi Harian Otomatis</span>
+    </div>
+    <div style="color: #f8fafc; font-size: 0.95rem; font-style: italic; font-weight: 500; line-height: 1.5;">"{qotd['quote']}"</div>
+    <div style="color: #facc15; font-size: 0.8rem; font-weight: 800; text-align: right; margin-top: 6px;">— {qotd['author']}</div>
+</div>
+""", unsafe_allow_html=True)
+
 now_wib_check = datetime.now(pytz.timezone('Asia/Jakarta'))
 jam_sekarang = now_wib_check.hour
 hari_sekarang = now_wib_check.weekday()
@@ -561,7 +603,7 @@ else:
     alert_color = "rgba(251, 191, 36, 0.2)"
     alert_border = "#fbbf24"
 
-st.markdown(f"<div style='border-left: 5px solid {alert_border}; padding: 12px 18px; background: {alert_color}; border-radius: 8px; margin-top: 10px; margin-bottom: 20px; color: #f8fafc; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.5px;'>{alert_msg}</div>", unsafe_allow_html=True)
+st.markdown(f"<div style='border-left: 5px solid {alert_border}; padding: 12px 18px; background: {alert_color}; border-radius: 8px; margin-bottom: 20px; color: #f8fafc; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.5px;'>{alert_msg}</div>", unsafe_allow_html=True)
 
 uptrend_count = sum(1 for s in st.session_state.raw_stocks if s.get("UP_SMA50", False)) if "raw_stocks" in st.session_state and st.session_state.raw_stocks else 0
 total_scanned = len(st.session_state.raw_stocks) if "raw_stocks" in st.session_state and st.session_state.raw_stocks else 1
@@ -692,7 +734,7 @@ else:
     top_invest_tickers = tuple(str(x) for x in df_invest.index[:20]) if not df_invest.empty else ()
 
     if "TRADING" in engine_mode:
-        tab1, tab2, tab3 = st.tabs(["🚀 TRADING SIGNAL (TOP GAINERS)", "🧬 VOLATILITY CLUSTERS", "📚 V15 ACADEMY"])
+        tab1, tab2, tab3, tab4 = st.tabs(["🚀 TRADING SIGNAL", "🧬 VOLATILITY CLUSTERS", "📜 SOP EKSEKUSI", "📚 ACADEMY"])
         
         with tab1:
             st.markdown("<br><h3 style='font-size: 1.5rem;'>🛰️ Institutional Trading Matrix (Dynamic Roster)</h3>", unsafe_allow_html=True)
@@ -726,7 +768,6 @@ else:
             if not df_trading.empty:
                 st.dataframe(df_trading.head(20).style.apply(style_trading, axis=1), use_container_width=True)
                 
-                # V15.2 EXCEL DATA VAULT
                 st.markdown("<br>", unsafe_allow_html=True)
                 col_dl1, col_dl2 = st.columns(2)
                 sheet_title_trd = now_wib_check.strftime("TRD %d%b %H.%M")
@@ -740,13 +781,6 @@ else:
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                         use_container_width=True
                     )
-                with col_dl2:
-                    if st.button("💾 Simpan Otomatis ke Master Jurnal (Local)", key="btn_master_trd", use_container_width=True):
-                        sukses, msg = save_to_local_master(df_trading.head(100), st.session_state.last_update, sheet_title_trd)
-                        if sukses:
-                            st.success(f"Berhasil! Data telah ditambahkan sebagai Sheet '{sheet_title_trd}' di file '{msg}'.")
-                        else:
-                            st.error(f"Gagal menyimpan: {msg}. Pastikan file Excel tidak sedang Anda buka/edit.")
             
             render_cross_validation_ui(top_trading_tickers, climate_mult)
 
@@ -781,12 +815,32 @@ else:
                 </div>
                 """, unsafe_allow_html=True)
 
+        with tab3:
+            st.markdown("<br><h3 style='font-size: 1.5rem; color: #00f2fe;'>📜 SOP Sniper Ambush (Rute Eksekusi Harian)</h3>", unsafe_allow_html=True)
+            st.markdown("""
+            **Tinggalkan kebiasaan menebak dasar saham (Catching Falling Knives). Ikuti 3 Fase Eksekusi Profesional ini:**
+
+            ### 🌙 FASE 1: Persiapan Malam Hari (> 16:00 WIB)
+            1. **Scan Market:** Tekan tombol Scan setelah bursa tutup (Zona Hijau). Data sudah 100% matang dan tidak bergerak lagi.
+            2. **Pilih Target:** Cari emiten yang mendapat gelar **⭐ SETUP A+** atau **✔️ SETUP B**. Abaikan Setup C.
+            3. **Catat Angka Penting:** Masukkan emiten pilihan ke menu *Sniper Cross-Validation* di bagian bawah layar. Catat angka **AREA BELI (SUPP)** dan **TRAILING STOP** ke dalam jurnal/kertas Anda. Saham ini resmi masuk *Watchlist VIP* Anda untuk besok.
+
+            ### 🌅 FASE 2: Eksekusi Pagi (09:00 - 09:15 WIB)
+            *Abaikan aplikasi ini sementara, buka chart Sekuritas/Broker Anda (misal: Stockbit).*
+            1. **Pantau Watchlist:** Fokus hanya pada emiten yang sudah Anda catat semalam.
+            2. **Skenario Validasi (HAJAR BELI):** Jika saham dibuka koreksi (turun wajar) menyentuh atau mendekati angka **AREA BELI** Anda, dan tidak ada guyuran volume besar. Masuk (Entry) dengan Lot Sizing yang direkomendasikan aplikasi!
+            3. **Skenario Jebakan (BATALKAN):** Jika saham dibuka langsung longsor (Morning Dump) dan menembus garis **TRAILING STOP** Anda. Jangan sentuh! Bandar sedang membuang barang.
+
+            ### ☀️ FASE 3: Radar Intraday Sesi 2 (> 10:00 WIB)
+            1. Setelah market stabil (Zona Kuning), buka kembali aplikasi ini dan lakukan Scan ulang.
+            2. Cari saham "Kejutan Intraday"—saham yang diam di pagi hari tapi meledak di siang hari dengan volatilitas tinggi (Cocok untuk masuk ke kategori Scalping Daily).
+            """)
+
     else:
-        tab1, tab2 = st.tabs(["🛡️ VALUE & GROWTH MATRIX", "📚 V15 ACADEMY"])
+        tab1, tab2, tab3 = st.tabs(["🛡️ VALUE & GROWTH MATRIX", "📜 SOP INVESTASI", "📚 ACADEMY"])
         
         with tab1:
             st.markdown("<br><h3 style='font-size: 1.5rem;'>🛡️ Institutional Investment Matrix (Sorted by Yield)</h3>", unsafe_allow_html=True)
-            st.markdown("<p style='color:#94a3b8; font-size:0.75rem;'>💡 <i>Kini dilengkapi dengan fitur <b>PEG Ratio</b> untuk mendeteksi saham yang murah dan labanya bertumbuh pesat (Growth/CANSLIM).</i></p>", unsafe_allow_html=True)
             
             def style_invest(row):
                 styles = []
@@ -813,7 +867,6 @@ else:
             if not df_invest.empty:
                 st.dataframe(df_invest.head(20).style.apply(style_invest, axis=1), use_container_width=True)
                 
-                # V15.2 EXCEL DATA VAULT
                 st.markdown("<br>", unsafe_allow_html=True)
                 col_dl1, col_dl2 = st.columns(2)
                 sheet_title_inv = now_wib_check.strftime("INV %d%b %H.%M")
@@ -827,40 +880,44 @@ else:
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                         use_container_width=True
                     )
-                with col_dl2:
-                    if st.button("💾 Simpan Otomatis ke Master Jurnal (Local)", key="btn_master_inv", use_container_width=True):
-                        sukses, msg = save_to_local_master(df_invest.head(100), st.session_state.last_update, sheet_title_inv)
-                        if sukses:
-                            st.success(f"Berhasil! Data telah ditambahkan sebagai Sheet '{sheet_title_inv}' di file '{msg}'.")
-                        else:
-                            st.error(f"Gagal menyimpan: {msg}. Pastikan file Excel tidak sedang Anda buka/edit.")
             
             render_cross_validation_ui(top_invest_tickers, climate_mult)
+            
+        with tab2:
+            st.markdown("<br><h3 style='font-size: 1.5rem; color: #10b981;'>📜 SOP Value & Growth Investing</h3>", unsafe_allow_html=True)
+            st.markdown("""
+            **Ini adalah cetak biru (blueprint) untuk membangun portofolio jangka menengah-panjang yang tangguh:**
 
-    with (tab3 if "TRADING" in engine_mode else tab2):
-        st.markdown("<br><h3 style='font-size: 1.5rem; text-align: center;'>📚 Institutional Academy v15.2</h3>", unsafe_allow_html=True)
+            ### 🔍 Langkah 1: Saring Mutiara Tersembunyi (Screening)
+            *   Gunakan matriks ini setiap akhir pekan (Jumat sore / Sabtu) untuk mencari saham bergelar **💎 UNDERVALUED (GROWTH)**. 
+            *   Fokus pada saham dengan **PEG Ratio < 1.0** (Harganya murah, tapi pertumbuhan labanya meledak).
+
+            ### ⚖️ Langkah 2: Evaluasi Sinyal Teknis (Cross-Check)
+            *   Saham yang murah belum tentu langsung naik besok pagi jika bandar belum masuk.
+            *   Gunakan alat *Sniper Cross-Validation* di bawah tabel. Jika Valuasinya **Undervalued** tapi rekomendasi algonya **HOLD / SETUP C (Weak)**, artinya Anda bisa mencicil perlahan (*dollar cost averaging*). 
+            *   Jika rekomendasinya **SETUP B / A+**, itu artinya valuasi murah bertemu dengan momentum bandar! Waktunya beli agresif.
+
+            ### 🛡️ Langkah 3: Disiplin Trailing Stop
+            *   Meski kita berinvestasi untuk fundamental, kita tidak boleh mati konyol saat fundamental perusahaannya memburuk. 
+            *   Jika harga saham terus merosot dan ditutup menjebol batas **Trailing Stop** berhari-hari, saatnya *Cut Loss* atau *Take Profit* sebagian. Amankan modal Anda!
+            """)
+
+    with (tab4 if "TRADING" in engine_mode else tab3):
+        st.markdown("<br><h3 style='font-size: 1.5rem; text-align: center;'>📚 Institutional Academy v15.4</h3>", unsafe_allow_html=True)
         st.markdown("<p style='text-align: center; color: #94a3b8; font-size: 0.85rem; margin-bottom: 20px;'>Panduan fitur-fitur level pro-trader Wall Street.</p>", unsafe_allow_html=True)
         
-        with st.expander("📖 1. Apa itu Master Jurnal (Auto-Sheet)? — BARU"):
-            st.markdown("""
-            **Tinggalkan file Excel terpisah yang berantakan!**
-            Kini Anda memiliki 2 opsi menyimpan data:
-            *   **Download Excel Manual:** Menyimpan file sebagai `.xlsx` normal yang rapi ke folder *Download* Anda.
-            *   **💾 Simpan Otomatis ke Master Jurnal:** Tombol ajaib ini akan mem-*bypass browser* dan langsung membuatkan file raksasa `Master_Jurnal_Quantum.xlsx` di dalam folder aplikasi Anda. Setiap kali tombol ditekan di hari berikutnya, ia tidak menimpa file lama, melainkan **menambahkan Sheet baru** dengan nama tanggal dan jam.
-            """)
-        with st.expander("📖 2. Sistem Auto-Brake (Kesehatan Pasar / Breadth)"):
+        with st.expander("📖 1. Sistem Auto-Brake (Kesehatan Pasar / Breadth)"):
             st.markdown("""
             **Lihat Kotak 'MARKET CLIMATE' di Atas Kanan!**
             *   Jika pasar berstatus **🌞 RISK ON (BULLISH)**: Berarti IHSG sedang sehat. Mesin mengizinkan Anda menggunakan 100% dari Lot Sizing Anda. Gas penuh!
             *   Jika pasar berstatus **⛈️ RISK OFF (BEARISH)**: Mayoritas saham di bursa sedang hancur. Mesin akan mengaktifkan *Auto-Brake* dan memangkas ukuran lot rekomendasi Anda **sebanyak 50%**. Jangan melawan pasar, selamatkan modal Anda!
             """)
-        with st.expander("📖 3. Analisis Zona Waktu (Peringatan Keterlambatan Data)"):
+        with st.expander("📖 2. Misteri PEG Ratio (Growth Investing)"):
             st.markdown("""
-            **Perhatikan Indikator Warna di Bawah Header!**
-            Aplikasi kita menggunakan data API yfinance yang rawan *delay* saat pembukaan market. 
-            *   **Zona Merah (09:00 - 10:00 WIB):** Jangan pernah melakukan eksekusi langsung berdasarkan tabel ini. Gunakan untuk referensi silang dengan broker Anda.
-            *   **Zona Hijau (>16:00 WIB):** Waktu paling sempurna (100% akurat) untuk menyusun Watchlist dan mengatur formasi Lot Sizing untuk esok pagi.
+            **Murah saja tidak cukup. Saham murah yang labanya turun = Value Trap.**
+            Kini, di Tab Investment, Anda akan melihat kolom **PEG (Price/Earnings-to-Growth)**.
+            *   **PEG < 1.0 (Warna Biru):** Ini adalah permata tersembunyi! Harganya murah, DAN labanya sedang bertumbuh pesat. Beli dan simpan!
             """)
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem; font-weight:600; letter-spacing: 1px;'>⚡ JIHAN-GHINA ENGINE • INSTITUTIONAL MASTERPIECE v15.2 (Data Vault Edition)</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem; font-weight:600; letter-spacing: 1px;'>⚡ JIHAN-GHINA ENGINE • INSTITUTIONAL MASTERPIECE v15.4 (QOTD Edition)</p>", unsafe_allow_html=True)
