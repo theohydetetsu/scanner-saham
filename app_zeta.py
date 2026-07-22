@@ -8,7 +8,7 @@ import warnings
 import gc
 import json
 import os
-import plotly.graph_objects as go
+import io
 
 warnings.filterwarnings('ignore')
 
@@ -39,7 +39,7 @@ if "current_tf" not in st.session_state: st.session_state.current_tf = "1 Hari (
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Ultimate v15.1", page_icon="🧬", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Ultimate v15.2", page_icon="🧬", layout="wide")
 
 st.markdown("""
 <style>
@@ -74,7 +74,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. CORE ENGINE DATA FETCHING & UI HELPERS
+# 2. CORE ENGINE DATA FETCHING & EXPORT UTILS
 # ==========================================
 MASTER_UNIVERSE = [
     "BBCA", "BBRI", "BMRI", "BBNI", "TLKM", "ASII", "UNTR", "ICBP", "INDF", "AMRT", "GOTO", "PGAS", "PTBA", "ITMG", 
@@ -108,13 +108,31 @@ def render_badges(tickers, hex_color):
 def get_waktu_wib():
     return datetime.now(pytz.timezone('Asia/Jakarta')).strftime("%d %b %Y - %H:%M:%S WIB")
 
-def export_df_to_csv(df_source, scan_time):
-    # Menyalin dataframe agar tidak merusak UI tabel asli
+# V15.2 EXCEL UTILITIES
+def export_df_to_excel_buffer(df_source, scan_time, sheet_name="Data_Saham"):
     df_export = df_source.copy()
-    # Menambahkan kolom WAKTU_SCAN di paling belakang untuk logger
     df_export['WAKTU_SCAN'] = scan_time
-    # Convert ke CSV (index=True memastikan TICKER ikut masuk)
-    return df_export.to_csv(index=True).encode('utf-8')
+    buffer = io.BytesIO()
+    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+        df_export.to_excel(writer, index=True, sheet_name=sheet_name[:31]) # Max 31 chars
+    return buffer.getvalue()
+
+def save_to_local_master(df_source, scan_time, sheet_name):
+    try:
+        df_export = df_source.copy()
+        df_export['WAKTU_SCAN'] = scan_time
+        master_file = "Master_Jurnal_Quantum.xlsx"
+        sheet_name_clean = sheet_name[:31] 
+
+        if os.path.exists(master_file):
+            with pd.ExcelWriter(master_file, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
+                df_export.to_excel(writer, index=True, sheet_name=sheet_name_clean)
+        else:
+            with pd.ExcelWriter(master_file, engine='openpyxl', mode='w') as writer:
+                df_export.to_excel(writer, index=True, sheet_name=sheet_name_clean)
+        return True, master_file
+    except Exception as e:
+        return False, str(e)
 
 @st.cache_data(ttl=300, show_spinner=False)
 def fetch_ihsg_data():
@@ -339,13 +357,13 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult):
     st.markdown("---")
     st.markdown("""
     <div style="margin-top: 15px; margin-bottom: 20px; padding-left: 5px; border-left: 5px solid #00f2fe;">
-        <h3 style="font-size: 1.8rem; font-weight: 900; color: #f8fafc; margin-bottom: 0px; margin-top: 0px; letter-spacing: -0.5px;">🎯 Sniper Cross-Validation (v15.1)</h3>
+        <h3 style="font-size: 1.8rem; font-weight: 900; color: #f8fafc; margin-bottom: 0px; margin-top: 0px; letter-spacing: -0.5px;">🎯 Sniper Cross-Validation (v15.2)</h3>
         <p style="color: #94a3b8; font-size: 0.85rem; font-weight: 400; margin-top: 4px;">Analisis mendalam dengan <strong style="color:#10b981;">Macro-Climate Auto-Brake</strong> & Trailing Stop.</p>
     </div>
     """, unsafe_allow_html=True)
     
     if active_tickers_tuple and len(active_tickers_tuple) > 0:
-        safe_key = f"cv_target_v151_{st.session_state.current_tf}_{engine_mode[:3]}"
+        safe_key = f"cv_target_v152_{st.session_state.current_tf}_{engine_mode[:3]}"
         if safe_key in st.session_state and st.session_state[safe_key] not in active_tickers_tuple:
             del st.session_state[safe_key]
             
@@ -466,7 +484,7 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult):
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #00f2fe; font-size: 1.25rem; font-weight: 900; margin-bottom: 0px;'>🧬 QUANTUM MATRIX</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #94a3b8; font-size: 0.65rem; letter-spacing: 1.5px; margin-bottom: 25px;'>DATA LOGGER EDITION v15.1</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #94a3b8; font-size: 0.65rem; letter-spacing: 1.5px; margin-bottom: 25px;'>DATA VAULT EDITION v15.2</p>", unsafe_allow_html=True)
     
     st.markdown("<div style='font-size:0.75rem; color:#facc15; font-weight:800; letter-spacing:1px; border-bottom: 1px solid rgba(250,204,21,0.2); padding-bottom: 5px; margin-bottom: 10px;'>🎛️ CORE ENGINE MODE</div>", unsafe_allow_html=True)
     engine_mode = st.radio("Pilih Mode Analisis:", ("⚔️ TRADING (Momentum & Technical)", "🛡️ INVESTMENT (Value & Fundamental)"))
@@ -525,11 +543,10 @@ with st.sidebar:
 # ==========================================
 st.markdown("<h1>🌐 Algorithmic Market Intelligence</h1>", unsafe_allow_html=True)
 
-# V15.1 FEATURE: TIME-ZONE INTELLIGENCE (ZONA WAKTU API)
 now_wib_check = datetime.now(pytz.timezone('Asia/Jakarta'))
 jam_sekarang = now_wib_check.hour
 hari_sekarang = now_wib_check.weekday()
-file_timestamp = now_wib_check.strftime("%H_%d_%b_%Y") # Format csv: hh_dd_MMM_yyyy
+file_timestamp = now_wib_check.strftime("%H_%d_%b_%Y")
 
 if hari_sekarang >= 5 or jam_sekarang >= 16 or jam_sekarang < 9:
     alert_msg = "🟢 **ZONA SCAN TERAKURAT (END OF DAY):** Market tutup. Data 100% akurat dan final. Waktu terbaik menyaring saham (Watchlist) untuk eksekusi esok hari."
@@ -546,7 +563,6 @@ else:
 
 st.markdown(f"<div style='border-left: 5px solid {alert_border}; padding: 12px 18px; background: {alert_color}; border-radius: 8px; margin-top: 10px; margin-bottom: 20px; color: #f8fafc; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.5px;'>{alert_msg}</div>", unsafe_allow_html=True)
 
-# Menghitung Macro Market Climate
 uptrend_count = sum(1 for s in st.session_state.raw_stocks if s.get("UP_SMA50", False)) if "raw_stocks" in st.session_state and st.session_state.raw_stocks else 0
 total_scanned = len(st.session_state.raw_stocks) if "raw_stocks" in st.session_state and st.session_state.raw_stocks else 1
 breadth_pct = (uptrend_count / total_scanned) * 100
@@ -710,14 +726,27 @@ else:
             if not df_trading.empty:
                 st.dataframe(df_trading.head(20).style.apply(style_trading, axis=1), use_container_width=True)
                 
-                # V15.1 CSV Exporter
-                csv_data_trading = export_df_to_csv(df_trading.head(100), st.session_state.last_update)
-                st.download_button(
-                    label="📥 Export Data Matrix (CSV)",
-                    data=csv_data_trading,
-                    file_name=f"{file_timestamp}_Trading.csv",
-                    mime="text/csv"
-                )
+                # V15.2 EXCEL DATA VAULT
+                st.markdown("<br>", unsafe_allow_html=True)
+                col_dl1, col_dl2 = st.columns(2)
+                sheet_title_trd = now_wib_check.strftime("TRD %d%b %H.%M")
+                
+                with col_dl1:
+                    excel_buffer_trd = export_df_to_excel_buffer(df_trading.head(100), st.session_state.last_update, sheet_title_trd)
+                    st.download_button(
+                        label="📥 Download Excel Manual (.xlsx)",
+                        data=excel_buffer_trd,
+                        file_name=f"{file_timestamp}_Trading.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        use_container_width=True
+                    )
+                with col_dl2:
+                    if st.button("💾 Simpan Otomatis ke Master Jurnal (Local)", key="btn_master_trd", use_container_width=True):
+                        sukses, msg = save_to_local_master(df_trading.head(100), st.session_state.last_update, sheet_title_trd)
+                        if sukses:
+                            st.success(f"Berhasil! Data telah ditambahkan sebagai Sheet '{sheet_title_trd}' di file '{msg}'.")
+                        else:
+                            st.error(f"Gagal menyimpan: {msg}. Pastikan file Excel tidak sedang Anda buka/edit.")
             
             render_cross_validation_ui(top_trading_tickers, climate_mult)
 
@@ -784,45 +813,54 @@ else:
             if not df_invest.empty:
                 st.dataframe(df_invest.head(20).style.apply(style_invest, axis=1), use_container_width=True)
                 
-                # V15.1 CSV Exporter
-                csv_data_invest = export_df_to_csv(df_invest.head(100), st.session_state.last_update)
-                st.download_button(
-                    label="📥 Export Data Matrix (CSV)",
-                    data=csv_data_invest,
-                    file_name=f"{file_timestamp}_Investment.csv",
-                    mime="text/csv"
-                )
+                # V15.2 EXCEL DATA VAULT
+                st.markdown("<br>", unsafe_allow_html=True)
+                col_dl1, col_dl2 = st.columns(2)
+                sheet_title_inv = now_wib_check.strftime("INV %d%b %H.%M")
+                
+                with col_dl1:
+                    excel_buffer_inv = export_df_to_excel_buffer(df_invest.head(100), st.session_state.last_update, sheet_title_inv)
+                    st.download_button(
+                        label="📥 Download Excel Manual (.xlsx)",
+                        data=excel_buffer_inv,
+                        file_name=f"{file_timestamp}_Investment.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        use_container_width=True
+                    )
+                with col_dl2:
+                    if st.button("💾 Simpan Otomatis ke Master Jurnal (Local)", key="btn_master_inv", use_container_width=True):
+                        sukses, msg = save_to_local_master(df_invest.head(100), st.session_state.last_update, sheet_title_inv)
+                        if sukses:
+                            st.success(f"Berhasil! Data telah ditambahkan sebagai Sheet '{sheet_title_inv}' di file '{msg}'.")
+                        else:
+                            st.error(f"Gagal menyimpan: {msg}. Pastikan file Excel tidak sedang Anda buka/edit.")
             
             render_cross_validation_ui(top_invest_tickers, climate_mult)
 
     with (tab3 if "TRADING" in engine_mode else tab2):
-        st.markdown("<br><h3 style='font-size: 1.5rem; text-align: center;'>📚 Institutional Academy v15.1</h3>", unsafe_allow_html=True)
+        st.markdown("<br><h3 style='font-size: 1.5rem; text-align: center;'>📚 Institutional Academy v15.2</h3>", unsafe_allow_html=True)
         st.markdown("<p style='text-align: center; color: #94a3b8; font-size: 0.85rem; margin-bottom: 20px;'>Panduan fitur-fitur level pro-trader Wall Street.</p>", unsafe_allow_html=True)
         
-        with st.expander("📖 1. Sistem Auto-Brake (Kesehatan Pasar / Breadth)"):
+        with st.expander("📖 1. Apa itu Master Jurnal (Auto-Sheet)? — BARU"):
+            st.markdown("""
+            **Tinggalkan file Excel terpisah yang berantakan!**
+            Kini Anda memiliki 2 opsi menyimpan data:
+            *   **Download Excel Manual:** Menyimpan file sebagai `.xlsx` normal yang rapi ke folder *Download* Anda.
+            *   **💾 Simpan Otomatis ke Master Jurnal:** Tombol ajaib ini akan mem-*bypass browser* dan langsung membuatkan file raksasa `Master_Jurnal_Quantum.xlsx` di dalam folder aplikasi Anda. Setiap kali tombol ditekan di hari berikutnya, ia tidak menimpa file lama, melainkan **menambahkan Sheet baru** dengan nama tanggal dan jam.
+            """)
+        with st.expander("📖 2. Sistem Auto-Brake (Kesehatan Pasar / Breadth)"):
             st.markdown("""
             **Lihat Kotak 'MARKET CLIMATE' di Atas Kanan!**
             *   Jika pasar berstatus **🌞 RISK ON (BULLISH)**: Berarti IHSG sedang sehat. Mesin mengizinkan Anda menggunakan 100% dari Lot Sizing Anda. Gas penuh!
             *   Jika pasar berstatus **⛈️ RISK OFF (BEARISH)**: Mayoritas saham di bursa sedang hancur. Mesin akan mengaktifkan *Auto-Brake* dan memangkas ukuran lot rekomendasi Anda **sebanyak 50%**. Jangan melawan pasar, selamatkan modal Anda!
             """)
-        with st.expander("📖 2. Analisis Zona Waktu (Peringatan Keterlambatan Data) — BARU"):
+        with st.expander("📖 3. Analisis Zona Waktu (Peringatan Keterlambatan Data)"):
             st.markdown("""
             **Perhatikan Indikator Warna di Bawah Header!**
             Aplikasi kita menggunakan data API yfinance yang rawan *delay* saat pembukaan market. 
             *   **Zona Merah (09:00 - 10:00 WIB):** Jangan pernah melakukan eksekusi langsung berdasarkan tabel ini. Gunakan untuk referensi silang dengan broker Anda.
             *   **Zona Hijau (>16:00 WIB):** Waktu paling sempurna (100% akurat) untuk menyusun Watchlist dan mengatur formasi Lot Sizing untuk esok pagi.
             """)
-        with st.expander("📖 3. Export Jurnal Trading ke CSV — BARU"):
-            st.markdown("""
-            **Klik tombol '📥 Export Data Matrix (CSV)' di bawah tabel!**
-            Sebagai pro-trader, Anda harus memiliki jurnal. File CSV yang diunduh akan otomatis menempelkan stempel **WAKTU SCAN** (Jam dan Tanggal) sehingga Anda bisa merekam jejak pergerakan sistem algoritma dari hari ke hari di Excel.
-            """)
-        with st.expander("📖 4. Misteri PEG Ratio (Growth Investing)"):
-            st.markdown("""
-            **Murah saja tidak cukup. Saham murah yang labanya turun = Value Trap.**
-            Kini, di Tab Investment, Anda akan melihat kolom **PEG (Price/Earnings-to-Growth)**.
-            *   **PEG < 1.0 (Warna Biru):** Ini adalah permata tersembunyi! Harganya murah, DAN labanya sedang bertumbuh pesat. Beli dan simpan!
-            """)
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem; font-weight:600; letter-spacing: 1px;'>⚡ JIHAN-GHINA ENGINE • INSTITUTIONAL MASTERPIECE v15.1 (Data Logger Edition)</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem; font-weight:600; letter-spacing: 1px;'>⚡ JIHAN-GHINA ENGINE • INSTITUTIONAL MASTERPIECE v15.2 (Data Vault Edition)</p>", unsafe_allow_html=True)
