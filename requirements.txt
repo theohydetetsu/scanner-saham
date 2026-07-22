@@ -4,3 +4,5 @@ yfinance
 numpy<2.0.0
 pytz
 plotly
+openpyxl
+xlsxwriter
