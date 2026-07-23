@@ -15,7 +15,7 @@ warnings.filterwarnings('ignore')
 # ==========================================
 # 0. SISTEM CACHE & TRACKING
 # ==========================================
-CACHE_FILE = "jihan_ghina_saham_cache_v157.json"
+CACHE_FILE = "jihan_ghina_saham_cache_v158.json"
 
 def load_smart_cache():
     if os.path.exists(CACHE_FILE):
@@ -24,7 +24,6 @@ def load_smart_cache():
                 cache_data = json.load(f)
                 loaded_stocks = cache_data.get("raw_stocks", [])
                 if loaded_stocks and isinstance(loaded_stocks, list):
-                    # Verifikasi fitur Financials v15.7 sudah ada di cache
                     if "REVENUE" not in loaded_stocks[0]:
                         return [], None
                 return loaded_stocks, cache_data.get("last_update", None)
@@ -40,7 +39,7 @@ if "current_tf" not in st.session_state: st.session_state.current_tf = "1 Hari (
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Ultimate v15.7", page_icon="🧬", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Ultimate v15.8", page_icon="🎯", layout="wide")
 
 st.markdown("""
 <style>
@@ -97,7 +96,6 @@ st.markdown("""
 # ==========================================
 QUOTES_DATABASE = [
     {"quote": "Dalam jangka pendek, pasar saham adalah mesin pemungutan suara (momentum). Dalam jangka panjang, ia adalah mesin penimbang (fundamental).", "author": "Benjamin Graham", "theme": "Trading vs Investment"},
-    {"quote": "Jangan pernah menangkap pisau yang sedang jatuh (Catching a Falling Knife). Biarkan bandar menghentikan kejatuhan harga, lalu kita beli saat tren naik terkonfirmasi.", "author": "The Institutional Way", "theme": "Disiplin & Risk Management"},
     {"quote": "Membeli saham dengan Volume Pressure (WPI) di atas 80% adalah seperti menumpang roket yang bahan bakarnya baru saja diisi penuh.", "author": "Quantum Matrix Philosophy", "theme": "Momentum & Whales"},
     {"quote": "Mengetahui di mana titik ARA (Auto Reject Atas) adalah mengetahui batas keserakahan pasar hari itu. Jadikan itu target akhir Anda.", "author": "Sniper Algo Playbook", "theme": "Targeting & Execution"},
     {"quote": "Harga adalah apa yang Anda bayar. Nilai (Value) adalah apa yang Anda dapatkan.", "author": "Warren Buffett", "theme": "Valuasi & Fundamental"}
@@ -334,7 +332,6 @@ def fetch_single_stock(emiten, mode_tf):
         div_yield = (div_rate / harga_skg * 100) if (div_rate and harga_skg > 0) else 0.0
         mcap = info.get('marketCap', 0)
         
-        # V15.7 REAL FINANCIALS DATA (For Investment Mode)
         rev = info.get('totalRevenue', 0)
         net_inc = info.get('netIncomeToCommon', 0)
         roe = info.get('returnOnEquity', 0) * 100 if info.get('returnOnEquity') else 0
@@ -359,7 +356,7 @@ def fetch_single_stock(emiten, mode_tf):
             "IS_VOLCANO": is_volcano,        
             "UP_SMA50": harga_skg > sma50_skg,
             "PER": round(per_val, 2), "PBV": round(pbv_val, 2), "PEG": round(peg_val, 2), "DIV_YIELD": round(div_yield, 2),
-            "REVENUE": rev, "NET_INCOME": net_inc, "ROE": round(roe, 2), "DER": round(der, 2), # V15.7 DATA
+            "REVENUE": rev, "NET_INCOME": net_inc, "ROE": round(roe, 2), "DER": round(der, 2),
             "RET_1D": ret_1d, "VOLUME": vol_skg, "VOL_SMA20": vol_sma20, "MARKET_CAP": mcap, "DIVIDEND_DATE": div_date_str, "TRANS_VAL": harga_skg * vol_skg
         }
     except Exception as e: 
@@ -378,18 +375,16 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
     """, unsafe_allow_html=True)
     
     if active_tickers_tuple and len(active_tickers_tuple) > 0:
-        safe_key = f"cv_target_v157_{st.session_state.current_tf}_{'TRD' if is_trading_mode else 'INV'}"
+        safe_key = f"cv_target_v158_{st.session_state.current_tf}_{'TRD' if is_trading_mode else 'INV'}"
         
         valid_targets = []
         for t in active_tickers_tuple:
             raw_data = next((item for item in st.session_state.raw_stocks if item.get("TICKER") == t), None)
             if raw_data:
                 if is_trading_mode:
-                    # FILTER TRADING: HANYA SETUP A+, B, ATAU AGGRESSIVE
                     grade = raw_data.get("SETUP_GRADE", "")
                     if "A+" in grade or "B" in grade or "AGGRESSIVE" in grade: valid_targets.append(t)
                 else:
-                    # FILTER INVESTMENT: HANYA UNDERVALUED ATAU FAIR VALUE
                     per = raw_data.get("PER", 0)
                     pbv = raw_data.get("PBV", 1)
                     peg = raw_data.get("PEG", 0)
@@ -401,7 +396,7 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                     if div > 4.0: skor_i += 20
                     if up_sma: skor_i += 15
                     if 0 < peg <= 1.0: skor_i += 25 
-                    if skor_i >= 40: valid_targets.append(t) # Minimal Fair Value
+                    if skor_i >= 40: valid_targets.append(t) 
         
         if not valid_targets:
             msg = "Semua emiten saat ini berstatus SETUP C (WEAK). Sistem memblokir Anda untuk masuk demi melindungi modal. Wait & See!" if is_trading_mode else "Tidak ada emiten dengan fundamental (Valuasi) yang cukup aman untuk diinvestasikan saat ini."
@@ -422,9 +417,6 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
             raw_target = next((item for item in st.session_state.raw_stocks if item.get("TICKER") == emiten_signal), None)
             
             if raw_target:
-                # ---------------------------------------------------------
-                # RENDER MODE TRADING
-                # ---------------------------------------------------------
                 if is_trading_mode:
                     bd_status = raw_target.get("STATUS_BANDAR", "➖ NEUTRAL")
                     setup_grade = raw_target.get("SETUP_GRADE", "⚠️ SETUP C")
@@ -478,11 +470,8 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                         wpi_color = "#10b981" if wpi_score > 70 else "#fbbf24" if wpi_score > 40 else "#f43f5e"
                         st.markdown(f"<div style='background: rgba(30,41,59,0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;'><div style='text-align: center; color: #94a3b8; font-size: 0.8rem; font-weight: 800; letter-spacing: 1px;'>🐋 WHALE PRESSURE INDEX</div><div style='text-align: center; font-size: 2.2rem; font-weight: 900; color: {wpi_color}; margin-top: 5px;'>{wpi_score}%</div><div style='font-size: 0.7rem; color: #64748b; text-align: center; margin-top: 8px;'>Kekuatan Beli Sesi Penutupan</div></div>", unsafe_allow_html=True)
                     
-                    st.markdown(f"<div style='margin-top: 20px; background: rgba(15, 23, 42, 0.8); border: 1px solid {color}50; border-radius: 14px; padding: 25px; text-align: center; box-shadow: 0 10px 30px -10px {color}30;'><div style='color: {color}; font-size: 0.8rem; font-weight: 900; letter-spacing: 3px; margin-bottom: 8px; text-transform: uppercase;'>🏆 V15.7 TRADING SIZING</div><div style='color: #cbd5e1; font-size: 0.95rem; font-weight: 300; max-width: 750px; margin: 0 auto; line-height: 1.6; margin-bottom: 20px;'>{desc}</div><div><span style='background: linear-gradient(90deg, rgba(0,242,254,0.1) 0%, rgba(30,58,138,0.2) 100%); border: 1px solid #00f2fe60; padding: 12px 30px; border-radius: 30px; color: #00f2fe; font-size: 1rem; font-weight: 900; display: inline-block;'>🎯 KEKUATAN BELI: {lot_rec_target}</span></div></div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='margin-top: 20px; background: rgba(15, 23, 42, 0.8); border: 1px solid {color}50; border-radius: 14px; padding: 25px; text-align: center; box-shadow: 0 10px 30px -10px {color}30;'><div style='color: {color}; font-size: 0.8rem; font-weight: 900; letter-spacing: 3px; margin-bottom: 8px; text-transform: uppercase;'>🏆 V15.8 TRADING SIZING</div><div style='color: #cbd5e1; font-size: 0.95rem; font-weight: 300; max-width: 750px; margin: 0 auto; line-height: 1.6; margin-bottom: 20px;'>{desc}</div><div><span style='background: linear-gradient(90deg, rgba(0,242,254,0.1) 0%, rgba(30,58,138,0.2) 100%); border: 1px solid #00f2fe60; padding: 12px 30px; border-radius: 30px; color: #00f2fe; font-size: 1rem; font-weight: 900; display: inline-block;'>🎯 KEKUATAN BELI: {lot_rec_target}</span></div></div>", unsafe_allow_html=True)
 
-                # ---------------------------------------------------------
-                # RENDER MODE INVESTMENT (NEW REAL FINANCIALS)
-                # ---------------------------------------------------------
                 else:
                     per = raw_target.get("PER", 0)
                     pbv = raw_target.get("PBV", 1)
@@ -524,14 +513,14 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                     with col_res2:
                         st.markdown(f"<div style='background: rgba(30,41,59,0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;'><div style='text-align: center; color: #94a3b8; font-size: 0.8rem; font-weight: 800; letter-spacing: 1px;'>📊 METRIK VALUASI</div><div style='text-align: center; font-size: 1.2rem; font-weight: 900; color: #f8fafc; margin-top: 10px;'>PER: <span style='color:#38bdf8;'>{per:.1f}x</span></div><div style='text-align: center; font-size: 1.2rem; font-weight: 900; color: #f8fafc; margin-top: 5px;'>PBV: <span style='color:#38bdf8;'>{pbv:.1f}x</span></div><div style='text-align: center; font-size: 1.2rem; font-weight: 900; color: #f8fafc; margin-top: 5px;'>Yield: <span style='color:#10b981;'>{div:.1f}%</span></div></div>", unsafe_allow_html=True)
                     
-                    st.markdown(f"<div style='margin-top: 20px; background: rgba(15, 23, 42, 0.8); border: 1px solid {color}50; border-radius: 14px; padding: 25px; text-align: center; box-shadow: 0 10px 30px -10px {color}30;'><div style='color: {color}; font-size: 0.8rem; font-weight: 900; letter-spacing: 3px; margin-bottom: 8px; text-transform: uppercase;'>🏆 V15.7 INVESTMENT VERDICT</div><div style='color: #cbd5e1; font-size: 0.95rem; font-weight: 300; max-width: 750px; margin: 0 auto; line-height: 1.6;'>{desc}</div></div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='margin-top: 20px; background: rgba(15, 23, 42, 0.8); border: 1px solid {color}50; border-radius: 14px; padding: 25px; text-align: center; box-shadow: 0 10px 30px -10px {color}30;'><div style='color: {color}; font-size: 0.8rem; font-weight: 900; letter-spacing: 3px; margin-bottom: 8px; text-transform: uppercase;'>🏆 V15.8 INVESTMENT VERDICT</div><div style='color: #cbd5e1; font-size: 0.95rem; font-weight: 300; max-width: 750px; margin: 0 auto; line-height: 1.6;'>{desc}</div></div>", unsafe_allow_html=True)
 
 # ==========================================
 # 5. SIDEBAR
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #00f2fe; font-size: 1.25rem; font-weight: 900; margin-bottom: 0px;'>🧬 QUANTUM MATRIX</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #94a3b8; font-size: 0.65rem; letter-spacing: 1.5px; margin-bottom: 25px;'>V15.7 DUAL-CORE EDITION</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #94a3b8; font-size: 0.65rem; letter-spacing: 1.5px; margin-bottom: 25px;'>V15.8 ELITE 15 EDITION</p>", unsafe_allow_html=True)
     
     st.markdown("<div style='font-size:0.75rem; color:#facc15; font-weight:800; letter-spacing:1px; border-bottom: 1px solid rgba(250,204,21,0.2); padding-bottom: 5px; margin-bottom: 10px;'>🎛️ CORE ENGINE MODE</div>", unsafe_allow_html=True)
     engine_mode = st.radio("Pilih Mode Analisis:", ("⚔️ TRADING (Momentum & Technical)", "🛡️ INVESTMENT (Value & Fundamental)"))
@@ -697,7 +686,7 @@ else:
             "BANDARMOLOGI": bd_status, "REKOMENDASI": setup_grade
         })
 
-        # INVESTMENT LOGIC
+        # INVESTMENT LOGIC (FIXED: PERBAIKAN FORMAT PEMANGGILAN ANGKA)
         skor_i = 0
         if 0 < per_val < 15: skor_i += 20
         if 0 < pbv_val < 1.5: skor_i += 20
@@ -710,7 +699,7 @@ else:
         else: kep_i = "⚠️ OVERVALUED"
             
         hasil_invest.append({
-            "RAW_YIELD": div_yield, "TICKER": ticker, "HARGA": f"{int(harga):,}".replace(",", "."), "MARKET CAP": format_market_cap(mcap),
+            "RAW_YIELD": div_yield, "TICKER": ticker, "HARGA": f"{int(harga):,}".replace(",", "."), "MARKET CAP": format_financials(mcap),
             "PER (x)": f"{per_val:.2f}", "PBV (x)": f"{pbv_val:.2f}", "PEG (x)": f"{peg_val:.2f}", "DIV YIELD (%)": f"{div_yield:.2f}%",
             "DIV DATE": str(div_date), "VALUASI": kep_i
         })
@@ -720,23 +709,24 @@ else:
         if (0 < peg_val <= 1.0): cluster_high_growth.append(ticker)
         if (div_yield >= 5.0): cluster_div_kings.append(ticker)
 
+    # --- TOP 15 FILTERING (V15.8 ELITE EDITION) ---
     df_trading = pd.DataFrame(hasil_trading)
     if not df_trading.empty:
         df_trading = df_trading.sort_values(by="RAW_RET", ascending=False).reset_index(drop=True).drop(columns=["RAW_RET"])
         df_trading.set_index("TICKER", inplace=True)
-    top_trading_tickers = tuple(str(x) for x in df_trading.index[:50]) if not df_trading.empty else ()
+    top_trading_tickers = tuple(str(x) for x in df_trading.index[:15]) if not df_trading.empty else ()
 
     df_invest = pd.DataFrame(hasil_invest)
     if not df_invest.empty:
         df_invest = df_invest.sort_values(by="RAW_YIELD", ascending=False).reset_index(drop=True).drop(columns=["RAW_YIELD"])
         df_invest.set_index("TICKER", inplace=True)
-    top_invest_tickers = tuple(str(x) for x in df_invest.index[:50]) if not df_invest.empty else ()
+    top_invest_tickers = tuple(str(x) for x in df_invest.index[:15]) if not df_invest.empty else ()
 
     if "TRADING" in engine_mode:
-        tab1, tab2 = st.tabs(["🚀 TRADING SIGNAL (MOMENTUM)", "📜 SOP TRADING"])
+        tab1, tab2 = st.tabs(["🚀 TRADING SIGNAL (TOP 15 ELITE)", "📜 SOP TRADING"])
         
         with tab1:
-            st.markdown("<br><h3 style='font-size: 1.5rem;'>🛰️ Institutional Trading Matrix (300 Emiten Scan)</h3>", unsafe_allow_html=True)
+            st.markdown("<br><h3 style='font-size: 1.5rem;'>🛰️ Target Sniper Utama (Top 15 Absolute Momentum)</h3>", unsafe_allow_html=True)
             def style_trading(row):
                 styles = []
                 if 'A+' in row['REKOMENDASI']: bg_rek = 'background-color: rgba(16, 185, 129, 0.15); color: #10b981; font-weight:900;'
@@ -768,25 +758,29 @@ else:
                 return styles
 
             if not df_trading.empty:
-                st.dataframe(df_trading.head(100).style.apply(style_trading, axis=1), use_container_width=True)
+                # TAMPILAN UI HANYA MENYORTIR DAN MENUNJUKKAN 15 SAHAM TERATAS
+                st.dataframe(df_trading.head(15).style.apply(style_trading, axis=1), use_container_width=True)
+                
+                # TOMBOL DOWNLOAD TETAP MENYIMPAN 300 SAHAM JIKA DIBUTUHKAN
                 excel_buffer_trd = export_df_to_excel_buffer(df_trading.head(300), st.session_state.last_update, "Trd_300_Data")
-                st.download_button(label="📥 Download Master Excel (Trading)", data=excel_buffer_trd, file_name=f"{file_timestamp}_Whale300_Trading.xlsx", use_container_width=True)
+                st.download_button(label="📥 Download Master Excel (Semua 300 Emiten)", data=excel_buffer_trd, file_name=f"{file_timestamp}_Whale300_Trading.xlsx", use_container_width=True)
             
             render_cross_validation_ui(top_trading_tickers, climate_mult, is_trading_mode=True)
 
         with tab2:
-            st.markdown("<br><h3 style='font-size: 1.5rem; color: #00f2fe;'>📜 SOP v15.7: Sniper Trading</h3>", unsafe_allow_html=True)
+            st.markdown("<br><h3 style='font-size: 1.5rem; color: #00f2fe;'>📜 SOP v15.8: Elite 15 Sniper</h3>", unsafe_allow_html=True)
             st.markdown("""
             **Fokus Eksekusi Harian:**
+            *   **Layar Anti-Distraksi:** Anda tidak akan lagi disuguhi ratusan saham yang membingungkan. Tabel sekarang otomatis memotong dan HANYA menyajikan **15 Sinyal Teratas** berdasarkan kekuatan momentum hari ini.
             *   **Whale Pressure Index (WPI 🐋):** Abaikan yang WPI-nya "DUMP". Fokus pada tekanan beli sesi akhir berstatus "POWER".
-            *   **Target ARA (Auto Reject Atas):** Klik target pada kotak di atas, dan jadikan nilai "TARGET ARA" sebagai target lepas barang maksimal.
+            *   **Target ARA (Auto Reject Atas):** Klik target pada kotak di bawah tabel, dan jadikan nilai "TARGET ARA" sebagai target lepas barang maksimal.
             """)
 
     else: 
-        tab1, tab2, tab3 = st.tabs(["🛡️ VALUE & GROWTH MATRIX", "🧬 INVESTMENT CLUSTERS", "📜 SOP INVESTASI"])
+        tab1, tab2, tab3 = st.tabs(["🛡️ VALUE & GROWTH MATRIX (TOP 15)", "🧬 INVESTMENT CLUSTERS", "📜 SOP INVESTASI"])
         
         with tab1:
-            st.markdown("<br><h3 style='font-size: 1.5rem;'>🛡️ Institutional Investment Matrix (Sorted by Yield)</h3>", unsafe_allow_html=True)
+            st.markdown("<br><h3 style='font-size: 1.5rem;'>🛡️ Top 15 Institutional Investment (Sorted by Yield)</h3>", unsafe_allow_html=True)
             def style_invest(row):
                 styles = []
                 for c, val in row.items():
@@ -810,15 +804,17 @@ else:
                 return styles
 
             if not df_invest.empty:
-                st.dataframe(df_invest.head(100).style.apply(style_invest, axis=1), use_container_width=True)
+                # TAMPILAN UI HANYA MENYORTIR DAN MENUNJUKKAN 15 SAHAM TERATAS
+                st.dataframe(df_invest.head(15).style.apply(style_invest, axis=1), use_container_width=True)
+                
+                # TOMBOL DOWNLOAD TETAP MENYIMPAN 300 SAHAM JIKA DIBUTUHKAN
                 excel_buffer_inv = export_df_to_excel_buffer(df_invest.head(300), st.session_state.last_update, "Inv_300_Data")
-                st.download_button(label="📥 Download Master Excel (Investment)", data=excel_buffer_inv, file_name=f"{file_timestamp}_Whale300_Investment.xlsx", use_container_width=True)
+                st.download_button(label="📥 Download Master Excel (Semua 300 Emiten)", data=excel_buffer_inv, file_name=f"{file_timestamp}_Whale300_Investment.xlsx", use_container_width=True)
             
-            # MEMANGGIL CROSS-VALIDATION DENGAN MODE INVESTMENT AKTIF
             render_cross_validation_ui(top_invest_tickers, climate_mult, is_trading_mode=False)
             
         with tab2:
-            st.markdown("<br><h3 style='font-size: 1.5rem;'>🧬 Behavioral Investment Clusters (v15.7)</h3>", unsafe_allow_html=True)
+            st.markdown("<br><h3 style='font-size: 1.5rem;'>🧬 Behavioral Investment Clusters (v15.8)</h3>", unsafe_allow_html=True)
             c_val, c_gro, c_div = st.columns(3)
             with c_val:
                 badges_val = render_badges(cluster_deep_value, "#00f2fe")
@@ -834,9 +830,9 @@ else:
             st.markdown("<br><h3 style='font-size: 1.5rem; color: #10b981;'>📜 SOP Value & Growth Investing</h3>", unsafe_allow_html=True)
             st.markdown("""
             **Buku Putih Portfolio Jangka Panjang:**
-            *   **Data Riil Financials (Baru di v15.7):** Saat Anda klik kotak emiten, sistem kini langsung menarik Laba Bersih, Pendapatan, dan ROE dari API pusat. Gunakan ini untuk memastikan perusahaan tidak mau bangkrut.
+            *   **Data Riil Financials:** Saat Anda klik kotak emiten, sistem kini langsung menarik Laba Bersih, Pendapatan, dan ROE dari API pusat. Gunakan ini untuk memastikan perusahaan tidak mau bangkrut.
             *   **Gunakan Fitur Cluster:** Ingin *passive income*? Ambil langsung dari cluster *Dividend Kings*. Ingin uang Anda meledak 2x lipat dalam 3 tahun? Fokus kumpulkan *High Growth*.
             """)
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem; font-weight:600;'>⚡ JIHAN-GHINA ENGINE • INSTITUTIONAL MASTERPIECE v15.7 (Dual-Core Edition)</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem; font-weight:600;'>⚡ JIHAN-GHINA ENGINE • INSTITUTIONAL MASTERPIECE v15.8 (Elite 15 Edition)</p>", unsafe_allow_html=True)
