@@ -67,9 +67,55 @@ st.markdown("""
     .ihsg-score { color: #00f2fe; font-size: 1.6rem; font-weight: 900; line-height: 1.1; margin: 4px 0; text-shadow: 0 0 15px rgba(0,242,254,0.3); }
     div.stButton > button:first-child { background: linear-gradient(90deg, rgba(0,242,254,0.1) 0%, rgba(30,58,138,0.2) 100%) !important; border: 1px solid rgba(0, 242, 254, 0.4) !important; color: #00f2fe !important; border-radius: 8px !important; padding: 10px 15px !important; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); font-weight: 900 !important; font-size: 0.95rem !important; letter-spacing: 1px;}
     div.stButton > button:first-child:hover { background: linear-gradient(90deg, #00f2fe 0%, #3b82f6 100%) !important; color: white !important; transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(0, 242, 254, 0.4); border-color: transparent !important; }
-    
     .stDataFrame { font-size: 13.5px !important; }
     th.row_heading { color: #00f2fe !important; font-weight: 900 !important; font-size: 1.1rem !important; text-align: center !important; }
+
+    /* =========================================================
+       CSS BARU: KOTAK MENGAMBANG UNTUK TARGET SNIPER
+       ========================================================= */
+    .block-container [data-testid="stRadio"] > div[role="radiogroup"] {
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+    .block-container [data-testid="stRadio"] > div[role="radiogroup"] > label {
+        background: rgba(30,41,59,0.7) !important;
+        border: 1px solid rgba(0, 242, 254, 0.3) !important;
+        border-radius: 8px !important;
+        padding: 10px 22px !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2) !important;
+        cursor: pointer;
+        transition: all 0.3s ease !important;
+    }
+    .block-container [data-testid="stRadio"] > div[role="radiogroup"] > label:hover {
+        background: rgba(0, 242, 254, 0.15) !important;
+        border-color: #00f2fe !important;
+        transform: translateY(-3px) !important;
+        box-shadow: 0 8px 20px rgba(0, 242, 254, 0.2) !important;
+    }
+    /* Sembunyikan bulatan asli radio */
+    .block-container [data-testid="stRadio"] > div[role="radiogroup"] > label > div:first-child {
+        display: none !important;
+    }
+    /* Warna Teks */
+    .block-container [data-testid="stRadio"] > div[role="radiogroup"] > label p {
+        color: #00f2fe !important;
+        font-weight: 900 !important;
+        font-size: 1.05rem !important;
+        margin: 0 !important;
+        letter-spacing: 1px;
+    }
+    /* Efek Saat Dipilih (Checked) */
+    .block-container [data-testid="stRadio"] > div[role="radiogroup"] > label[data-checked="true"] {
+        background: linear-gradient(135deg, #00f2fe 0%, #3b82f6 100%) !important;
+        border-color: #ffffff !important;
+        box-shadow: 0 10px 25px rgba(0, 242, 254, 0.5) !important;
+        transform: scale(1.05) !important;
+    }
+    .block-container [data-testid="stRadio"] > div[role="radiogroup"] > label[data-checked="true"] p {
+        color: #ffffff !important;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -346,7 +392,7 @@ def fetch_analyst_consensus(ticker_symbol):
     return data
 
 # ==========================================
-# 4. CROSS-VALIDATION UI
+# 4. CROSS-VALIDATION UI (WITH FLOATING BOXES)
 # ==========================================
 def render_cross_validation_ui(active_tickers_tuple, market_climate_mult):
     st.markdown("---")
@@ -359,10 +405,30 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult):
     
     if active_tickers_tuple and len(active_tickers_tuple) > 0:
         safe_key = f"cv_target_v155_{st.session_state.current_tf}_{engine_mode[:3]}"
-        if safe_key in st.session_state and st.session_state[safe_key] not in active_tickers_tuple:
+        
+        # FITUR BARU: FILTERING HANYA UNTUK SETUP A+, B, ATAU AGGRESSIVE
+        valid_targets = []
+        for t in active_tickers_tuple:
+            raw_data = next((item for item in st.session_state.raw_stocks if item.get("TICKER") == t), None)
+            if raw_data:
+                grade = raw_data.get("SETUP_GRADE", "")
+                if "A+" in grade or "B" in grade or "AGGRESSIVE" in grade:
+                    valid_targets.append(t)
+        
+        if not valid_targets:
+            st.markdown("""
+            <div style='background:rgba(244, 63, 94, 0.1); border:1px solid #f43f5e; padding:15px; border-radius:10px; color:#f8fafc;'>
+                ⚠️ <b>TIDAK ADA TARGET VALID.</b> Semua emiten yang disaring saat ini berstatus SETUP C (WEAK). Sistem menyarankan Anda untuk <i>Wait & See</i> dan melindungi cash Anda!
+            </div>
+            """, unsafe_allow_html=True)
+            return
+
+        if safe_key in st.session_state and st.session_state[safe_key] not in valid_targets:
             del st.session_state[safe_key]
             
-        emiten_signal = st.selectbox("Pindai Detil Emiten:", options=active_tickers_tuple, key=safe_key)
+        # UI BARU: KOTAK MENGAMBANG (RADIO BUTTON YANG SUDAH DI-CSS)
+        st.markdown("<p style='color:#00f2fe; font-size:0.8rem; font-weight:800; letter-spacing:1px; margin-bottom:-10px; text-transform:uppercase;'>Pilih Target Eksekusi Anda (Filter Aktif):</p>", unsafe_allow_html=True)
+        emiten_signal = st.radio("Target Sniper:", options=valid_targets, horizontal=True, key=safe_key, label_visibility="collapsed")
         
         with st.spinner(f"Membedah anatomi harga {emiten_signal}..."):
             raw_target = next((item for item in st.session_state.raw_stocks if item.get("TICKER") == emiten_signal), None)
@@ -499,6 +565,7 @@ with st.sidebar:
     modal_input_str = st.text_input("💰 Modal Trading (Rp):", value="50.000.000")
     try: modal_trading = int(modal_input_str.replace(".", "").replace(",", ""))
     except: modal_trading = 50000000
+    
     risiko_pct = st.slider("🚨 Batas Risiko Normal /Trade (%):", min_value=0.5, max_value=10.0, value=2.0, step=0.5)
 
     st.markdown("<br>", unsafe_allow_html=True)
@@ -612,7 +679,7 @@ if not st.session_state.scan_clicked or not st.session_state.raw_stocks:
     st.info("👈 Tekan tombol '🔄 SCAN 300 EMITEN' di panel kiri. (Peringatan: Loading memakan waktu sekitar 1-2 menit karena memproses data massif).")
 else:
     hasil_trading = []
-    hasil_invest = [] # RESTORED: Variabel Penampung Data Investment
+    hasil_invest = [] 
     
     for raw in st.session_state.raw_stocks:
         up_sma50 = raw.get("UP_SMA50", False)
@@ -624,7 +691,6 @@ else:
         ticker = raw.get("TICKER", "-")
         wpi_score = raw.get("WPI_SCORE", 50.0)
         
-        # Variabel Fundamental Investment (RESTORED)
         per_val = raw.get("PER", 0.0)
         pbv_val = raw.get("PBV", 1.0)
         peg_val = raw.get("PEG", 0.0) 
@@ -632,9 +698,6 @@ else:
         div_date = raw.get("DIVIDEND_DATE", "-")
         mcap = raw.get("MARKET_CAP", 0)
 
-        # ---------------------
-        # BLOK LOGIKA TRADING
-        # ---------------------
         if "A+" in setup_grade: kep_t = "🚀 STRONG ACCUM"
         elif "AGGRESSIVE" in setup_grade: kep_t = "⚡ AGGRESSIVE SCALP"
         elif "B" in setup_grade: kep_t = "🟢 ACCUMULATE"
@@ -659,9 +722,6 @@ else:
             "BANDARMOLOGI": bd_status, "REKOMENDASI": setup_grade
         })
 
-        # ---------------------
-        # BLOK LOGIKA INVESTMENT (RESTORED)
-        # ---------------------
         skor_i = 0
         if 0 < per_val < 15: skor_i += 20
         if 0 < pbv_val < 1.5: skor_i += 20
@@ -679,23 +739,18 @@ else:
             "DIV DATE": str(div_date), "VALUASI": kep_i
         })
 
-    # --- DATAFRAME TRADING ---
     df_trading = pd.DataFrame(hasil_trading)
     if not df_trading.empty:
         df_trading = df_trading.sort_values(by="RAW_RET", ascending=False).reset_index(drop=True).drop(columns=["RAW_RET"])
         df_trading.set_index("TICKER", inplace=True)
     top_trading_tickers = tuple(str(x) for x in df_trading.index[:20]) if not df_trading.empty else ()
 
-    # --- DATAFRAME INVESTMENT (RESTORED) ---
     df_invest = pd.DataFrame(hasil_invest)
     if not df_invest.empty:
         df_invest = df_invest.sort_values(by="RAW_YIELD", ascending=False).reset_index(drop=True).drop(columns=["RAW_YIELD"])
         df_invest.set_index("TICKER", inplace=True)
     top_invest_tickers = tuple(str(x) for x in df_invest.index[:20]) if not df_invest.empty else ()
 
-    # ==========================================
-    # DISPLAY TABEL BERDASARKAN MODE
-    # ==========================================
     if "TRADING" in engine_mode:
         tab1, tab2 = st.tabs(["🚀 TRADING SIGNAL (V15.5 WHALE)", "📜 ACADEMY & SOP"])
         
@@ -748,9 +803,6 @@ else:
             *   **Kapasitas 300 Emiten:** Tombol Scan kini akan sedikit lebih lambat, mohon bersabar. Ia sedang menyeleksi 300 emiten paling bergerak di IHSG.
             """)
 
-    # ------------------------------------------
-    # BLOK RENDER INVESTMENT YANG SEMPAT HILANG
-    # ------------------------------------------
     else: 
         tab1, tab2 = st.tabs(["🛡️ VALUE & GROWTH MATRIX", "📜 SOP INVESTASI"])
         
