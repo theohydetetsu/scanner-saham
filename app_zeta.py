@@ -301,6 +301,11 @@ def fetch_single_stock(emiten, mode_tf):
         div_rate = info.get('trailingAnnualDividendRate', 0)
         div_yield = (div_rate / harga_skg * 100) if (div_rate and harga_skg > 0) else 0.0
         mcap = info.get('marketCap', 0)
+        div_date_unix = info.get('exDividendDate', None)
+        div_date_str = "-"
+        if div_date_unix:
+            try: div_date_str = datetime.fromtimestamp(div_date_unix).strftime('%d %b %Y')
+            except: pass
             
         return {
             "TICKER": kode, "HARGA": harga_skg, 
@@ -312,7 +317,7 @@ def fetch_single_stock(emiten, mode_tf):
             "IS_VOLCANO": is_volcano,        
             "UP_SMA50": harga_skg > sma50_skg,
             "PER": round(per_val, 2), "PBV": round(pbv_val, 2), "PEG": round(peg_val, 2), "DIV_YIELD": round(div_yield, 2),
-            "RET_1D": ret_1d, "VOLUME": vol_skg, "VOL_SMA20": vol_sma20, "MARKET_CAP": mcap, "TRANS_VAL": harga_skg * vol_skg
+            "RET_1D": ret_1d, "VOLUME": vol_skg, "VOL_SMA20": vol_sma20, "MARKET_CAP": mcap, "DIVIDEND_DATE": div_date_str, "TRANS_VAL": harga_skg * vol_skg
         }
     except Exception as e: 
         return None
@@ -494,10 +499,6 @@ with st.sidebar:
     modal_input_str = st.text_input("💰 Modal Trading (Rp):", value="50.000.000")
     try: modal_trading = int(modal_input_str.replace(".", "").replace(",", ""))
     except: modal_trading = 50000000
-    
-    # ------------------------------------------
-    # UPDATE V15.5: Slider Risiko Diperlebar
-    # ------------------------------------------
     risiko_pct = st.slider("🚨 Batas Risiko Normal /Trade (%):", min_value=0.5, max_value=10.0, value=2.0, step=0.5)
 
     st.markdown("<br>", unsafe_allow_html=True)
@@ -611,8 +612,10 @@ if not st.session_state.scan_clicked or not st.session_state.raw_stocks:
     st.info("👈 Tekan tombol '🔄 SCAN 300 EMITEN' di panel kiri. (Peringatan: Loading memakan waktu sekitar 1-2 menit karena memproses data massif).")
 else:
     hasil_trading = []
+    hasil_invest = [] # RESTORED: Variabel Penampung Data Investment
     
     for raw in st.session_state.raw_stocks:
+        up_sma50 = raw.get("UP_SMA50", False)
         bd_status = raw.get("STATUS_BANDAR", "➖ NEUTRAL")
         setup_grade = raw.get("SETUP_GRADE", "⚠️ SETUP C")
         harga = raw.get("HARGA", 0)
@@ -620,7 +623,18 @@ else:
         ret_1d = raw.get("RET_1D", 0.0)
         ticker = raw.get("TICKER", "-")
         wpi_score = raw.get("WPI_SCORE", 50.0)
+        
+        # Variabel Fundamental Investment (RESTORED)
+        per_val = raw.get("PER", 0.0)
+        pbv_val = raw.get("PBV", 1.0)
+        peg_val = raw.get("PEG", 0.0) 
+        div_yield = raw.get("DIV_YIELD", 0.0)
+        div_date = raw.get("DIVIDEND_DATE", "-")
+        mcap = raw.get("MARKET_CAP", 0)
 
+        # ---------------------
+        # BLOK LOGIKA TRADING
+        # ---------------------
         if "A+" in setup_grade: kep_t = "🚀 STRONG ACCUM"
         elif "AGGRESSIVE" in setup_grade: kep_t = "⚡ AGGRESSIVE SCALP"
         elif "B" in setup_grade: kep_t = "🟢 ACCUMULATE"
@@ -645,13 +659,43 @@ else:
             "BANDARMOLOGI": bd_status, "REKOMENDASI": setup_grade
         })
 
+        # ---------------------
+        # BLOK LOGIKA INVESTMENT (RESTORED)
+        # ---------------------
+        skor_i = 0
+        if 0 < per_val < 15: skor_i += 20
+        if 0 < pbv_val < 1.5: skor_i += 20
+        if div_yield > 4.0: skor_i += 20
+        if up_sma50: skor_i += 15
+        if 0 < peg_val <= 1.0: skor_i += 25 
+        
+        if skor_i >= 70: kep_i = "💎 UNDERVALUED (GROWTH)" if (0 < peg_val <= 1.0) else "💎 UNDERVALUED"
+        elif skor_i >= 40: kep_i = "⚖️ FAIR VALUE"
+        else: kep_i = "⚠️ OVERVALUED"
+            
+        hasil_invest.append({
+            "RAW_YIELD": div_yield, "TICKER": ticker, "HARGA": f"{int(harga):,}".replace(",", "."), "MARKET CAP": format_market_cap(mcap),
+            "PER (x)": f"{per_val:.2f}", "PBV (x)": f"{pbv_val:.2f}", "PEG (x)": f"{peg_val:.2f}", "DIV YIELD (%)": f"{div_yield:.2f}%",
+            "DIV DATE": str(div_date), "VALUASI": kep_i
+        })
+
+    # --- DATAFRAME TRADING ---
     df_trading = pd.DataFrame(hasil_trading)
     if not df_trading.empty:
         df_trading = df_trading.sort_values(by="RAW_RET", ascending=False).reset_index(drop=True).drop(columns=["RAW_RET"])
         df_trading.set_index("TICKER", inplace=True)
-
     top_trading_tickers = tuple(str(x) for x in df_trading.index[:20]) if not df_trading.empty else ()
 
+    # --- DATAFRAME INVESTMENT (RESTORED) ---
+    df_invest = pd.DataFrame(hasil_invest)
+    if not df_invest.empty:
+        df_invest = df_invest.sort_values(by="RAW_YIELD", ascending=False).reset_index(drop=True).drop(columns=["RAW_YIELD"])
+        df_invest.set_index("TICKER", inplace=True)
+    top_invest_tickers = tuple(str(x) for x in df_invest.index[:20]) if not df_invest.empty else ()
+
+    # ==========================================
+    # DISPLAY TABEL BERDASARKAN MODE
+    # ==========================================
     if "TRADING" in engine_mode:
         tab1, tab2 = st.tabs(["🚀 TRADING SIGNAL (V15.5 WHALE)", "📜 ACADEMY & SOP"])
         
@@ -691,7 +735,7 @@ else:
                 st.dataframe(df_trading.head(100).style.apply(style_trading, axis=1), use_container_width=True)
                 
                 excel_buffer_trd = export_df_to_excel_buffer(df_trading.head(300), st.session_state.last_update, "Trd_300_Data")
-                st.download_button(label="📥 Download Master Excel (300 Emiten)", data=excel_buffer_trd, file_name=f"{file_timestamp}_Whale300.xlsx", use_container_width=True)
+                st.download_button(label="📥 Download Master Excel (300 Emiten)", data=excel_buffer_trd, file_name=f"{file_timestamp}_Whale300_Trading.xlsx", use_container_width=True)
             
             render_cross_validation_ui(top_trading_tickers, climate_mult)
 
@@ -702,6 +746,64 @@ else:
             *   **Whale Pressure Index (WPI 🐋):** Jangan beli saham jika WPI-nya "DUMP" (di bawah 30%), sekalipun gain-nya hijau. Itu artinya harga ditutup dengan buangan bandar di pucuk. Carilah yang WPI-nya **>80% (POWER)**.
             *   **Sinyal AGGRESSIVE (Ungu):** Jika muncul sinyal ungu, ini cocok untuk *day trader*. Bandar baru saja menginjak gas, volatilitas sedang gila-gilanya. Hajar cepat, keluar cepat!
             *   **Kapasitas 300 Emiten:** Tombol Scan kini akan sedikit lebih lambat, mohon bersabar. Ia sedang menyeleksi 300 emiten paling bergerak di IHSG.
+            """)
+
+    # ------------------------------------------
+    # BLOK RENDER INVESTMENT YANG SEMPAT HILANG
+    # ------------------------------------------
+    else: 
+        tab1, tab2 = st.tabs(["🛡️ VALUE & GROWTH MATRIX", "📜 SOP INVESTASI"])
+        
+        with tab1:
+            st.markdown("<br><h3 style='font-size: 1.5rem;'>🛡️ Institutional Investment Matrix (Sorted by Yield)</h3>", unsafe_allow_html=True)
+            
+            def style_invest(row):
+                styles = []
+                for c, val in row.items():
+                    if c == 'DIV YIELD (%)':
+                        if val != '0.00%': styles.append('color: #10b981; font-weight: 900; background: rgba(16,185,129,0.1);')
+                        else: styles.append('color: #64748b;')
+                    elif c in ['PER (x)', 'PBV (x)', 'PEG (x)']:
+                        try:
+                            v = float(val)
+                            if (c == 'PER (x)' and 0 < v < 15) or (c == 'PBV (x)' and 0 < v < 1.2) or (c == 'PEG (x)' and 0 < v <= 1.0): styles.append('color: #38bdf8; font-weight: 800;')
+                            elif v > 20 or v > 2.5: styles.append('color: #f43f5e; font-weight: 800;')
+                            else: styles.append('color: #cbd5e1;')
+                        except: styles.append('')
+                    elif c == 'DIV DATE': styles.append('color: #94a3b8; font-size: 0.85rem; text-align: center;')
+                    elif c == 'VALUASI':
+                        if 'GROWTH' in val: styles.append('background: linear-gradient(90deg, rgba(16,185,129,0.2) 0%, rgba(0,242,254,0.2) 100%); color: #00f2fe; font-weight:900;')
+                        elif 'BUY' in val or 'UNDERVALUED' in val: styles.append('background-color: rgba(16, 185, 129, 0.12); color: #34d399; font-weight:800;')
+                        elif 'HOLD' in val or 'FAIR' in val: styles.append('background-color: rgba(245, 158, 11, 0.12); color: #fbbf24; font-weight:800;')
+                        else: styles.append('background-color: rgba(244, 63, 94, 0.12); color: #fb7185; font-weight:800;')
+                    else: styles.append('')
+                return styles
+
+            if not df_invest.empty:
+                st.dataframe(df_invest.head(100).style.apply(style_invest, axis=1), use_container_width=True)
+                
+                excel_buffer_inv = export_df_to_excel_buffer(df_invest.head(300), st.session_state.last_update, "Inv_300_Data")
+                st.download_button(label="📥 Download Master Excel (Investment)", data=excel_buffer_inv, file_name=f"{file_timestamp}_Whale300_Investment.xlsx", use_container_width=True)
+            
+            render_cross_validation_ui(top_invest_tickers, climate_mult)
+            
+        with tab2:
+            st.markdown("<br><h3 style='font-size: 1.5rem; color: #10b981;'>📜 SOP Value & Growth Investing</h3>", unsafe_allow_html=True)
+            st.markdown("""
+            **Ini adalah cetak biru (blueprint) untuk membangun portofolio jangka menengah-panjang yang tangguh:**
+
+            ### 🔍 Langkah 1: Saring Mutiara Tersembunyi (Screening)
+            *   Gunakan matriks ini setiap akhir pekan (Jumat sore / Sabtu) untuk mencari saham bergelar **💎 UNDERVALUED (GROWTH)**. 
+            *   Fokus pada saham dengan **PEG Ratio < 1.0** (Harganya murah, tapi pertumbuhan labanya meledak).
+
+            ### ⚖️ Langkah 2: Evaluasi Sinyal Teknis (Cross-Check)
+            *   Saham yang murah belum tentu langsung naik besok pagi jika bandar belum masuk.
+            *   Gunakan alat *Sniper Cross-Validation* di bawah tabel. Jika Valuasinya **Undervalued** tapi rekomendasi algonya **HOLD / SETUP C (Weak)**, artinya Anda bisa mencicil perlahan (*dollar cost averaging*). 
+            *   Jika rekomendasinya **SETUP B / A+**, itu artinya valuasi murah bertemu dengan momentum bandar! Waktunya beli agresif.
+
+            ### 🛡️ Langkah 3: Disiplin Trailing Stop
+            *   Meski kita berinvestasi untuk fundamental, kita tidak boleh mati konyol saat fundamental perusahaannya memburuk. 
+            *   Jika harga saham terus merosot dan ditutup menjebol batas **Trailing Stop** berhari-hari, saatnya *Cut Loss* atau *Take Profit* sebagian. Amankan modal Anda!
             """)
 
 st.markdown("---")
