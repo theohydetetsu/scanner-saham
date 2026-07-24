@@ -37,7 +37,7 @@ if "scan_clicked" not in st.session_state: st.session_state.scan_clicked = len(s
 if "current_tf" not in st.session_state: st.session_state.current_tf = "1 Hari (Daily)"
 
 # ==========================================
-# 1. KONFIGURASI HALAMAN & UI LUXURY STYLE
+# 1. KONFIGURASI HALAMAN & LUXURY UI STYLE
 # ==========================================
 st.set_page_config(page_title="JIHAN-GHINA Ultimate v15.9 Luxury", page_icon="💎", layout="wide")
 
@@ -52,42 +52,42 @@ st.markdown("""
     p { color: #94a3b8; font-weight: 300; }
     ::-webkit-scrollbar { width: 6px; height: 8px; }
     ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); }
-    ::-webkit-scrollbar-thumb { background: rgba(0, 242, 254, 0.4); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: rgba(0, 242, 254, 0.5); border-radius: 10px; }
     ::-webkit-scrollbar-thumb:hover { background: rgba(0, 242, 254, 1); }
-    section[data-testid="stSidebar"] { width: 290px !important; min-width: 290px !important; max-width: 290px !important; background: linear-gradient(180deg, rgba(2,6,23,0.98) 0%, rgba(11,18,32,0.98) 100%) !important; backdrop-filter: blur(25px); border-right: 1px solid rgba(255, 255, 255, 0.08); }
+    section[data-testid="stSidebar"] { width: 285px !important; min-width: 285px !important; max-width: 285px !important; background: linear-gradient(180deg, rgba(2,6,23,0.98) 0%, rgba(15,23,42,0.98) 100%) !important; backdrop-filter: blur(25px); border-right: 1px solid rgba(0, 242, 254, 0.1); }
     section[data-testid="stSidebar"] .stMarkdown, section[data-testid="stSidebar"] p, section[data-testid="stSidebar"] span { font-size: 0.8rem !important; }
     section[data-testid="stSidebar"] label { font-size: 0.75rem !important; font-weight: 700 !important; color: #94a3b8 !important; letter-spacing: 0.5px; }
-    .stTabs [data-baseweb="tab-list"] { gap: 10px; background-color: rgba(15,23,42,0.7); padding: 6px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.05); }
-    .stTabs [data-baseweb="tab"] { padding: 10px 22px; border-radius: 10px; color: #94a3b8; font-weight: 700; transition: all 0.3s; }
-    .stTabs [aria-selected="true"] { background: linear-gradient(135deg, rgba(0,242,254,0.2) 0%, rgba(59,130,246,0.2) 100%); color: #00f2fe; border: 1px solid rgba(0,242,254,0.4); text-shadow: 0 0 10px rgba(0,242,254,0.4); }
+    .stTabs [data-baseweb="tab-list"] { gap: 8px; background-color: rgba(15,23,42,0.7); padding: 6px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.05); }
+    .stTabs [data-baseweb="tab"] { padding: 10px 22px; border-radius: 10px; color: #94a3b8; font-weight: 700; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .stTabs [aria-selected="true"] { background: linear-gradient(135deg, rgba(0,242,254,0.2) 0%, rgba(59,130,246,0.2) 100%) !important; color: #00f2fe; border: 1px solid rgba(0,242,254,0.4); box-shadow: 0 0 15px rgba(0,242,254,0.2); }
     .premium-card { background: rgba(30, 41, 59, 0.35); backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 16px; padding: 20px; box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.6); transition: all 0.3s ease; display: flex; flex-direction: column; }
     .premium-card:hover { transform: translateY(-3px); box-shadow: 0 20px 40px -5px rgba(0, 242, 254, 0.2); border-color: rgba(0, 242, 254, 0.4); }
-    .ihsg-box { text-align: right; display: flex; flex-direction: column; justify-content: center; height: 100%; padding: 14px 20px !important; background: rgba(15,23,42,0.7); }
+    .ihsg-box { text-align: right; display: flex; flex-direction: column; justify-content: center; height: 100%; padding: 14px 20px !important; background: rgba(15,23,42,0.7); border-radius: 16px !important; }
     .ihsg-title { color: #94a3b8; font-size: 0.65rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
     .ihsg-score { color: #00f2fe; font-size: 1.6rem; font-weight: 900; line-height: 1.1; margin: 4px 0; text-shadow: 0 0 15px rgba(0,242,254,0.3); }
-    div.stButton > button:first-child { background: linear-gradient(90deg, rgba(0,242,254,0.12) 0%, rgba(30,58,138,0.25) 100%) !important; border: 1px solid rgba(0, 242, 254, 0.4) !important; color: #00f2fe !important; border-radius: 10px !important; padding: 11px 18px !important; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); font-weight: 900 !important; font-size: 0.95rem !important; letter-spacing: 1px;}
-    div.stButton > button:first-child:hover { background: linear-gradient(90deg, #00f2fe 0%, #3b82f6 100%) !important; color: white !important; transform: translateY(-2px); box-shadow: 0 12px 25px -5px rgba(0, 242, 254, 0.5); border-color: transparent !important; }
-    .stDataFrame { font-size: 13.5px !important; }
+    div.stButton > button:first-child { background: linear-gradient(90deg, rgba(0,242,254,0.1) 0%, rgba(30,58,138,0.25) 100%) !important; border: 1px solid rgba(0, 242, 254, 0.4) !important; color: #00f2fe !important; border-radius: 10px !important; padding: 10px 18px !important; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); font-weight: 900 !important; font-size: 0.95rem !important; letter-spacing: 1px;}
+    div.stButton > button:first-child:hover { background: linear-gradient(90deg, #00f2fe 0%, #3b82f6 100%) !important; color: white !important; transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0, 242, 254, 0.5); border-color: transparent !important; }
+    .stDataFrame { font-size: 13.5px !important; border-radius: 12px !important; overflow: hidden !important; }
     th.row_heading { color: #00f2fe !important; font-weight: 900 !important; font-size: 1.1rem !important; text-align: center !important; }
 
-    /* CSS: KOTAK MENGAMBANG (LUXURY FLOATING CHIPS) - LEBIH RAPI & PRESISI */
-    .block-container [data-testid="stRadio"] > div[role="radiogroup"] { gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+    /* CSS: KOTAK MENGAMBANG (LUXURY COMPACT CHIPS) */
+    .block-container [data-testid="stRadio"] > div[role="radiogroup"] { gap: 8px; flex-wrap: wrap; margin-top: 8px; }
     .block-container [data-testid="stRadio"] > div[role="radiogroup"] > label {
-        background: rgba(30,41,59,0.85) !important; border: 1px solid rgba(0, 242, 254, 0.35) !important;
-        border-radius: 10px !important; padding: 8px 18px !important; box-shadow: 0 6px 15px rgba(0,0,0,0.3) !important;
-        cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; min-width: 95px; text-align: center;
+        background: rgba(30,41,59,0.8) !important; border: 1px solid rgba(0, 242, 254, 0.25) !important;
+        border-radius: 8px !important; padding: 6px 14px !important; box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+        cursor: pointer; transition: all 0.3s ease !important;
     }
     .block-container [data-testid="stRadio"] > div[role="radiogroup"] > label:hover {
         background: rgba(0, 242, 254, 0.2) !important; border-color: #00f2fe !important;
-        transform: translateY(-3px) !important; box-shadow: 0 10px 25px rgba(0, 242, 254, 0.3) !important;
+        transform: translateY(-2px) !important; box-shadow: 0 6px 18px rgba(0, 242, 254, 0.3) !important;
     }
     .block-container [data-testid="stRadio"] > div[role="radiogroup"] > label > div:first-child { display: none !important; }
-    .block-container [data-testid="stRadio"] > div[role="radiogroup"] > label p { color: #00f2fe !important; font-weight: 900 !important; font-size: 0.95rem !important; margin: 0 !important; letter-spacing: 0.8px; text-align: center; width: 100%; }
+    .block-container [data-testid="stRadio"] > div[role="radiogroup"] > label p { color: #00f2fe !important; font-weight: 900 !important; font-size: 0.9rem !important; margin: 0 !important; letter-spacing: 0.5px; }
     .block-container [data-testid="stRadio"] > div[role="radiogroup"] > label[data-checked="true"] {
         background: linear-gradient(135deg, #00f2fe 0%, #3b82f6 100%) !important; border-color: #ffffff !important;
-        box-shadow: 0 10px 30px rgba(0, 242, 254, 0.6) !important; transform: scale(1.04) !important;
+        box-shadow: 0 8px 22px rgba(0, 242, 254, 0.6) !important; transform: scale(1.03) !important;
     }
-    .block-container [data-testid="stRadio"] > div[role="radiogroup"] > label[data-checked="true"] p { color: #ffffff !important; text-shadow: 0 2px 5px rgba(0,0,0,0.4) !important; }
+    .block-container [data-testid="stRadio"] > div[role="radiogroup"] > label[data-checked="true"] p { color: #ffffff !important; text-shadow: 0 2px 4px rgba(0,0,0,0.4) !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -141,6 +141,10 @@ def export_df_to_excel_buffer(df_source, scan_time, sheet_name="Data_Saham"):
         df_export.to_excel(writer, index=True, sheet_name=sheet_name[:31])
     return buffer.getvalue()
 
+def format_rupiah(val):
+    if pd.isna(val) or val == 0: return "-"
+    return f"Rp {val:,.0f}".replace(",", ".")
+
 def format_financials(val):
     if pd.isna(val) or val == 0: return "-"
     if val >= 1_000_000_000_000: return f"Rp {val/1_000_000_000_000:.2f} T"
@@ -150,7 +154,7 @@ def format_financials(val):
 def render_badges(tickers, hex_color):
     if not tickers: return "<span style='color:#64748b; font-size:0.8rem; font-style:italic; display:block; margin-top:10px;'>Menunggu peluang...</span>"
     res = "<div style='display:flex; flex-wrap:wrap; gap:8px; margin-top:15px;'>"
-    for t in tickers: res += f"<span style='background:rgba(0,0,0,0.35); border:1px solid {hex_color}70; border-radius:6px; padding:4px 10px; color:{hex_color}; font-size:0.85rem; font-weight:800; box-shadow: 0 2px 5px rgba(0,0,0,0.4); letter-spacing:0.5px;'>{t}</span>"
+    for t in tickers: res += f"<span style='background:rgba(0,0,0,0.3); border:1px solid {hex_color}60; border-radius:6px; padding:4px 10px; color:{hex_color}; font-size:0.85rem; font-weight:800; box-shadow: 0 2px 4px rgba(0,0,0,0.3); letter-spacing:0.5px;'>{t}</span>"
     res += "</div>"
     return res
 
@@ -358,14 +362,14 @@ def fetch_single_stock(emiten, mode_tf):
         return None
 
 # ==========================================
-# 4. CROSS-VALIDATION UI (LUXURY CONTEXT)
+# 4. CROSS-VALIDATION UI (LUXURY COMPACT)
 # ==========================================
 def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_trading_mode):
     st.markdown("---")
     st.markdown(f"""
-    <div style="margin-top: 15px; margin-bottom: 20px; padding-left: 5px; border-left: 5px solid #00f2fe;">
-        <h3 style="font-size: 1.8rem; font-weight: 900; color: #f8fafc; margin-bottom: 0px; margin-top: 0px; letter-spacing: -0.5px;">🎯 Sniper Cross-Validation {'(Trading Execution)' if is_trading_mode else '(Fundamental Health Check)'}</h3>
-        <p style="color: #94a3b8; font-size: 0.85rem; font-weight: 400; margin-top: 4px;">{'Kalkulator otomatis untuk target ARA & Manajemen Risiko.' if is_trading_mode else 'Bedah neraca keuangan riil & kesehatan perusahaan jangka panjang.'}</p>
+    <div style="margin-top: 15px; margin-bottom: 15px; padding-left: 5px; border-left: 4px solid #00f2fe;">
+        <h3 style="font-size: 1.6rem; font-weight: 900; color: #f8fafc; margin-bottom: 0px; margin-top: 0px; letter-spacing: -0.5px;">🎯 Sniper Cross-Validation {'(Trading Execution)' if is_trading_mode else '(Fundamental Health Check)'}</h3>
+        <p style="color: #94a3b8; font-size: 0.8rem; font-weight: 400; margin-top: 2px;">{'Kalkulator otomatis untuk target ARA & Manajemen Risiko.' if is_trading_mode else 'Bedah neraca keuangan riil & kesehatan perusahaan jangka panjang.'}</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -396,7 +400,7 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
         if not valid_targets:
             msg = "Semua emiten saat ini berstatus SETUP C (WEAK). Sistem memblokir Anda untuk masuk demi melindungi modal. Wait & See!" if is_trading_mode else "Tidak ada emiten dengan fundamental (Valuasi) yang cukup aman untuk diinvestasikan saat ini."
             st.markdown(f"""
-            <div style='background:rgba(244, 63, 94, 0.1); border:1px solid #f43f5e; padding:15px; border-radius:10px; color:#f8fafc;'>
+            <div style='background:rgba(244, 63, 94, 0.1); border:1px solid #f43f5e; padding:12px; border-radius:10px; color:#f8fafc;'>
                 ⚠️ <b>TIDAK ADA TARGET VALID.</b> {msg}
             </div>
             """, unsafe_allow_html=True)
@@ -405,7 +409,7 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
         if safe_key in st.session_state and st.session_state[safe_key] not in valid_targets:
             del st.session_state[safe_key]
             
-        st.markdown("<p style='color:#00f2fe; font-size:0.8rem; font-weight:800; letter-spacing:1px; margin-bottom:-10px; text-transform:uppercase;'>Pilih Target Eksekusi Presisi (Filter Cerdas Aktif):</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color:#00f2fe; font-size:0.75rem; font-weight:800; letter-spacing:1px; margin-bottom:-8px; text-transform:uppercase;'>Pilih Target Eksekusi (Compact Luxury Chips):</p>", unsafe_allow_html=True)
         emiten_signal = st.radio("Target Sniper:", options=valid_targets, horizontal=True, key=safe_key, label_visibility="collapsed")
         
         with st.spinner(f"Membedah anatomi {'Whale' if is_trading_mode else 'Financials'} {emiten_signal}..."):
@@ -413,7 +417,6 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
             
             if raw_target:
                 if is_trading_mode:
-                    bd_status = raw_target.get("STATUS_BANDAR", "➖ NEUTRAL")
                     setup_grade = raw_target.get("SETUP_GRADE", "⚠️ SETUP C")
                     harga_tgt = raw_target.get('HARGA', 0)
                     wpi_score = raw_target.get('WPI_SCORE', 50)
@@ -454,18 +457,18 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                     
                     col_res1, col_res2 = st.columns([1.5, 1])
                     with col_res1:
-                        st.markdown(f"<div style='background: rgba(30,41,59,0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 20px;'><div style='text-align: center; color: #94a3b8; font-size: 0.8rem; font-weight: 800; letter-spacing: 1px;'>💻 DYNAMIC ALGO DECISION</div><div style='text-align: center; font-size: 1.8rem; font-weight: 900; color: {color}; margin-top: 5px; margin-bottom: 5px;'>{sys_rec_raw}</div><div style='text-align: center; font-size: 0.9rem; color: #facc15; font-weight: 800; margin-bottom: 15px;'>{setup_grade}</div></div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='background: rgba(30,41,59,0.5); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 18px;'><div style='text-align: center; color: #94a3b8; font-size: 0.75rem; font-weight: 800; letter-spacing: 1px;'>💻 DYNAMIC ALGO DECISION</div><div style='text-align: center; font-size: 1.7rem; font-weight: 900; color: {color}; margin-top: 4px; margin-bottom: 4px;'>{sys_rec_raw}</div><div style='text-align: center; font-size: 0.85rem; color: #facc15; font-weight: 800; margin-bottom: 12px;'>{setup_grade}</div></div>", unsafe_allow_html=True)
                         sub1, sub2, sub3, sub4 = st.columns(4)
-                        with sub1: st.markdown(f"<div style='background: rgba(251, 191, 36, 0.05); padding: 12px 5px; border-radius: 10px; border: 1px solid rgba(251, 191, 36, 0.15); text-align: center;'><div style='font-size: 0.60rem; color: #94a3b8; font-weight: 800;'>HARGA AKTIF</div><div style='font-size: 1.05rem; color: #facc15; font-weight: 900; margin-top: 4px;'>{int(harga_tgt)}</div></div>", unsafe_allow_html=True)
-                        with sub2: st.markdown(f"<div style='background: rgba(56, 189, 248, 0.05); padding: 12px 5px; border-radius: 10px; border: 1px solid rgba(56, 189, 248, 0.15); text-align: center;'><div style='font-size: 0.60rem; color: #94a3b8; font-weight: 800;'>AREA BELI</div><div style='font-size: 1.05rem; color: #38bdf8; font-weight: 900; margin-top: 4px;'>{area_beli}</div></div>", unsafe_allow_html=True)
-                        with sub3: st.markdown(f"<div style='background: rgba(244, 63, 94, 0.05); padding: 12px 5px; border-radius: 10px; border: 1px solid rgba(244, 63, 94, 0.15); text-align: center;'><div style='font-size: 0.60rem; color: #94a3b8; font-weight: 800;'>CUT LOSS</div><div style='font-size: 1.05rem; color: #f43f5e; font-weight: 900; margin-top: 4px;'>{trailing_stop}</div></div>", unsafe_allow_html=True)
-                        with sub4: st.markdown(f"<div style='background: rgba(16, 185, 129, 0.05); padding: 12px 5px; border-radius: 10px; border: 1px solid rgba(16, 185, 129, 0.3); text-align: center;'><div style='font-size: 0.60rem; color: #94a3b8; font-weight: 800;'>TARGET ARA</div><div style='font-size: 1.05rem; color: #10b981; font-weight: 900; margin-top: 4px;'>{batas_ara}</div></div>", unsafe_allow_html=True)
+                        with sub1: st.markdown(f"<div style='background: rgba(251, 191, 36, 0.05); padding: 10px 4px; border-radius: 10px; border: 1px solid rgba(251, 191, 36, 0.2); text-align: center;'><div style='font-size: 0.55rem; color: #94a3b8; font-weight: 800;'>HARGA AKTIF</div><div style='font-size: 1rem; color: #facc15; font-weight: 900; margin-top: 3px;'>{int(harga_tgt)}</div></div>", unsafe_allow_html=True)
+                        with sub2: st.markdown(f"<div style='background: rgba(56, 189, 248, 0.05); padding: 10px 4px; border-radius: 10px; border: 1px solid rgba(56, 189, 248, 0.2); text-align: center;'><div style='font-size: 0.55rem; color: #94a3b8; font-weight: 800;'>AREA BELI</div><div style='font-size: 1rem; color: #38bdf8; font-weight: 900; margin-top: 3px;'>{area_beli}</div></div>", unsafe_allow_html=True)
+                        with sub3: st.markdown(f"<div style='background: rgba(244, 63, 94, 0.05); padding: 10px 4px; border-radius: 10px; border: 1px solid rgba(244, 63, 94, 0.2); text-align: center;'><div style='font-size: 0.55rem; color: #94a3b8; font-weight: 800;'>CUT LOSS</div><div style='font-size: 1rem; color: #f43f5e; font-weight: 900; margin-top: 3px;'>{trailing_stop}</div></div>", unsafe_allow_html=True)
+                        with sub4: st.markdown(f"<div style='background: rgba(16, 185, 129, 0.05); padding: 10px 4px; border-radius: 10px; border: 1px solid rgba(16, 185, 129, 0.35); text-align: center;'><div style='font-size: 0.55rem; color: #94a3b8; font-weight: 800;'>TARGET ARA</div><div style='font-size: 1rem; color: #10b981; font-weight: 900; margin-top: 3px;'>{batas_ara}</div></div>", unsafe_allow_html=True)
                             
                     with col_res2:
                         wpi_color = "#10b981" if wpi_score > 70 else "#fbbf24" if wpi_score > 40 else "#f43f5e"
-                        st.markdown(f"<div style='background: rgba(30,41,59,0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;'><div style='text-align: center; color: #94a3b8; font-size: 0.8rem; font-weight: 800; letter-spacing: 1px;'>🐋 WHALE PRESSURE INDEX</div><div style='text-align: center; font-size: 2.2rem; font-weight: 900; color: {wpi_color}; margin-top: 5px;'>{wpi_score}%</div><div style='font-size: 0.7rem; color: #64748b; text-align: center; margin-top: 8px;'>Kekuatan Beli Sesi Penutupan</div></div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='background: rgba(30,41,59,0.5); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 18px; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;'><div style='text-align: center; color: #94a3b8; font-size: 0.75rem; font-weight: 800; letter-spacing: 1px;'>🐋 WHALE PRESSURE INDEX</div><div style='text-align: center; font-size: 2.1rem; font-weight: 900; color: {wpi_color}; margin-top: 4px;'>{wpi_score}%</div><div style='font-size: 0.65rem; color: #64748b; text-align: center; margin-top: 6px;'>Kekuatan Beli Sesi Penutupan</div></div>", unsafe_allow_html=True)
                     
-                    st.markdown(f"<div style='margin-top: 20px; background: rgba(15, 23, 42, 0.8); border: 1px solid {color}50; border-radius: 14px; padding: 25px; text-align: center; box-shadow: 0 10px 30px -10px {color}30;'><div style='color: {color}; font-size: 0.8rem; font-weight: 900; letter-spacing: 3px; margin-bottom: 8px; text-transform: uppercase;'>🏆 V15.9 TRADING SIZING</div><div style='color: #cbd5e1; font-size: 0.95rem; font-weight: 300; max-width: 750px; margin: 0 auto; line-height: 1.6; margin-bottom: 20px;'>{desc}</div><div><span style='background: linear-gradient(90deg, rgba(0,242,254,0.1) 0%, rgba(30,58,138,0.2) 100%); border: 1px solid #00f2fe60; padding: 12px 30px; border-radius: 30px; color: #00f2fe; font-size: 1rem; font-weight: 900; display: inline-block;'>🎯 KEKUATAN BELI: {lot_rec_target}</span></div></div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='margin-top: 15px; background: rgba(15, 23, 42, 0.85); border: 1px solid {color}60; border-radius: 14px; padding: 22px; text-align: center; box-shadow: 0 10px 30px -10px {color}30;'><div style='color: {color}; font-size: 0.75rem; font-weight: 900; letter-spacing: 3px; margin-bottom: 6px; text-transform: uppercase;'>🏆 V15.9 LUXURY TRADING SIZING</div><div style='color: #cbd5e1; font-size: 0.9rem; font-weight: 300; max-width: 750px; margin: 0 auto; line-height: 1.5; margin-bottom: 15px;'>{desc}</div><div><span style='background: linear-gradient(90deg, rgba(0,242,254,0.15) 0%, rgba(30,58,138,0.3) 100%); border: 1px solid #00f2fe80; padding: 10px 25px; border-radius: 30px; color: #00f2fe; font-size: 0.95rem; font-weight: 900; display: inline-block;'>🎯 KEKUATAN BELI: {lot_rec_target}</span></div></div>", unsafe_allow_html=True)
 
                 else:
                     per = raw_target.get("PER", 0)
@@ -498,26 +501,26 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
 
                     col_res1, col_res2 = st.columns([1.5, 1])
                     with col_res1:
-                        st.markdown(f"<div style='background: rgba(30,41,59,0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 20px;'><div style='text-align: center; color: #94a3b8; font-size: 0.8rem; font-weight: 800; letter-spacing: 1px;'>🏛️ FUNDAMENTAL VALUATION</div><div style='text-align: center; font-size: 1.8rem; font-weight: 900; color: {color}; margin-top: 5px; margin-bottom: 5px;'>{sys_rec_raw}</div><div style='text-align: center; font-size: 0.9rem; color: #facc15; font-weight: 800; margin-bottom: 15px;'>Skor Kesehatan: {skor_i}/100</div></div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='background: rgba(30,41,59,0.5); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 18px;'><div style='text-align: center; color: #94a3b8; font-size: 0.75rem; font-weight: 800; letter-spacing: 1px;'>🏛️ FUNDAMENTAL VALUATION</div><div style='text-align: center; font-size: 1.7rem; font-weight: 900; color: {color}; margin-top: 4px; margin-bottom: 4px;'>{sys_rec_raw}</div><div style='text-align: center; font-size: 0.85rem; color: #facc15; font-weight: 800; margin-bottom: 12px;'>Skor Kesehatan: {skor_i}/100</div></div>", unsafe_allow_html=True)
                         sub1, sub2, sub3, sub4 = st.columns(4)
-                        with sub1: st.markdown(f"<div style='background: rgba(251, 191, 36, 0.05); padding: 12px 5px; border-radius: 10px; border: 1px solid rgba(251, 191, 36, 0.15); text-align: center;'><div style='font-size: 0.60rem; color: #94a3b8; font-weight: 800;'>TOTAL REVENUE</div><div style='font-size: 0.9rem; color: #facc15; font-weight: 900; margin-top: 4px;'>{format_financials(rev)}</div></div>", unsafe_allow_html=True)
-                        with sub2: st.markdown(f"<div style='background: rgba(56, 189, 248, 0.05); padding: 12px 5px; border-radius: 10px; border: 1px solid rgba(56, 189, 248, 0.15); text-align: center;'><div style='font-size: 0.60rem; color: #94a3b8; font-weight: 800;'>NET INCOME</div><div style='font-size: 0.9rem; color: #38bdf8; font-weight: 900; margin-top: 4px;'>{format_financials(net_inc)}</div></div>", unsafe_allow_html=True)
-                        with sub3: st.markdown(f"<div style='background: rgba(16, 185, 129, 0.05); padding: 12px 5px; border-radius: 10px; border: 1px solid rgba(16, 185, 129, 0.3); text-align: center;'><div style='font-size: 0.60rem; color: #94a3b8; font-weight: 800;'>ROE (%)</div><div style='font-size: 1.05rem; color: {roe_color}; font-weight: 900; margin-top: 4px;'>{roe:.1f}%</div></div>", unsafe_allow_html=True)
-                        with sub4: st.markdown(f"<div style='background: rgba(244, 63, 94, 0.05); padding: 12px 5px; border-radius: 10px; border: 1px solid rgba(244, 63, 94, 0.15); text-align: center;'><div style='font-size: 0.60rem; color: #94a3b8; font-weight: 800;'>DER (%)</div><div style='font-size: 1.05rem; color: {der_color}; font-weight: 900; margin-top: 4px;'>{der:.1f}%</div></div>", unsafe_allow_html=True)
+                        with sub1: st.markdown(f"<div style='background: rgba(251, 191, 36, 0.05); padding: 10px 4px; border-radius: 10px; border: 1px solid rgba(251, 191, 36, 0.2); text-align: center;'><div style='font-size: 0.55rem; color: #94a3b8; font-weight: 800;'>TOTAL REVENUE</div><div style='font-size: 0.85rem; color: #facc15; font-weight: 900; margin-top: 3px;'>{format_financials(rev)}</div></div>", unsafe_allow_html=True)
+                        with sub2: st.markdown(f"<div style='background: rgba(56, 189, 248, 0.05); padding: 10px 4px; border-radius: 10px; border: 1px solid rgba(56, 189, 248, 0.2); text-align: center;'><div style='font-size: 0.55rem; color: #94a3b8; font-weight: 800;'>NET INCOME</div><div style='font-size: 0.85rem; color: #38bdf8; font-weight: 900; margin-top: 3px;'>{format_financials(net_inc)}</div></div>", unsafe_allow_html=True)
+                        with sub3: st.markdown(f"<div style='background: rgba(16, 185, 129, 0.05); padding: 10px 4px; border-radius: 10px; border: 1px solid rgba(16, 185, 129, 0.35); text-align: center;'><div style='font-size: 0.55rem; color: #94a3b8; font-weight: 800;'>ROE (%)</div><div style='font-size: 1rem; color: {roe_color}; font-weight: 900; margin-top: 3px;'>{roe:.1f}%</div></div>", unsafe_allow_html=True)
+                        with sub4: st.markdown(f"<div style='background: rgba(244, 63, 94, 0.05); padding: 10px 4px; border-radius: 10px; border: 1px solid rgba(244, 63, 94, 0.2); text-align: center;'><div style='font-size: 0.55rem; color: #94a3b8; font-weight: 800;'>DER (%)</div><div style='font-size: 1rem; color: {der_color}; font-weight: 900; margin-top: 3px;'>{der:.1f}%</div></div>", unsafe_allow_html=True)
                             
                     with col_res2:
-                        st.markdown(f"<div style='background: rgba(30,41,59,0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;'><div style='text-align: center; color: #94a3b8; font-size: 0.8rem; font-weight: 800; letter-spacing: 1px;'>📊 METRIK VALUASI</div><div style='text-align: center; font-size: 1.2rem; font-weight: 900; color: #f8fafc; margin-top: 10px;'>PER: <span style='color:#38bdf8;'>{per:.1f}x</span></div><div style='text-align: center; font-size: 1.2rem; font-weight: 900; color: #f8fafc; margin-top: 5px;'>PBV: <span style='color:#38bdf8;'>{pbv:.1f}x</span></div><div style='text-align: center; font-size: 1.2rem; font-weight: 900; color: #f8fafc; margin-top: 5px;'>Yield: <span style='color:#10b981;'>{div:.1f}%</span></div></div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='background: rgba(30,41,59,0.5); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 18px; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;'><div style='text-align: center; color: #94a3b8; font-size: 0.75rem; font-weight: 800; letter-spacing: 1px;'>📊 METRIK VALUASI</div><div style='text-align: center; font-size: 1.1rem; font-weight: 900; color: #f8fafc; margin-top: 8px;'>PER: <span style='color:#38bdf8;'>{per:.1f}x</span></div><div style='text-align: center; font-size: 1.1rem; font-weight: 900; color: #f8fafc; margin-top: 4px;'>PBV: <span style='color:#38bdf8;'>{pbv:.1f}x</span></div><div style='text-align: center; font-size: 1.1rem; font-weight: 900; color: #f8fafc; margin-top: 4px;'>Yield: <span style='color:#10b981;'>{div:.1f}%</span></div></div>", unsafe_allow_html=True)
                     
-                    st.markdown(f"<div style='margin-top: 20px; background: rgba(15, 23, 42, 0.8); border: 1px solid {color}50; border-radius: 14px; padding: 25px; text-align: center; box-shadow: 0 10px 30px -10px {color}30;'><div style='color: {color}; font-size: 0.8rem; font-weight: 900; letter-spacing: 3px; margin-bottom: 8px; text-transform: uppercase;'>🏆 V15.9 INVESTMENT VERDICT</div><div style='color: #cbd5e1; font-size: 0.95rem; font-weight: 300; max-width: 750px; margin: 0 auto; line-height: 1.6;'>{desc}</div></div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='margin-top: 15px; background: rgba(15, 23, 42, 0.85); border: 1px solid {color}60; border-radius: 14px; padding: 22px; text-align: center; box-shadow: 0 10px 30px -10px {color}30;'><div style='color: {color}; font-size: 0.75rem; font-weight: 900; letter-spacing: 3px; margin-bottom: 6px; text-transform: uppercase;'>🏆 V15.9 LUXURY INVESTMENT VERDICT</div><div style='color: #cbd5e1; font-size: 0.9rem; font-weight: 300; max-width: 750px; margin: 0 auto; line-height: 1.5;'>{desc}</div></div>", unsafe_allow_html=True)
 
 # ==========================================
-# 5. SIDEBAR
+# 5. SIDEBAR (DENGAN TOMBOL LOGOUT ELEGAN)
 # ==========================================
 with st.sidebar:
-    st.markdown("<h2 style='color: #00f2fe; font-size: 1.25rem; font-weight: 900; margin-bottom: 0px;'>🧬 QUANTUM MATRIX</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #94a3b8; font-size: 0.65rem; letter-spacing: 1.5px; margin-bottom: 25px;'>V15.9 LUXURY PRECISION</p>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color: #00f2fe; font-size: 1.25rem; font-weight: 900; margin-bottom: 0px;'>💎 QUANTUM MATRIX</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #94a3b8; font-size: 0.65rem; letter-spacing: 1.5px; margin-bottom: 20px;'>V15.9 LUXURY ELITE EDITION</p>", unsafe_allow_html=True)
     
-    st.markdown("<div style='font-size:0.75rem; color:#facc15; font-weight:800; letter-spacing:1px; border-bottom: 1px solid rgba(250,204,21,0.2); padding-bottom: 5px; margin-bottom: 10px;'>🎛️ CORE ENGINE MODE</div>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size:0.75rem; color:#facc15; font-weight:800; letter-spacing:1px; border-bottom: 1px solid rgba(250,204,21,0.2); padding-bottom: 4px; margin-bottom: 8px;'>🎛️ CORE ENGINE MODE</div>", unsafe_allow_html=True)
     engine_mode = st.radio("Pilih Mode Analisis:", ("⚔️ TRADING (Momentum & Technical)", "🛡️ INVESTMENT (Value & Fundamental)"))
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -525,10 +528,10 @@ with st.sidebar:
     tf_berubah = tf_pilihan != st.session_state.current_tf
     if tf_berubah: st.session_state.current_tf = tf_pilihan
         
-    st.markdown("<div style='font-size:0.7rem; color:#00f2fe; font-weight:800; letter-spacing:1px; margin-top:20px; border-bottom: 1px solid rgba(0,242,254,0.2); padding-bottom: 5px;'>🎯 RISK PROFILE ENGINE</div>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size:0.7rem; color:#00f2fe; font-weight:800; letter-spacing:1px; margin-top:15px; border-bottom: 1px solid rgba(0,242,254,0.2); padding-bottom: 4px;'>🎯 RISK PROFILE ENGINE</div>", unsafe_allow_html=True)
     profil_risiko = st.selectbox("Tingkat Agresivitas AI:", ("⚖️ Moderat (Balanced)", "🔥 Agresif (High Signal)", "🛡️ Konservatif (Strict)"), index=0)
     
-    st.markdown("<div style='font-size:0.7rem; color:#00f2fe; font-weight:800; letter-spacing:1px; margin-top:20px; border-bottom: 1px solid rgba(0,242,254,0.2); padding-bottom: 5px;'>⚙️ POSITION SIZING</div>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size:0.7rem; color:#00f2fe; font-weight:800; letter-spacing:1px; margin-top:15px; border-bottom: 1px solid rgba(0,242,254,0.2); padding-bottom: 4px;'>⚙️ POSITION SIZING</div>", unsafe_allow_html=True)
     modal_input_str = st.text_input("💰 Modal Trading (Rp):", value="50.000.000")
     try: modal_trading = int(modal_input_str.replace(".", "").replace(",", ""))
     except: modal_trading = 50000000
@@ -563,15 +566,15 @@ with st.sidebar:
         if hasattr(st, 'rerun'): st.rerun()
         else: st.experimental_rerun()
 
-    # RESTORED LOGOUT & SESSION CONTROL PANEL
-    st.markdown("---")
-    st.markdown("<div style='font-size:0.7rem; color:#f43f5e; font-weight:800; letter-spacing:1px; margin-bottom: 8px;'>🔒 SESSION CONTROLS</div>", unsafe_allow_html=True)
-    if st.button("🚪 LOGOUT / RESET", use_container_width=True):
+    # --- TOMBOL LOGOUT ELEGAN DI SIDEBAR BAWAH ---
+    st.markdown("<br><hr style='border-color: rgba(255,255,255,0.08);'>", unsafe_allow_html=True)
+    if st.button("🔒 LOGOUT / RESET SESI", use_container_width=True):
         st.session_state.clear()
         if os.path.exists(CACHE_FILE):
             try: os.remove(CACHE_FILE)
             except: pass
-        st.rerun()
+        if hasattr(st, 'rerun'): st.rerun()
+        else: st.experimental_rerun()
 
 # ==========================================
 # 6. HEADER DASHBOARD
@@ -580,7 +583,7 @@ st.markdown("<h1>🌐 Algorithmic Market Intelligence</h1>", unsafe_allow_html=T
 
 qotd = get_quote_of_the_day()
 st.markdown(f"""
-<div style="background: linear-gradient(135deg, rgba(0,242,254,0.08) 0%, rgba(30,58,138,0.18) 100%); border: 1px solid rgba(0,242,254,0.35); border-radius: 14px; padding: 16px 24px; margin-top: 15px; margin-bottom: 20px; box-shadow: 0 6px 25px rgba(0,0,0,0.4);">
+<div style="background: linear-gradient(135deg, rgba(0,242,254,0.08) 0%, rgba(30,58,138,0.18) 100%); border: 1px solid rgba(0,242,254,0.35); border-radius: 14px; padding: 15px 22px; margin-top: 15px; margin-bottom: 20px; box-shadow: 0 4px 25px rgba(0,0,0,0.4);">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
         <span style="color: #00f2fe; font-size: 0.7rem; font-weight: 900; letter-spacing: 2px; text-transform: uppercase;">💡 QUOTE OF THE DAY • {qotd['theme']}</span>
         <span style="color: #64748b; font-size: 0.7rem; font-weight: 700;">Rotasi Harian Otomatis</span>
@@ -598,7 +601,7 @@ file_timestamp = now_wib_check.strftime("%H_%d_%b_%Y")
 alert_msg = "🟢 **ZONA TERAKURAT:** Market tutup. Waktu terbaik membedah kekuatan Whale Index (Trading) atau Valuasi Fundamental (Investment) untuk besok." if (hari_sekarang >= 5 or jam_sekarang >= 16 or jam_sekarang < 9) else "🟡 **ZONA LIVE MARKET:** Waspada delay API. Jangan Entry membabi buta, patuhi batas Trailing Stop!"
 alert_color = "rgba(16, 185, 129, 0.2)" if (hari_sekarang >= 5 or jam_sekarang >= 16 or jam_sekarang < 9) else "rgba(251, 191, 36, 0.2)"
 alert_border = "#10b981" if (hari_sekarang >= 5 or jam_sekarang >= 16 or jam_sekarang < 9) else "#fbbf24"
-st.markdown(f"<div style='border-left: 5px solid {alert_border}; padding: 12px 18px; background: {alert_color}; border-radius: 8px; margin-bottom: 20px; color: #f8fafc; font-size: 0.9rem; font-weight: 500;'>{alert_msg}</div>", unsafe_allow_html=True)
+st.markdown(f"<div style='border-left: 5px solid {alert_border}; padding: 12px 18px; background: {alert_color}; border-radius: 10px; margin-bottom: 20px; color: #f8fafc; font-size: 0.9rem; font-weight: 500;'>{alert_msg}</div>", unsafe_allow_html=True)
 
 uptrend_count = sum(1 for s in st.session_state.raw_stocks if s.get("UP_SMA50", False)) if "raw_stocks" in st.session_state and st.session_state.raw_stocks else 0
 total_scanned = len(st.session_state.raw_stocks) if "raw_stocks" in st.session_state and st.session_state.raw_stocks else 1
@@ -620,7 +623,7 @@ with col_h2:
         warna_panah = "▲" if ihsg_chg >= 0 else "▼"
         warna_garis = '#10b981' if ihsg_chg >= 0 else '#f43f5e'
         st.markdown(f"""
-        <div class="premium-card ihsg-box" style="border-left: 5px solid {warna_garis}; height:100%;">
+        <div class="premium-card ihsg-box" style="border-left: 5px solid {warna_garis};">
             <span class="ihsg-title">IHSG COMPOSITE</span>
             <span class="ihsg-score">{ihsg_now:,.2f}</span>
             <span style="color: {warna_garis}; font-weight: 800; font-size: 0.95rem;">{warna_panah} {ihsg_chg:+,.2f} ({ihsg_pct:+.2f}%)</span>
@@ -630,7 +633,7 @@ with col_h2:
 with col_h3:
     if st.session_state.scan_clicked:
         st.markdown(f"""
-        <div class="premium-card ihsg-box" style="border-left: 5px solid {climate_color}; height:100%;">
+        <div class="premium-card ihsg-box" style="border-left: 5px solid {climate_color};">
             <span class="ihsg-title">MARKET CLIMATE</span>
             <span class="ihsg-score" style="color:{climate_color};">{climate_icon} {climate_status}</span>
             <span style="color: #94a3b8; font-weight: 800; font-size: 0.75rem; margin-top:2px;">{breadth_pct:.1f}% Uptrend Breadth</span>
@@ -714,7 +717,6 @@ else:
         if (0 < peg_val <= 1.0): cluster_high_growth.append(ticker)
         if (div_yield >= 5.0): cluster_div_kings.append(ticker)
 
-    # --- TOP 15 FILTERING (V15.9 LUXURY PRECISION) ---
     df_trading = pd.DataFrame(hasil_trading)
     if not df_trading.empty:
         df_trading = df_trading.sort_values(by="RAW_RET", ascending=False).reset_index(drop=True).drop(columns=["RAW_RET"])
@@ -770,11 +772,12 @@ else:
             render_cross_validation_ui(top_trading_tickers, climate_mult, is_trading_mode=True)
 
         with tab2:
-            st.markdown("<br><h3 style='font-size: 1.5rem; color: #00f2fe;'>📜 SOP v15.9: Luxury Precision</h3>", unsafe_allow_html=True)
+            st.markdown("<br><h3 style='font-size: 1.5rem; color: #00f2fe;'>📜 SOP v15.9: Elite 15 Sniper</h3>", unsafe_allow_html=True)
             st.markdown("""
             **Fokus Eksekusi Harian:**
-            *   **Layar Presisi Tinggi:** Kotak mengambang target chip kini tersusun rapi dengan standar estetika *luxury*.
-            *   **Whale Pressure Index (WPI 🐋):** Hanya eksekusi emiten dengan tekanan beli *POWER*.
+            *   **Layar Anti-Distraksi:** Tabel otomatis menyaring dan HANYA menyajikan **15 Sinyal Teratas** paling prospektif.
+            *   **Whale Pressure Index (WPI 🐋):** Abaikan yang WPI-nya "DUMP". Fokus pada tekanan beli sesi akhir berstatus "POWER".
+            *   **Target ARA (Auto Reject Atas):** Klik target pada kotak di bawah tabel, dan jadikan nilai "TARGET ARA" sebagai target lepas barang maksimal.
             """)
 
     else: 
@@ -816,20 +819,21 @@ else:
             c_val, c_gro, c_div = st.columns(3)
             with c_val:
                 badges_val = render_badges(cluster_deep_value, "#00f2fe")
-                st.markdown(f"<div class='premium-card' style='border-top: 4px solid #00f2fe; height: 100%;'><div style='color:#00f2fe; font-weight:900; font-size:1.1rem; letter-spacing:0.5px;'>💎 1. DEEP VALUE GEMS</div><div style='color:#94a3b8; font-size:0.75rem; margin-top:5px; line-height:1.4;'>Saham sangat murah di bawah nilai buku (PBV < 1) dengan PER rendah (< 10).</div>{badges_val}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='premium-card' style='border-top: 4px solid #00f2fe; height: 100%;'><div style='color:#00f2fe; font-weight:900; font-size:1.1rem; letter-spacing:0.5px;'>💎 1. DEEP VALUE GEMS</div><div style='color:#94a3b8; font-size:0.75rem; margin-top:5px; line-height:1.4;'>Saham sangat murah. Diperdagangkan di bawah nilai buku (PBV < 1) dengan PER rendah (< 10).</div>{badges_val}</div>", unsafe_allow_html=True)
             with c_gro:
                 badges_gro = render_badges(cluster_high_growth, "#8b5cf6")
                 st.markdown(f"<div class='premium-card' style='border-top: 4px solid #8b5cf6; height: 100%;'><div style='color:#8b5cf6; font-weight:900; font-size:1.1rem; letter-spacing:0.5px;'>🚀 2. HIGH GROWTH</div><div style='color:#94a3b8; font-size:0.75rem; margin-top:5px; line-height:1.4;'>Pertumbuhan laba mengalahkan valuasinya (PEG Ratio < 1). Cocok untuk capital gain agresif.</div>{badges_gro}</div>", unsafe_allow_html=True)
             with c_div:
                 badges_div = render_badges(cluster_div_kings, "#10b981")
-                st.markdown(f"<div class='premium-card' style='border-top: 4px solid #10b981; height: 100%;'><div style='color:#10b981; font-weight:900; font-size:1.1rem; letter-spacing:0.5px;'>💰 3. DIVIDEND KINGS</div><div style='color:#94a3b8; font-size:0.75rem; margin-top:5px; line-height:1.4;'>Mesin pasif income dengan Dividend Yield di atas 5% per tahun.</div>{badges_div}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='premium-card' style='border-top: 4px solid #10b981; height: 100%;'><div style='color:#10b981; font-weight:900; font-size:1.1rem; letter-spacing:0.5px;'>💰 3. DIVIDEND KINGS</div><div style='color:#94a3b8; font-size:0.75rem; margin-top:5px; line-height:1.4;'>Mesin pencetak uang pasif. Memberikan imbal hasil (Dividend Yield) di atas 5% per tahun.</div>{badges_div}</div>", unsafe_allow_html=True)
 
         with tab3:
             st.markdown("<br><h3 style='font-size: 1.5rem; color: #10b981;'>📜 SOP Value & Growth Investing</h3>", unsafe_allow_html=True)
             st.markdown("""
             **Buku Putih Portfolio Jangka Panjang:**
-            *   **Data Riil Financials:** Laba Bersih, Pendapatan, dan ROE ditarik langsung dari API pusat saat emiten dipilih.
+            *   **Data Riil Financials:** Saat Anda klik kotak emiten, sistem langsung menarik Laba Bersih, Pendapatan, dan ROE dari API pusat.
+            *   **Gunakan Fitur Cluster:** Ingin *passive income*? Ambil langsung dari cluster *Dividend Kings*. Ingin capital gain eksponensial? Fokus kumpulkan *High Growth*.
             """)
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem; font-weight:600;'>⚡ JIHAN-GHINA ENGINE • INSTITUTIONAL MASTERPIECE v15.9 (Luxury Precision Edition)</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #475569; font-size: 0.75rem; font-weight:600;'>⚡ JIHAN-GHINA ENGINE • INSTITUTIONAL MASTERPIECE v15.9 (Luxury Edition)</p>", unsafe_allow_html=True)
