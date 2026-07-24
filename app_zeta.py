@@ -9,14 +9,14 @@ import gc
 import json
 import os
 import io
-import plotly.graph_objects as go # Engine Grafik Luxury v16.0
+import plotly.graph_objects as go
 
 warnings.filterwarnings('ignore')
 
 # ==========================================
 # 0. SISTEM CACHE & TRACKING
 # ==========================================
-CACHE_FILE = "jihan_ghina_saham_cache_v160.json"
+CACHE_FILE = "jihan_ghina_saham_cache_v162.json"
 
 def load_smart_cache():
     if os.path.exists(CACHE_FILE):
@@ -25,7 +25,7 @@ def load_smart_cache():
                 cache_data = json.load(f)
                 loaded_stocks = cache_data.get("raw_stocks", [])
                 if loaded_stocks and isinstance(loaded_stocks, list):
-                    if "REVENUE" not in loaded_stocks[0]: return [], None
+                    if "BID" not in loaded_stocks[0]: return [], None
                 return loaded_stocks, cache_data.get("last_update", None)
         except: pass
     return [], None
@@ -39,7 +39,7 @@ if "current_tf" not in st.session_state: st.session_state.current_tf = "1 Hari (
 # ==========================================
 # 1. KONFIGURASI HALAMAN & UI STYLE (LUXURY)
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Executive v16.0", page_icon="🥂", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Executive v16.2", page_icon="🥂", layout="wide")
 
 st.markdown("""
 <style>
@@ -80,10 +80,10 @@ st.markdown("""
     div.stButton > button:first-child:hover { background: linear-gradient(90deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 100%) !important; color: #d4af37 !important; border-color: rgba(212, 175, 55, 0.4) !important; }
     
     /* DATAFRAME */
-    .stDataFrame { font-size: 13px !important; }
+    .stDataFrame { font-size: 13.5px !important; }
     th.row_heading { color: #d4af37 !important; font-weight: 800 !important; font-size: 1rem !important; text-align: center !important; }
 
-    /* CSS: KOTAK MENGAMBANG (FLOATING CHIPS) - LEBIH RAPI & KECIL */
+    /* CSS: KOTAK MENGAMBANG (FLOATING CHIPS) - KECIL & RAPI */
     .block-container [data-testid="stRadio"] > div[role="radiogroup"] { gap: 8px; flex-wrap: wrap; margin-top: 5px; }
     .block-container [data-testid="stRadio"] > div[role="radiogroup"] > label {
         background: rgba(30,41,59,0.4) !important; border: 1px solid rgba(255, 255, 255, 0.08) !important;
@@ -234,6 +234,16 @@ def fetch_single_stock(emiten, mode_tf):
         grade = "⭐ SETUP A+" if score >= 6 and wpi_score >= 70 else ("⚡ SETUP AGGRESSIVE" if score >= 4 and wpi_score >= 80 else ("✔️ SETUP B" if score >= 2 else "⚠️ SETUP C"))
 
         info = yf.Ticker(emiten).info or {}
+        div_date_unix = info.get('exDividendDate', None)
+        div_date_str = "-"
+        if div_date_unix:
+            try: div_date_str = datetime.fromtimestamp(div_date_unix).strftime('%d %b %Y')
+            except: pass
+
+        # FITUR BARU: Menarik Data Bid dan Ask dari API
+        bid_price = info.get('bid', 0)
+        ask_price = info.get('ask', 0)
+
         return {
             "TICKER": kode, "HARGA": h_skg, "AREA BELI": ema20 if h_skg > ema20 else (float(df['Low'].tail(20).min()) + (h_skg - float(df['Low'].tail(20).min()))*0.3), 
             "TRAILING STOP": t_stop, "WPI_SCORE": round(wpi_score, 1), "BATAS_ARA": b_ara, "STATUS_ARA_ARB": status_ara, 
@@ -241,11 +251,12 @@ def fetch_single_stock(emiten, mode_tf):
             "PER": round(info.get('trailingPE', 0), 2), "PBV": round(info.get('priceToBook', 1), 2), "PEG": round(info.get('pegRatio') or 0, 2), 
             "DIV_YIELD": round((info.get('trailingAnnualDividendRate', 0) / h_skg * 100) if info.get('trailingAnnualDividendRate', 0) else 0, 2),
             "REVENUE": info.get('totalRevenue', 0), "NET_INCOME": info.get('netIncomeToCommon', 0), "ROE": round(info.get('returnOnEquity', 0) * 100 if info.get('returnOnEquity') else 0, 2),
-            "RET_1D": ((h_skg - prev_c) / prev_c * 100) if prev_c > 0 else 0, "MARKET_CAP": info.get('marketCap', 0)
+            "RET_1D": ((h_skg - prev_c) / prev_c * 100) if prev_c > 0 else 0, "MARKET_CAP": info.get('marketCap', 0), "DIVIDEND_DATE": div_date_str,
+            "BID": bid_price, "OFFER": ask_price
         }
     except: return None
 
-# ENGINE GRAFIK KUARTAL (BARU v16.0)
+# ENGINE GRAFIK KUARTAL (PLOTLY TERKUNCI v16.2)
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_quarterly_charts(emiten):
     try:
@@ -283,25 +294,26 @@ def plot_luxury_bar(x_data, y1, y2, name1, name2, color1, color2, title):
         barmode='group', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(color='#94a3b8', size=10)),
         margin=dict(l=10, r=10, t=40, b=20),
-        xaxis=dict(showgrid=False, tickfont=dict(color='#64748b')),
-        yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.05)', tickfont=dict(color='#64748b'), zerolinecolor='rgba(255,255,255,0.1)')
+        dragmode=False, # MENGUNCI FITUR PAN & ZOOM AGAR RAPI SEPERTI YFINANCE
+        xaxis=dict(showgrid=False, tickfont=dict(color='#64748b'), fixedrange=True),
+        yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.05)', tickfont=dict(color='#64748b'), zerolinecolor='rgba(255,255,255,0.1)', fixedrange=True)
     )
     return fig
 
 # ==========================================
-# 4. CROSS-VALIDATION UI (LUXURY CONTEXT)
+# 4. CROSS-VALIDATION UI
 # ==========================================
 def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_trading_mode):
     st.markdown("---")
     st.markdown(f"""
     <div style="margin-top: 10px; margin-bottom: 15px; padding-left: 10px; border-left: 4px solid #d4af37;">
         <h3 style="font-size: 1.6rem; font-weight: 800; color: #f8fafc; margin-bottom: 0px; margin-top: 0px;">🎯 Executive Cross-Validation</h3>
-        <p style="color: #64748b; font-size: 0.8rem; font-weight: 400; margin-top: 2px;">{'Kalkulator Momentum & Targeting.' if is_trading_mode else 'Bedah Laporan Keuangan Riil Kuartalan (Plotly Engine).'}</p>
+        <p style="color: #64748b; font-size: 0.8rem; font-weight: 400; margin-top: 2px;">{'Kalkulator Momentum & Targeting.' if is_trading_mode else 'Bedah Laporan Keuangan Riil Kuartalan (Fixed Axis).'}</p>
     </div>
     """, unsafe_allow_html=True)
     
     if active_tickers_tuple:
-        safe_key = f"cv_target_v16_{st.session_state.current_tf}_{'TRD' if is_trading_mode else 'INV'}"
+        safe_key = f"cv_target_v162_{st.session_state.current_tf}_{'TRD' if is_trading_mode else 'INV'}"
         valid_targets = [t for t in active_tickers_tuple if next((i for i in st.session_state.raw_stocks if i.get("TICKER")==t), None)]
         if not valid_targets: return
         
@@ -311,7 +323,6 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
         raw_target = next((item for item in st.session_state.raw_stocks if item.get("TICKER") == emiten_signal), None)
         if raw_target:
             if is_trading_mode:
-                # --- MODE TRADING (SAMA DENGAN SEBELUMNYA TAPI LEBIH LUXURY) ---
                 setup_grade = raw_target.get("SETUP_GRADE", "")
                 h_tgt, wpi = raw_target.get('HARGA', 0), raw_target.get('WPI_SCORE', 50)
                 a_beli = f"{int(raw_target.get('AREA BELI', h_tgt)):,}".replace(",", ".")
@@ -337,7 +348,6 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                     st.markdown(f"<div class='premium-card' style='padding: 15px; height: 100%; justify-content: center; align-items: center;'><div style='color: #64748b; font-size: 0.7rem; font-weight: 800; letter-spacing: 1px;'>WHALE PRESSURE</div><div style='font-size: 2rem; font-weight: 800; color: {'#10b981' if wpi>70 else '#facc15' if wpi>40 else '#f43f5e'}; margin-top: 5px;'>{wpi}%</div></div>", unsafe_allow_html=True)
 
             else:
-                # --- MODE INVESTMENT (GRAFIK PLOTLY BARU v16.0) ---
                 per, pbv, yld = raw_target.get("PER", 0), raw_target.get("PBV", 0), raw_target.get("DIV_YIELD", 0)
                 st.markdown(f"<div style='display:flex; justify-content:space-around; background:rgba(30,41,59,0.3); border:1px solid rgba(255,255,255,0.05); border-radius:10px; padding:12px; margin-bottom:15px;'><div style='text-align:center;'><span style='color:#64748b; font-size:0.7rem; font-weight:700;'>VALUASI PER</span><br><span style='color:#f8fafc; font-weight:800; font-size:1.1rem;'>{per:.1f}x</span></div><div style='text-align:center;'><span style='color:#64748b; font-size:0.7rem; font-weight:700;'>VALUASI PBV</span><br><span style='color:#f8fafc; font-weight:800; font-size:1.1rem;'>{pbv:.1f}x</span></div><div style='text-align:center;'><span style='color:#64748b; font-size:0.7rem; font-weight:700;'>DIV YIELD</span><br><span style='color:#10b981; font-weight:800; font-size:1.1rem;'>{yld:.1f}%</span></div></div>", unsafe_allow_html=True)
 
@@ -361,7 +371,7 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #f8fafc; font-size: 1.4rem; font-weight: 800; margin-bottom: -5px;'>Quantum Matrix</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #d4af37; font-size: 0.65rem; letter-spacing: 2px; margin-bottom: 25px;'>v16.0 LUXURY EDITION</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #d4af37; font-size: 0.65rem; letter-spacing: 2px; margin-bottom: 25px;'>v16.2 ULTIMATE PRECISION</p>", unsafe_allow_html=True)
     
     engine_mode = st.radio("PILIH MODE ENGINE:", ("⚔️ TRADING (Momentum)", "🛡️ INVESTMENT (Fundamental)"))
     st.markdown("<br>", unsafe_allow_html=True)
@@ -402,7 +412,7 @@ with st.sidebar:
         
     st.markdown("<br><br><br>", unsafe_allow_html=True)
     st.markdown("---")
-    # TOMBOL LOGOUT BARU
+    # TOMBOL LOGOUT 
     if st.button("🚪 LOGOUT SISTEM", use_container_width=True):
         st.session_state.clear()
         if hasattr(st, 'rerun'): st.rerun()
@@ -431,25 +441,56 @@ with c_h3:
     if st.session_state.scan_clicked and st.session_state.raw_stocks:
         up_c = sum(1 for s in st.session_state.raw_stocks if s.get("UP_SMA50", False))
         b_pct = (up_c / len(st.session_state.raw_stocks)) * 100
-        c_stat, c_col = ("BULLISH", "#10b981") if b_pct >= 50 else ("BEARISH", "#f43f5e")
+        c_stat, c_col, c_mult = ("BULLISH", "#10b981", 1.0) if b_pct >= 50 else ("BEARISH", "#f43f5e", 0.5)
         st.markdown(f"<div class='ihsg-box' style='border-left:3px solid {c_col}; border-radius:8px;'><span class='ihsg-title'>CLIMATE</span><span class='ihsg-score' style='color:{c_col};'>{c_stat}</span><span style='color:#64748b; font-weight:700; font-size:0.8rem;'>Breadth: {b_pct:.0f}%</span></div>", unsafe_allow_html=True)
+    else: c_mult = 1.0
 
 st.markdown("---")
 
 if not st.session_state.scan_clicked or not st.session_state.raw_stocks:
-    st.info("👈 Tekan tombol '🔄 SCAN MARKET' untuk memulai Inisiasi Engine v16.0.")
+    st.info("👈 Tekan tombol '🔄 SCAN MARKET' untuk memulai Inisiasi Engine v16.2.")
 else:
     h_trd, h_inv = [], []
     c_val, c_gro, c_div = [], [], []
     
     for r in st.session_state.raw_stocks:
         t, h = r.get("TICKER", ""), r.get("HARGA", 0)
+        setup_grade = r.get("SETUP_GRADE", "⚠️ SETUP C")
+        status_ara = r.get("STATUS_ARA_ARB", "")
+        t_stop_val = r.get("TRAILING STOP", 0)
+        
+        # Format Data Bid dan Offer
+        bid_val = r.get("BID", 0)
+        offer_val = r.get("OFFER", 0)
+        bid_str = f"{int(bid_val):,}".replace(",", ".") if bid_val > 0 else "-"
+        offer_str = f"{int(offer_val):,}".replace(",", ".") if offer_val > 0 else "-"
+        
+        # LOGIC REKOMENDASI LOT
+        if "A+" in setup_grade: kep_t = "🚀 STRONG ACCUM"
+        elif "AGGRESSIVE" in setup_grade: kep_t = "⚡ AGGRESSIVE SCALP"
+        elif "B" in setup_grade: kep_t = "🟢 ACCUMULATE"
+        else: kep_t = "🟡 HOLD"
+        
+        risk_ps = h - t_stop_val
+        if ("ACCUM" in kep_t or "SCALP" in kep_t) and risk_ps > 0 and "ARA" not in status_ara:
+            multiplier = 2.0 if "A+" in setup_grade else (1.5 if "SCALP" in kep_t else 1.0)
+            final_risk = risiko_pct * multiplier * c_mult
+            max_lots = int(((modal_trading * (final_risk / 100)) / risk_ps) / 100)
+            rec_lot_text = f"Max {max_lots:,} Lot"
+        elif "ARA" in status_ara: rec_lot_text = "⚠️ ARA LOCKED (HOLD)"
+        else: rec_lot_text = "🔒 Proteksi/Hold"
+
+        wpi_score = r.get('WPI_SCORE', 50)
+        wpi_text = f"🐋 {wpi_score}% (POWER)" if wpi_score >= 80 else (f"🩸 {wpi_score}% (DUMP)" if wpi_score <= 30 else f"{wpi_score}%")
+        
         h_trd.append({
             "R_RET": r.get("RET_1D", 0), "TICKER": t, "HARGA": f"{int(h):,}".replace(",", "."), 
+            "BID": bid_str, "OFFER": offer_str,
             "1D GAIN (%)": f"{r.get('RET_1D',0):+.2f}%", 
-            "WPI 🐋": f"{r.get('WPI_SCORE', 50):.1f}%",
-            "TRAILING STOP": f"{int(r.get('TRAILING STOP', 0)):,}".replace(",", "."),
-            "BANDARMOLOGI": r.get("STATUS_BANDAR", ""), "REKOMENDASI": r.get("SETUP_GRADE", "")
+            "WPI 🐋": wpi_text,
+            "REKOMENDASI LOT": rec_lot_text,
+            "TRAILING STOP": f"{int(t_stop_val):,}".replace(",", "."),
+            "BANDARMOLOGI": r.get("STATUS_BANDAR", ""), "REKOMENDASI": setup_grade
         })
         
         per, pbv, peg, yld = r.get("PER", 0), r.get("PBV", 0), r.get("PEG", 0), r.get("DIV_YIELD", 0)
@@ -457,8 +498,9 @@ else:
         
         h_inv.append({
             "R_YLD": yld, "TICKER": t, "HARGA": f"{int(h):,}".replace(",", "."), "MARKET CAP": format_financials(r.get("MARKET_CAP", 0)),
-            "PER (x)": f"{per:.2f}", "PBV (x)": f"{pbv:.2f}", "DIV YIELD (%)": f"{yld:.2f}%",
-            "VALUASI": "💎 UNDERVALUED" if skor>=70 else ("⚖️ FAIR VALUE" if skor>=40 else "⚠️ OVERVALUED")
+            "PER (x)": f"{per:.2f}", "PBV (x)": f"{pbv:.2f}", "PEG (x)": f"{peg:.2f}", "DIV YIELD (%)": f"{yld:.2f}%",
+            "DIV DATE": r.get("DIVIDEND_DATE", "-"),
+            "VALUASI": "💎 UNDERVALUED (GROWTH)" if skor>=70 and 0<peg<=1.0 else ("💎 UNDERVALUED" if skor>=70 else ("⚖️ FAIR VALUE" if skor>=40 else "⚠️ OVERVALUED"))
         })
         
         if 0 < per < 10 and 0 < pbv < 1.0: c_val.append(t)
@@ -475,13 +517,25 @@ else:
             def style_t(row):
                 stls = []
                 for c, v in row.items():
-                    if c == '1D GAIN (%)': stls.append('color:#10b981; font-weight:800;' if '+' in str(v) else ('color:#f43f5e; font-weight:800;' if '-' in str(v) and v!='-0.00%' else 'color:#64748b;'))
-                    elif c == 'REKOMENDASI': stls.append('color:#10b981;' if 'A+' in v else ('color:#c4b5fd;' if 'AGGRESSIVE' in v else 'color:#38bdf8;'))
-                    elif c == 'BANDARMOLOGI': stls.append('color:#00f2fe;' if 'AKUMULASI' in v else ('color:#f43f5e;' if 'DISTRIBUSI' in v else 'color:#64748b;'))
+                    if c in ['BID', 'OFFER']: 
+                        stls.append('color:#f8fafc; font-weight:800; text-align:center;')
+                    elif c == '1D GAIN (%)': 
+                        stls.append('color:#10b981; font-weight:800; text-align:center;' if '+' in str(v) else ('color:#f43f5e; font-weight:800; text-align:center;' if '-' in str(v) and v!='-0.00%' else 'color:#64748b; text-align:center;'))
+                    elif c == 'WPI 🐋':
+                        stls.append('color:#10b981; font-weight:800;' if 'POWER' in str(v) else ('color:#f43f5e; font-weight:800;' if 'DUMP' in str(v) else 'color:#94a3b8;'))
+                    elif c == 'REKOMENDASI LOT':
+                        stls.append('color:#d4af37; font-weight:800;' if 'Max' in str(v) else ('color:#facc15; font-weight:800;' if 'LOCKED' in str(v) else 'color:#64748b;'))
+                    elif c == 'TRAILING STOP':
+                        stls.append('color:#f43f5e; font-weight:800; text-align:center;')
+                    elif c == 'REKOMENDASI': 
+                        stls.append('color:#10b981; font-weight:800;' if 'A+' in v else ('color:#c4b5fd; font-weight:800;' if 'AGGRESSIVE' in v else ('color:#38bdf8; font-weight:700;' if 'B' in v else 'color:#fb7185;')))
+                    elif c == 'BANDARMOLOGI': 
+                        stls.append('color:#00f2fe; font-weight:800;' if 'AKUMULASI' in v else ('color:#f43f5e; font-weight:800;' if 'DISTRIBUSI' in v else ('color:#10b981; font-weight:800;' if 'MARK-UP' in v else 'color:#64748b;')))
                     else: stls.append('color:#cbd5e1;')
                 return stls
-            if not df_trd.empty: st.dataframe(df_trd.style.apply(style_t, axis=1), use_container_width=True)
-            render_cross_validation_ui(tuple(str(x) for x in df_trd.index), 1.0, True)
+            if not df_trd.empty: 
+                st.dataframe(df_trd.style.apply(style_t, axis=1), use_container_width=True)
+            render_cross_validation_ui(tuple(str(x) for x in df_trd.index), c_mult, True)
         with tab_t2: st.info("SOP Eksekutif: Disiplin pada Trailing Stop. Amankan profit secara bertahap saat menyentuh batas ARA.")
 
     else: 
@@ -491,12 +545,24 @@ else:
             def style_i(row):
                 stls = []
                 for c, v in row.items():
-                    if c == 'DIV YIELD (%)': stls.append('color:#10b981; font-weight:800;' if v!='0.00%' else 'color:#64748b;')
-                    elif c == 'VALUASI': stls.append('color:#00f2fe;' if 'UNDER' in v else ('color:#facc15;' if 'FAIR' in v else 'color:#f43f5e;'))
+                    if c == 'DIV YIELD (%)': 
+                        stls.append('color:#10b981; font-weight:800;' if v!='0.00%' else 'color:#64748b;')
+                    elif c in ['PER (x)', 'PBV (x)', 'PEG (x)']:
+                        try:
+                            f_v = float(v)
+                            if (c == 'PER (x)' and 0 < f_v < 15) or (c == 'PBV (x)' and 0 < f_v < 1.2) or (c == 'PEG (x)' and 0 < f_v <= 1.0): stls.append('color: #38bdf8; font-weight: 800;')
+                            elif f_v > 20 or f_v > 2.5: stls.append('color: #f43f5e; font-weight: 800;')
+                            else: stls.append('color: #cbd5e1;')
+                        except: stls.append('color:#cbd5e1;')
+                    elif c == 'DIV DATE':
+                        stls.append('color:#94a3b8; font-size:0.85rem; text-align:center;')
+                    elif c == 'VALUASI': 
+                        stls.append('color:#00f2fe; font-weight:800;' if 'UNDER' in v else ('color:#facc15; font-weight:800;' if 'FAIR' in v else 'color:#f43f5e; font-weight:800;'))
                     else: stls.append('color:#cbd5e1;')
                 return stls
-            if not df_inv.empty: st.dataframe(df_inv.style.apply(style_i, axis=1), use_container_width=True)
-            render_cross_validation_ui(tuple(str(x) for x in df_inv.index), 1.0, False)
+            if not df_inv.empty: 
+                st.dataframe(df_inv.style.apply(style_i, axis=1), use_container_width=True)
+            render_cross_validation_ui(tuple(str(x) for x in df_inv.index), c_mult, False)
         
         with tab_i2:
             st.markdown("<br><h3 style='font-size: 1.3rem; color:#f8fafc;'>🧬 Institutional Clusters</h3>", unsafe_allow_html=True)
