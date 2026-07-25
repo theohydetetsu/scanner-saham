@@ -16,7 +16,7 @@ warnings.filterwarnings('ignore')
 # ==========================================
 # 0. REACTIVE STATE MANAGEMENT & CACHE
 # ==========================================
-CACHE_FILE = "jihan_ghina_saham_cache_v164.json"
+CACHE_FILE = "jihan_ghina_saham_cache_v165.json"
 
 def load_smart_cache():
     if os.path.exists(CACHE_FILE):
@@ -25,7 +25,7 @@ def load_smart_cache():
                 cache_data = json.load(f)
                 loaded_stocks = cache_data.get("raw_stocks", [])
                 if loaded_stocks and isinstance(loaded_stocks, list):
-                    if "BID" not in loaded_stocks[0]: return [], None
+                    if "BID_VOL" not in loaded_stocks[0]: return [], None
                 return loaded_stocks, cache_data.get("last_update", None)
         except: pass
     return [], None
@@ -35,12 +35,11 @@ if "raw_stocks" not in st.session_state:
 
 if "scan_clicked" not in st.session_state: st.session_state.scan_clicked = len(st.session_state.raw_stocks) > 0
 if "current_tf" not in st.session_state: st.session_state.current_tf = "1 Hari (Daily)"
-if "reactive_filter" not in st.session_state: st.session_state.reactive_filter = "ALL"
 
 # ==========================================
 # 1. KONFIGURASI HALAMAN & REACTIVE UI
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Executive v16.4", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Executive v16.5", page_icon="⚡", layout="wide")
 
 st.markdown("""
 <style>
@@ -95,13 +94,13 @@ st.markdown("""
 # ==========================================
 QUOTES_DATABASE = [
     {"quote": "Membeli di saat merah (support) dan menjual saat euphoria (top gainer) adalah hukum alam institusi.", "author": "Smart Money Concept", "theme": "Bottom Fishing"},
-    {"quote": "React to the market, don't predict it. (Reaksi lebih penting dari prediksi).", "author": "Reactive Engine Philosophy", "theme": "Agility"},
+    {"quote": "Ketika antrean beli 2x lipat dari antrean jual, bandar sedang melindungi areanya. Ikuti arusnya.", "author": "Order Book Logic", "theme": "Tape Reading"},
     {"quote": "Harga adalah apa yang Anda bayar. Nilai (Value) adalah apa yang Anda dapatkan.", "author": "Warren Buffett", "theme": "Fundamental"}
 ]
 def get_quote_of_the_day(): return QUOTES_DATABASE[datetime.now(pytz.timezone('Asia/Jakarta')).timetuple().tm_yday % len(QUOTES_DATABASE)]
 
 # ==========================================
-# 3. CORE ENGINE DATA FETCHING & REACTIVE ALGO
+# 3. CORE ENGINE DATA FETCHING & ORDER BOOK ALGO
 # ==========================================
 MASTER_UNIVERSE = [
     "BBCA", "BBRI", "BMRI", "BBNI", "TLKM", "ASII", "UNTR", "ICBP", "INDF", "AMRT", "GOTO", "PGAS", "PTBA", "ITMG", 
@@ -210,45 +209,53 @@ def fetch_single_stock(emiten, mode_tf):
         b_size, u_shadow, l_shadow = abs(o_skg - h_skg), hi_skg - (h_skg if is_bull else o_skg), (o_skg if is_bull else h_skg) - lo_skg
         is_spike = v_skg > (vol_sma20 * 1.2)
         
-        # 1. Mendeteksi "Serok Bawah" 
+        # --- ORDER BOOK & REACTIVE LOGIC (v16.5) ---
+        info = yf.Ticker(emiten).info or {}
+        bid_price = info.get('bid', 0)
+        ask_price = info.get('ask', 0)
+        bid_vol = info.get('bidSize', 0)
+        ask_vol = info.get('askSize', 0)
+
+        obi_ratio = 1.0
+        orderbook_status = ""
+        if bid_vol > 0 and ask_vol > 0:
+            obi_ratio = bid_vol / ask_vol
+            if obi_ratio >= 1.5: orderbook_status = " 🛡️ BUY WALL"
+            elif obi_ratio <= 0.5: orderbook_status = " 🧱 SELL WALL"
+        
         low_20 = float(df['Low'].tail(20).min())
         dist_to_low = ((h_skg - low_20) / low_20) * 100
         is_near_support = dist_to_low < 5.0 
         is_vol_dry = v_skg < (vol_sma20 * 0.8) 
         is_hammer = l_shadow > (b_size * 2) and l_shadow > u_shadow
-
-        # 2. Mendeteksi "Fake Accumulation" 
         is_fake_accum = not is_bull and wpi_score < 35 and prev_c > ema20
         
-        if is_near_support and is_hammer: s_bandar = "🎯 SEROK BAWAH (REJECTION)"
+        # Inject OBI into Bandarmologi Judgment
+        if (is_near_support and is_hammer) or (is_near_support and obi_ratio >= 1.5): s_bandar = "🎯 SEROK (REJECTION/WALL)"
         elif is_near_support and is_vol_dry: s_bandar = "🔍 VOLUME DRY-UP (PANTAU)"
-        elif is_fake_accum: s_bandar = "⚠️ FAKE ACCUMULATION (GUYURAN)"
+        elif is_fake_accum or obi_ratio <= 0.5: s_bandar = "⚠️ AWAS GUYURAN (FAKE/SELL WALL)"
         elif is_spike:
             if l_shadow > (b_size * 1.5): s_bandar = "🐋 AKUMULASI DASAR"
             elif u_shadow > (b_size * 1.5): s_bandar = "🩸 DISTRIBUSI PUCUK"
-            elif is_bull and wpi_score > 70: s_bandar = "🚀 MARK-UP BERINGAS"
+            elif is_bull and wpi_score > 70: s_bandar = f"🚀 MARK-UP BERINGAS{orderbook_status}"
             elif is_bull: s_bandar = "🟢 AKUMULASI AWAL"
             else: s_bandar = "💥 MARK-DOWN"
         else: s_bandar = "➖ SEPI"
             
         score = sum([h_skg > ema20, wpi_score > 85, is_spike]) * 2 + (3 if v_skg > vol_sma20*3 and h_skg >= float(df['High'].tail(20).max()) else 0)
         
-        if "SEROK BAWAH" in s_bandar: grade = "🎯 SETUP REACTIVE (BOTTOM)"
-        elif "FAKE" in s_bandar: grade = "⚠️ SETUP C (AVOID)"
+        if "SEROK" in s_bandar: grade = "🎯 SETUP REACTIVE (BOTTOM)"
+        elif "AWAS" in s_bandar: grade = "⚠️ SETUP C (AVOID)"
         elif score >= 6 and wpi_score >= 70: grade = "⭐ SETUP A+" 
         elif score >= 4 and wpi_score >= 80: grade = "⚡ SETUP AGGRESSIVE"
         elif score >= 2: grade = "✔️ SETUP B"
         else: grade = "⚠️ SETUP C"
 
-        info = yf.Ticker(emiten).info or {}
         div_date_unix = info.get('exDividendDate', None)
         div_date_str = "-"
         if div_date_unix:
             try: div_date_str = datetime.fromtimestamp(div_date_unix).strftime('%d %b %Y')
             except: pass
-
-        bid_price = info.get('bid', 0)
-        ask_price = info.get('ask', 0)
 
         return {
             "TICKER": kode, "HARGA": h_skg, "AREA BELI": ema20 if h_skg > ema20 else (low_20 + (h_skg - low_20)*0.3), 
@@ -258,11 +265,11 @@ def fetch_single_stock(emiten, mode_tf):
             "DIV_YIELD": round((info.get('trailingAnnualDividendRate', 0) / h_skg * 100) if info.get('trailingAnnualDividendRate', 0) else 0, 2),
             "REVENUE": info.get('totalRevenue', 0), "NET_INCOME": info.get('netIncomeToCommon', 0), "ROE": round(info.get('returnOnEquity', 0) * 100 if info.get('returnOnEquity') else 0, 2),
             "RET_1D": ((h_skg - prev_c) / prev_c * 100) if prev_c > 0 else 0, "MARKET_CAP": info.get('marketCap', 0), "DIVIDEND_DATE": div_date_str,
-            "BID": bid_price, "OFFER": ask_price
+            "BID": bid_price, "OFFER": ask_price, "BID_VOL": bid_vol, "OFFER_VOL": ask_vol
         }
     except: return None
 
-# ENGINE GRAFIK KUARTAL (PLOTLY TERKUNCI & DIPENDEKKAN)
+# ENGINE GRAFIK KUARTAL
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_quarterly_charts(emiten):
     try:
@@ -296,11 +303,11 @@ def plot_luxury_bar(x_data, y1, y2, name1, name2, color1, color2, title):
     fig.add_trace(go.Bar(x=x_data, y=y1, name=name1, marker_color=color1, opacity=0.85, textposition='auto'))
     fig.add_trace(go.Bar(x=x_data, y=y2, name=name2, marker_color=color2, opacity=0.85, textposition='auto'))
     fig.update_layout(
-        height=320, # FITUR BARU: CHART DIBUAT LEBIH PENDEK & PRESISI
+        height=320, 
         title=dict(text=title, font=dict(color='#cbd5e1', size=13)),
         barmode='group', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
         legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="right", x=1, font=dict(color='#94a3b8', size=10)),
-        margin=dict(l=10, r=10, t=35, b=10), # FITUR BARU: MARGIN DIRAPATKAN
+        margin=dict(l=10, r=10, t=35, b=10), 
         dragmode=False, 
         xaxis=dict(showgrid=False, tickfont=dict(color='#64748b'), fixedrange=True),
         yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.05)', tickfont=dict(color='#64748b'), zerolinecolor='rgba(255,255,255,0.1)', fixedrange=True)
@@ -320,7 +327,7 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
     """, unsafe_allow_html=True)
     
     if active_tickers_tuple:
-        safe_key = f"cv_target_v164_{st.session_state.current_tf}_{'TRD' if is_trading_mode else 'INV'}"
+        safe_key = f"cv_target_v165_{st.session_state.current_tf}_{'TRD' if is_trading_mode else 'INV'}"
         valid_targets = [t for t in active_tickers_tuple if next((i for i in st.session_state.raw_stocks if i.get("TICKER")==t), None)]
         if not valid_targets: return
         
@@ -339,7 +346,7 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                 s_ara = raw_target.get('STATUS_ARA_ARB', "")
                 
                 if "REACTIVE" in setup_grade: sys_rec, color, r_mult = "BOTTOM FISHING (SEROK)", "#d4af37", 1.5
-                elif "AVOID" in setup_grade: sys_rec, color, r_mult = "AVOID (FAKE SIGNAL)", "#f43f5e", 0.0
+                elif "AVOID" in setup_grade: sys_rec, color, r_mult = "AVOID (FAKE/SELL WALL)", "#f43f5e", 0.0
                 elif "A+" in setup_grade: sys_rec, color, r_mult = "STRONG ACCUMULATE", "#10b981", 2.0 
                 elif "AGGRESSIVE" in setup_grade: sys_rec, color, r_mult = "AGGRESSIVE SCALP", "#8b5cf6", 1.5
                 else: sys_rec, color, r_mult = "ACCUMULATE", "#00f2fe", 1.0 
@@ -355,8 +362,8 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                     for col, label, val, c_col in zip([s1,s2,s3,s4], ["HARGA", "AREA BELI", "CUT LOSS", "TARGET ARA"], [int(h_tgt), a_beli, t_stop, b_ara], ["#f8fafc", "#00f2fe", "#f43f5e", "#10b981"]):
                         with col: st.markdown(f"<div style='background: rgba(255,255,255,0.02); padding: 10px 5px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); text-align: center;'><div style='font-size: 0.55rem; color: #64748b; font-weight: 800;'>{label}</div><div style='font-size: 0.95rem; color: {c_col}; font-weight: 800; margin-top: 2px;'>{val}</div></div>", unsafe_allow_html=True)
                 with c2:
-                    wpi_color = '#f43f5e' if "FAKE" in s_bandar else ('#d4af37' if "SEROK" in s_bandar else ('#10b981' if wpi>70 else '#facc15' if wpi>40 else '#f43f5e'))
-                    wpi_label = "REJECTION (BOTTOM)" if "SEROK" in s_bandar else ("DISTRIBUTION" if "FAKE" in s_bandar else "WHALE PRESSURE")
+                    wpi_color = '#f43f5e' if ("FAKE" in s_bandar or "AWAS" in s_bandar) else ('#d4af37' if "SEROK" in s_bandar else ('#10b981' if wpi>70 else '#facc15' if wpi>40 else '#f43f5e'))
+                    wpi_label = "REJECTION / BUY WALL" if "SEROK" in s_bandar else ("DISTRIBUTION / SELL WALL" if ("FAKE" in s_bandar or "AWAS" in s_bandar) else "WHALE PRESSURE")
                     st.markdown(f"<div class='premium-card' style='padding: 15px; height: 100%; justify-content: center; align-items: center;'><div style='color: #64748b; font-size: 0.7rem; font-weight: 800; letter-spacing: 1px;'>{wpi_label}</div><div style='font-size: 2rem; font-weight: 800; color: {wpi_color}; margin-top: 5px;'>{wpi}%</div></div>", unsafe_allow_html=True)
 
             else:
@@ -377,7 +384,7 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #f8fafc; font-size: 1.4rem; font-weight: 800; margin-bottom: -5px;'>Quantum Matrix</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #00f2fe; font-size: 0.65rem; letter-spacing: 2px; margin-bottom: 25px;'>v16.4 PRECISION ENGINE</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #00f2fe; font-size: 0.65rem; letter-spacing: 2px; margin-bottom: 25px;'>v16.5 ORDER BOOK ENGINE</p>", unsafe_allow_html=True)
     
     engine_mode = st.radio("PILIH MODE ENGINE:", ("⚔️ TRADING (Momentum & Reactive)", "🛡️ INVESTMENT (Fundamental)"))
     st.markdown("<br>", unsafe_allow_html=True)
@@ -402,10 +409,10 @@ with st.sidebar:
         st.cache_data.clear()
         st.session_state.raw_stocks = []
         
-        my_bar = st.progress(0, text="Menyiapkan Radar Reaktif...")
+        my_bar = st.progress(0, text="Menyiapkan Radar Reaktif & Order Book...")
         dyn_tickers = get_dynamic_market_roster()
         for i, t in enumerate(dyn_tickers):
-            my_bar.progress((i + 1) / len(dyn_tickers), text=f"Menganalisa & Merespon Data {t} ({i+1}/{len(dyn_tickers)})")
+            my_bar.progress((i + 1) / len(dyn_tickers), text=f"Scanning Flow & Bid-Ask {t} ({i+1}/{len(dyn_tickers)})")
             data = fetch_single_stock(t, st.session_state.current_tf)
             if data: st.session_state.raw_stocks.append(data)
             gc.collect() 
@@ -455,7 +462,7 @@ with c_h3:
 st.markdown("---")
 
 if not st.session_state.scan_clicked or not st.session_state.raw_stocks:
-    st.info("👈 Tekan tombol '🔄 SCAN MARKET' untuk memulai Inisiasi Reactive Engine v16.4.")
+    st.info("👈 Tekan tombol '🔄 SCAN MARKET' untuk memulai Inisiasi Reactive Engine v16.5.")
 else:
     h_trd, h_inv = [], []
     c_val, c_gro, c_div = [], [], []
@@ -466,12 +473,14 @@ else:
         status_ara = r.get("STATUS_ARA_ARB", "")
         t_stop_val = r.get("TRAILING STOP", 0)
         
-        bid_val = r.get("BID", 0)
-        offer_val = r.get("OFFER", 0)
-        bid_str = f"{int(bid_val):,}".replace(",", ".") if bid_val > 0 else "-"
-        offer_str = f"{int(offer_val):,}".replace(",", ".") if offer_val > 0 else "-"
+        bid_p, ask_p = r.get("BID", 0), r.get("OFFER", 0)
+        bid_v, ask_v = r.get("BID_VOL", 0), r.get("OFFER_VOL", 0)
         
-        # LOGIC REKOMENDASI LOT & PRIORITY (REACTIVE SORTING v16.4)
+        # Display Bid/Offer with Volume if available (E.g. "1.350 [200]")
+        bid_str = f"{int(bid_p):,} [{int(bid_v)}]" if bid_p > 0 and bid_v > 0 else (f"{int(bid_p):,}" if bid_p > 0 else "-")
+        offer_str = f"{int(ask_p):,} [{int(ask_v)}]" if ask_p > 0 and ask_v > 0 else (f"{int(ask_p):,}" if ask_p > 0 else "-")
+        
+        # Logika Prioritas Reactive & Order Book
         if "REACTIVE" in setup_grade: kep_t, prio = "🎯 SEROK BAWAH", 5
         elif "A+" in setup_grade: kep_t, prio = "🚀 STRONG ACCUM", 4
         elif "AGGRESSIVE" in setup_grade: kep_t, prio = "⚡ AGGRESSIVE SCALP", 3
@@ -479,6 +488,11 @@ else:
         elif "AVOID" in setup_grade: kep_t, prio = "⚠️ AVOID (FAKE)", 0
         else: kep_t, prio = "🟡 HOLD", 1
         
+        # Boost/Downgrade priority based on Order Book Imbalance (jika data API ada)
+        if bid_v > 0 and ask_v > 0:
+            if bid_v >= ask_v * 1.5: prio += 1
+            elif ask_v >= bid_v * 1.5: prio -= 1
+
         risk_ps = h - t_stop_val
         if ("ACCUM" in kep_t or "SCALP" in kep_t or "SEROK" in kep_t) and risk_ps > 0 and "ARA" not in status_ara:
             multiplier = 2.0 if "A+" in setup_grade else (1.5 if ("SCALP" in kep_t or "SEROK" in kep_t) else 1.0)
@@ -492,16 +506,16 @@ else:
         wpi_score = r.get('WPI_SCORE', 50)
         s_bandar = r.get("STATUS_BANDAR", "")
         
-        if "FAKE" in s_bandar: wpi_text = f"🚫 {wpi_score}% (DISTRIBUSI)"
-        elif "SEROK" in s_bandar: wpi_text = f"🎯 {wpi_score}% (REJECTION)"
+        if "FAKE" in s_bandar or "AWAS" in s_bandar: wpi_text = f"🚫 {wpi_score}% (DISTRIBUSI)"
+        elif "SEROK" in s_bandar: wpi_text = f"🎯 {wpi_score}% (BUY WALL)"
         elif wpi_score >= 80: wpi_text = f"🐋 {wpi_score}% (POWER)"
         elif wpi_score <= 30: wpi_text = f"🩸 {wpi_score}% (DUMP)"
         else: wpi_text = f"{wpi_score}%"
         
         h_trd.append({
-            "PRIORITY": prio, "RAW_WPI": wpi_score, # Kolom tersembunyi untuk sorting cerdas
+            "PRIORITY": prio, "RAW_WPI": wpi_score,
             "TICKER": t, "HARGA": f"{int(h):,}".replace(",", "."), 
-            "BID": bid_str, "OFFER": offer_str,
+            "BID [VOL]": bid_str, "OFFER [VOL]": offer_str,
             "1D GAIN (%)": f"{r.get('RET_1D',0):+.2f}%", 
             "WPI 🐋": wpi_text,
             "REKOMENDASI LOT": rec_lot_text,
@@ -523,7 +537,6 @@ else:
         if 0 < peg <= 1.0: c_gro.append(t)
         if yld >= 5.0: c_div.append(t)
 
-    # FITUR BARU: Tabel Trading Tidak Lagi Disortir Berdasarkan Top Gainer, tapi Berdasarkan Prioritas Serok & Kekuatan WPI
     df_trd = pd.DataFrame(h_trd).sort_values(["PRIORITY", "RAW_WPI"], ascending=[False, False]).drop(columns=["PRIORITY", "RAW_WPI"]).set_index("TICKER").head(15) if h_trd else pd.DataFrame()
     df_inv = pd.DataFrame(h_inv).sort_values("R_YLD", ascending=False).drop(columns=["R_YLD"]).set_index("TICKER").head(15) if h_inv else pd.DataFrame()
 
@@ -534,18 +547,18 @@ else:
             def style_t(row):
                 stls = []
                 for c, v in row.items():
-                    if c in ['BID', 'OFFER']: stls.append('color:#f8fafc; font-weight:800; text-align:center;')
+                    if c in ['BID [VOL]', 'OFFER [VOL]']: stls.append('color:#f8fafc; font-weight:800; text-align:center;')
                     elif c == '1D GAIN (%)': stls.append('color:#10b981; font-weight:800; text-align:center;' if '+' in str(v) else ('color:#f43f5e; font-weight:800; text-align:center;' if '-' in str(v) and v!='-0.00%' else 'color:#64748b; text-align:center;'))
                     elif c == 'WPI 🐋': stls.append('color:#f43f5e; font-weight:800;' if '🚫' in str(v) else ('color:#d4af37; font-weight:800;' if '🎯' in str(v) else ('color:#10b981; font-weight:800;' if 'POWER' in str(v) else ('color:#f43f5e; font-weight:800;' if 'DUMP' in str(v) else 'color:#94a3b8;'))))
                     elif c == 'REKOMENDASI LOT': stls.append('color:#00f2fe; font-weight:800;' if 'Max' in str(v) else ('color:#f43f5e; font-weight:800;' if 'Dilarang' in str(v) else 'color:#64748b;'))
                     elif c == 'TRAILING STOP': stls.append('color:#f43f5e; font-weight:800; text-align:center;')
                     elif c == 'REKOMENDASI': stls.append('color:#d4af37; font-weight:800;' if 'REACTIVE' in v else ('color:#f43f5e; font-weight:800;' if 'AVOID' in v else ('color:#10b981; font-weight:800;' if 'A+' in v else ('color:#c4b5fd; font-weight:800;' if 'AGGRESSIVE' in v else ('color:#38bdf8; font-weight:700;' if 'B' in v else 'color:#fb7185;')))))
-                    elif c == 'BANDARMOLOGI': stls.append('color:#d4af37; font-weight:800;' if 'SEROK' in v else ('color:#f43f5e; font-weight:800;' if 'FAKE' in v or 'DISTRIBUSI' in v else ('color:#00f2fe; font-weight:800;' if 'AKUMULASI' in v else ('color:#10b981; font-weight:800;' if 'MARK-UP' in v else 'color:#64748b;'))))
+                    elif c == 'BANDARMOLOGI': stls.append('color:#d4af37; font-weight:800;' if 'SEROK' in v else ('color:#f43f5e; font-weight:800;' if 'AWAS' in v or 'DISTRIBUSI' in v else ('color:#00f2fe; font-weight:800;' if 'AKUMULASI' in v else ('color:#10b981; font-weight:800;' if 'MARK-UP' in v else 'color:#64748b;'))))
                     else: stls.append('color:#cbd5e1;')
                 return stls
             if not df_trd.empty: st.dataframe(df_trd.style.apply(style_t, axis=1), use_container_width=True)
             render_cross_validation_ui(tuple(str(x) for x in df_trd.index), c_mult, True)
-        with tab_t2: st.info("SOP REAKTIF v16.4: Abaikan saham berlabel 'FAKE ACCUMULATION'. Fokus pada saham berlabel '🎯 SEROK BAWAH' untuk menangkap pantulan (rebound) di area support yang kering volume.")
+        with tab_t2: st.info("SOP REAKTIF v16.5: Mesin kini mengkalkulasi ketebalan antrean Beli vs Jual (Order Book Imbalance). Tabel akan memprioritaskan saham dengan Tembok Beli (Buy Wall) yang kuat untuk Serok Bawah Anti-Boncos.")
 
     else: 
         tab_i1, tab_i2 = st.tabs(["🛡️ LUXURY VALUE MATRIX", "🧬 BEHAVIORAL CLUSTERS"])
