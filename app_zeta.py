@@ -16,7 +16,7 @@ warnings.filterwarnings('ignore')
 # ==========================================
 # 0. REACTIVE STATE MANAGEMENT & CACHE
 # ==========================================
-CACHE_FILE = "jihan_ghina_saham_cache_v174.json"
+CACHE_FILE = "jihan_ghina_saham_cache_v175.json"
 
 def load_smart_cache():
     if os.path.exists(CACHE_FILE):
@@ -37,9 +37,9 @@ if "scan_clicked" not in st.session_state: st.session_state.scan_clicked = len(s
 if "current_tf" not in st.session_state: st.session_state.current_tf = "1 Hari (Daily)"
 
 # ==========================================
-# 1. KONFIGURASI HALAMAN & MOBILE UI (v17.4)
+# 1. KONFIGURASI HALAMAN & MOBILE UI (v17.5)
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Masterpiece v17.4", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Masterpiece v17.5", page_icon="⚡", layout="wide")
 
 st.markdown("""
 <style>
@@ -291,7 +291,7 @@ def plot_luxury_bar(x_data, y1, y2, name1, name2, color1, color2, title):
 def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_trading_mode):
     st.markdown("---")
     if active_tickers_tuple:
-        safe_key = f"cv_target_v174_{st.session_state.current_tf}_{'TRD' if is_trading_mode else 'INV'}"
+        safe_key = f"cv_target_v175_{st.session_state.current_tf}_{'TRD' if is_trading_mode else 'INV'}"
         valid_targets = [t for t in active_tickers_tuple if next((i for i in st.session_state.raw_stocks if i.get("TICKER")==t), None)]
         if not valid_targets: return
         
@@ -325,87 +325,92 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
 
                 max_lots = int(((modal_trading * (risiko_pct * r_mult * market_climate_mult / 100)) / (h_tgt - t_stop_val)) / 100) if (h_tgt - t_stop_val)>0 and r_mult > 0 else 0
 
-                st.markdown(f"""
-                <div class="stocksly-card" style="margin-bottom: 12px; border-color: rgba(0, 242, 254, 0.25);">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <div style="display:flex; align-items:center; gap:8px;">
-                                <h2 style="color:#f8fafc; font-size:1.2rem; margin:0;">{emiten_signal}</h2>
-                                <span style="background:rgba(0,242,254,0.1); color:#00f2fe; padding:3px 6px; border-radius:4px; font-size:0.6rem; font-weight:800; border:1px solid rgba(0,242,254,0.3);">{sector}</span>
-                            </div>
-                            <p style="color:#94a3b8; font-size:0.75rem; margin:2px 0 0 0;">{long_name}</p>
-                        </div>
-                        <div style="text-align:right;">
-                            <div style="font-size:0.55rem; color:#64748b; font-weight:800; letter-spacing:0.5px;">WPI SCORE</div>
-                            <div style="font-size:1.2rem; font-weight:800; color:{'#10b981' if wpi>=70 else ('#d4af37' if wpi>=40 else '#f43f5e')}; line-height:1;">{wpi:.0f}%</div>
-                            <div style="font-size:0.6rem; color:#94a3b8; margin-top:2px;">{s_bandar}</div>
-                        </div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+                html_header = (
+                    f'<div class="stocksly-card" style="margin-bottom: 12px; border-color: rgba(0, 242, 254, 0.25);">'
+                    f'<div style="display:flex; justify-content:space-between; align-items:center;">'
+                    f'<div><div style="display:flex; align-items:center; gap:8px;">'
+                    f'<h2 style="color:#f8fafc; font-size:1.2rem; margin:0;">{emiten_signal}</h2>'
+                    f'<span style="background:rgba(0,242,254,0.1); color:#00f2fe; padding:3px 6px; border-radius:4px; font-size:0.6rem; font-weight:800; border:1px solid rgba(0,242,254,0.3);">{sector}</span>'
+                    f'</div><p style="color:#94a3b8; font-size:0.75rem; margin:2px 0 0 0;">{long_name}</p></div>'
+                    f'<div style="text-align:right;"><div style="font-size:0.55rem; color:#64748b; font-weight:800; letter-spacing:0.5px;">WPI SCORE</div>'
+                    f'<div style="font-size:1.2rem; font-weight:800; color:{"#10b981" if wpi>=70 else ("#d4af37" if wpi>=40 else "#f43f5e")}; line-height:1;">{wpi:.0f}%</div>'
+                    f'<div style="font-size:0.6rem; color:#94a3b8; margin-top:2px;">{s_bandar}</div>'
+                    f'</div></div></div>'
+                )
+                st.markdown(html_header, unsafe_allow_html=True)
 
                 col_g1, col_g2 = st.columns(2)
                 with col_g1:
-                    st.markdown(f"""
-                    <div class="stocksly-card" style="margin-bottom: 10px;">
-                        <div class="card-title">📊 Strategi</div>
-                        <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.75rem;">
-                            <span style="color:#64748b;">ROE {roe:.0f}%</span>
-                            <span style="color:{'#10b981' if 'AKUM' in s_bandar or 'SEROK' in s_bandar else '#f43f5e'}; font-weight:800;">{s_bandar}</span>
-                        </div>
-                        <div style="background:rgba(255,255,255,0.05); height:6px; border-radius:3px;">
-                            <div style="background:linear-gradient(90deg, #f43f5e, #facc15, #10b981); width:{wpi}%; height:100%;"></div>
-                        </div>
-                    </div>
+                    html_strategy = (
+                        f'<div class="stocksly-card" style="margin-bottom: 10px;">'
+                        f'<div class="card-title">📊 Strategi</div>'
+                        f'<div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.75rem;">'
+                        f'<span style="color:#64748b;">ROE {roe:.0f}%</span>'
+                        f'<span style="color:{"#10b981" if "AKUM" in s_bandar or "SEROK" in s_bandar else "#f43f5e"}; font-weight:800;">{s_bandar}</span>'
+                        f'</div>'
+                        f'<div style="background:rgba(255,255,255,0.05); height:6px; border-radius:3px;">'
+                        f'<div style="background:linear-gradient(90deg, #f43f5e, #facc15, #10b981); width:{wpi}%; height:100%;"></div>'
+                        f'</div></div>'
+                    )
+                    st.markdown(html_strategy, unsafe_allow_html=True)
                     
-                    <div class="stocksly-card" style="margin-bottom: 10px;">
-                        <div class="card-title">📈 Harga</div>
-                        <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:6px; text-align:center;">
-                            <div style="background:rgba(255,255,255,0.02); padding:6px; border-radius:6px; border:1px solid rgba(255,255,255,0.04);">
-                                <div style="font-size:0.55rem; color:#64748b; font-weight:800;">LAST</div>
-                                <div style="font-size:0.9rem; color:#f8fafc; font-weight:800;">{int(h_tgt):,}</div>
-                            </div>
-                            <div style="background:rgba(255,255,255,0.02); padding:6px; border-radius:6px; border:1px solid rgba(255,255,255,0.04);">
-                                <div style="font-size:0.55rem; color:#64748b; font-weight:800;">ATR</div>
-                                <div style="font-size:0.9rem; color:{'#f43f5e' if volatility_pct>5 else '#10b981'}; font-weight:800;">{volatility_pct:.1f}%</div>
-                            </div>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    html_harga = (
+                        f'<div class="stocksly-card" style="margin-bottom: 10px;">'
+                        f'<div class="card-title">📈 Harga</div>'
+                        f'<div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:6px; text-align:center;">'
+                        f'<div style="background:rgba(255,255,255,0.02); padding:6px; border-radius:6px; border:1px solid rgba(255,255,255,0.04);">'
+                        f'<div style="font-size:0.55rem; color:#64748b; font-weight:800;">LAST</div>'
+                        f'<div style="font-size:0.9rem; color:#f8fafc; font-weight:800;">{int(h_tgt):,}</div>'
+                        f'</div>'
+                        f'<div style="background:rgba(255,255,255,0.02); padding:6px; border-radius:6px; border:1px solid rgba(255,255,255,0.04);">'
+                        f'<div style="font-size:0.55rem; color:#64748b; font-weight:800;">ATR</div>'
+                        f'<div style="font-size:0.9rem; color:{"#f43f5e" if volatility_pct>5 else "#10b981"}; font-weight:800;">{volatility_pct:.1f}%</div>'
+                        f'</div></div></div>'
+                    )
+                    st.markdown(html_harga, unsafe_allow_html=True)
 
                 with col_g2:
-                    st.markdown(f"""
-                    <div class="stocksly-card" style="margin-bottom: 10px;">
-                        <div class="card-title">🎯 Keputusan</div>
-                        <div style="text-align:center; background:rgba(0,242,254,0.05); border:1px solid rgba(0,242,254,0.2); border-radius:6px; padding:8px; margin-bottom:6px;">
-                            <div style="font-size:1.05rem; font-weight:800; color:{color};">{sys_rec}</div>
-                        </div>
-                        <div style="font-size:0.65rem; color:#94a3b8; text-align:center;">
-                            Vol: <b>{vol_lot:,}</b> | Avg: <b>{avg_lot:,}</b>
-                        </div>
-                    </div>
+                    html_keputusan = (
+                        f'<div class="stocksly-card" style="margin-bottom: 10px;">'
+                        f'<div class="card-title">🎯 Keputusan</div>'
+                        f'<div style="text-align:center; background:rgba(0,242,254,0.05); border:1px solid rgba(0,242,254,0.2); border-radius:6px; padding:8px; margin-bottom:6px;">'
+                        f'<div style="font-size:1.05rem; font-weight:800; color:{color};">{sys_rec}</div>'
+                        f'</div>'
+                        f'<div style="font-size:0.65rem; color:#94a3b8; text-align:center;">'
+                        f'Vol: <b>{vol_lot:,}</b> | Avg: <b>{avg_lot:,}</b>'
+                        f'</div></div>'
+                    )
+                    st.markdown(html_keputusan, unsafe_allow_html=True)
 
-                    <div class="stocksly-card" style="margin-bottom: 10px; border-left: 3px solid {'#10b981' if 'SEROK' in setup_grade or 'A+' in setup_grade else '#f43f5e'};">
-                        <div class="card-title">🛒 Entry & Stop</div>
-                        <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:6px; margin-bottom:6px;">
-                            <div style="background:rgba(255,255,255,0.02); padding:6px; border-radius:6px; text-align:center;">
-                                <div style="font-size:0.55rem; color:#64748b; font-weight:800;">BELI</div>
-                                <div style="font-size:0.85rem; color:#00f2fe; font-weight:800;">{a_beli}</div>
-                            </div>
-                            <div style="background:rgba(255,255,255,0.02); padding:6px; border-radius:6px; text-align:center;">
-                                <div style="font-size:0.55rem; color:#64748b; font-weight:800;">CUT</div>
-                                <div style="font-size:0.85rem; color:#f43f5e; font-weight:800;">{t_stop}</div>
-                            </div>
-                        </div>
-                        <div style="text-align:center; font-size:0.75rem; color:#cbd5e1; background:rgba(255,255,255,0.02); padding:4px; border-radius:4px;">
-                            Max Alokasi: <b style="color:#00f2fe;">{max_lots:,} Lot</b>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    entry_border = "#10b981" if "SEROK" in setup_grade or "A+" in setup_grade else "#f43f5e"
+                    html_entry = (
+                        f'<div class="stocksly-card" style="margin-bottom: 10px; border-left: 3px solid {entry_border};">'
+                        f'<div class="card-title">🛒 Entry & Stop</div>'
+                        f'<div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:6px; margin-bottom:6px;">'
+                        f'<div style="background:rgba(255,255,255,0.02); padding:6px; border-radius:6px; text-align:center;">'
+                        f'<div style="font-size:0.55rem; color:#64748b; font-weight:800;">BELI</div>'
+                        f'<div style="font-size:0.85rem; color:#00f2fe; font-weight:800;">{a_beli}</div>'
+                        f'</div>'
+                        f'<div style="background:rgba(255,255,255,0.02); padding:6px; border-radius:6px; text-align:center;">'
+                        f'<div style="font-size:0.55rem; color:#64748b; font-weight:800;">CUT</div>'
+                        f'<div style="font-size:0.85rem; color:#f43f5e; font-weight:800;">{t_stop}</div>'
+                        f'</div></div>'
+                        f'<div style="text-align:center; font-size:0.75rem; color:#cbd5e1; background:rgba(255,255,255,0.02); padding:4px; border-radius:4px;">'
+                        f'Max Alokasi: <b style="color:#00f2fe;">{max_lots:,} Lot</b>'
+                        f'</div></div>'
+                    )
+                    st.markdown(html_entry, unsafe_allow_html=True)
 
             else:
                 per, pbv, yld = r.get("PER", 0), r.get("PBV", 0), r.get("DIV_YIELD", 0)
-                st.markdown(f"<div style='display:flex; justify-content:space-around; background:rgba(15,23,42,0.8); border:1px solid rgba(255,255,255,0.05); border-radius:8px; padding:10px; margin-bottom:12px;'><div style='text-align:center;'><span style='color:#64748b; font-size:0.6rem; font-weight:700;'>PER</span><br><span style='color:#f8fafc; font-weight:800; font-size:1rem;'>{per:.1f}x</span></div><div style='text-align:center;'><span style='color:#64748b; font-size:0.6rem; font-weight:700;'>PBV</span><br><span style='color:#f8fafc; font-weight:800; font-size:1rem;'>{pbv:.1f}x</span></div><div style='text-align:center;'><span style='color:#64748b; font-size:0.6rem; font-weight:700;'>YIELD</span><br><span style='color:#10b981; font-weight:800; font-size:1rem;'>{yld:.1f}%</span></div></div>", unsafe_allow_html=True)
+                html_val = (
+                    f'<div style="display:flex; justify-content:space-around; background:rgba(15,23,42,0.8); border:1px solid rgba(255,255,255,0.05); border-radius:8px; padding:10px; margin-bottom:12px;">'
+                    f'<div style="text-align:center;"><span style="color:#64748b; font-size:0.6rem; font-weight:700;">PER</span><br><span style="color:#f8fafc; font-weight:800; font-size:1rem;">{per:.1f}x</span></div>'
+                    f'<div style="text-align:center;"><span style="color:#64748b; font-size:0.6rem; font-weight:700;">PBV</span><br><span style="color:#f8fafc; font-weight:800; font-size:1rem;">{pbv:.1f}x</span></div>'
+                    f'<div style="text-align:center;"><span style="color:#64748b; font-size:0.6rem; font-weight:700;">YIELD</span><br><span style="color:#10b981; font-weight:800; font-size:1rem;">{yld:.1f}%</span></div>'
+                    f'</div>'
+                )
+                st.markdown(html_val, unsafe_allow_html=True)
                 with st.spinner("Mengunduh Laporan Keuangan..."):
                     dates, inc_data = fetch_quarterly_charts(emiten_signal)
                     if dates: st.plotly_chart(plot_luxury_bar(dates, inc_data[0], inc_data[1], "Rev", "Net", "#0ea5e9", "#10b981", "Revenue vs Net Income"), use_container_width=True)
@@ -415,7 +420,7 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #f8fafc; font-weight: 800;'>Quantum Matrix</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #00f2fe; letter-spacing: 1px; margin-bottom: 12px;'>v17.4 PERFECTION</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #00f2fe; letter-spacing: 1px; margin-bottom: 12px;'>v17.5 BUG-FIX</p>", unsafe_allow_html=True)
     
     engine_mode = st.radio("MODE ENGINE:", ("⚔️ TRD (Reactive)", "🛡️ INV (Fund)"))
     
@@ -467,7 +472,14 @@ df_ihsg_hist, ihsg_now, ihsg_chg, ihsg_pct = fetch_ihsg_data()
 
 q = get_quote_of_the_day()
 upd_time = st.session_state.last_update if st.session_state.last_update else "-"
-st.markdown(f"<div style='margin-bottom: 12px; margin-top: 5px;'><span style='color:#00f2fe; font-size:0.65rem; font-weight:800; letter-spacing:1px;'>{q['theme'].upper()}</span><br><span style='color:#cbd5e1; font-size:0.8rem; font-style:italic;'>\"{q['quote']}\"</span><br><span style='font-size:0.65rem; color:#64748b;'>Sync: {upd_time}</span></div>", unsafe_allow_html=True)
+html_quote = (
+    f'<div style="margin-bottom: 12px; margin-top: 5px;">'
+    f'<span style="color:#00f2fe; font-size:0.65rem; font-weight:800; letter-spacing:1px;">{q["theme"].upper()}</span><br>'
+    f'<span style="color:#cbd5e1; font-size:0.8rem; font-style:italic;">\"{q["quote"]}\"</span><br>'
+    f'<span style="font-size:0.65rem; color:#64748b;">Sync: {upd_time}</span>'
+    f'</div>'
+)
+st.markdown(html_quote, unsafe_allow_html=True)
 
 if st.session_state.scan_clicked and st.session_state.raw_stocks:
     up_c = sum(1 for s in st.session_state.raw_stocks if s.get("UP_SMA50", False))
@@ -478,13 +490,14 @@ else:
 
 if ihsg_now:
     w_p, w_g = ("▲", '#10b981') if ihsg_chg >= 0 else ("▼", '#f43f5e')
-    # HTML GRID MURNI: 100% dipaksa bersebelahan di Mobile
-    st.markdown(f"""
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
-        <div class='ihsg-box' style='border-left:3px solid {w_g};'><span class='ihsg-title'>IHSG</span><span class='ihsg-score'>{ihsg_now:,.0f}</span><span style='color:{w_g}; font-weight:700; font-size:0.75rem;'>{w_p} {ihsg_chg:+,.1f} ({ihsg_pct:+.2f}%)</span></div>
-        <div class='ihsg-box' style='border-left:3px solid {c_col};'><span class='ihsg-title'>CLIMATE</span><span class='ihsg-score' style='color:{c_col};'>{c_stat}</span><span style='color:#64748b; font-weight:700; font-size:0.75rem;'>Breadth: {b_pct:.0f}%</span></div>
-    </div>
-    """, unsafe_allow_html=True)
+    # STRING CONCATENATION FIX: No Markdown Indentation Issues
+    html_ihsg_grid = (
+        f'<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">'
+        f'<div class="ihsg-box" style="border-left:3px solid {w_g};"><span class="ihsg-title">IHSG</span><span class="ihsg-score">{ihsg_now:,.0f}</span><span style="color:{w_g}; font-weight:700; font-size:0.75rem;">{w_p} {ihsg_chg:+,.1f} ({ihsg_pct:+.2f}%)</span></div>'
+        f'<div class="ihsg-box" style="border-left:3px solid {c_col};"><span class="ihsg-title">CLIMATE</span><span class="ihsg-score" style="color:{c_col};">{c_stat}</span><span style="color:#64748b; font-weight:700; font-size:0.75rem;">Breadth: {b_pct:.0f}%</span></div>'
+        f'</div>'
+    )
+    st.markdown(html_ihsg_grid, unsafe_allow_html=True)
 
 if not st.session_state.scan_clicked or not st.session_state.raw_stocks:
     st.info("👈 Tekan tombol '🔄 SCAN' di sidebar untuk memulai.")
@@ -560,7 +573,7 @@ else:
         with tab_c1:
             st.markdown("<h3 style='font-size: 0.9rem; color:#00f2fe; margin-bottom: 12px;'>👑 Top 4 Elite Picks</h3>", unsafe_allow_html=True)
             if not df_trd_full.empty:
-                # HTML GRID MURNI: 2x2 Grid (Kanan 2 Kiri 2)
+                # STRING CONCATENATION FIX: No Markdown Indentation Issues
                 html_cards = '<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px;">'
                 top_4 = df_trd_full.head(4)
                 for row in top_4.to_dict('records'):
@@ -568,32 +581,17 @@ else:
                     lot, ts, area_beli = row['MAX_LOT'].replace('Max ', ''), row['STOP'], f"{int(row['AREA_BELI']):,}".replace(",", ".")
                     ret_color, ret_sign = ("#10b981", "+") if ret >= 0 else ("#f43f5e", "")
                     
-                    html_cards += f"""
-                    <div class="vip-card">
-                        <div>
-                            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                                <h2 class="vip-title">{tkr}</h2>
-                                <span style="color:{ret_color}; font-weight:800; font-size:0.85rem;">{ret_sign}{ret:.1f}%</span>
-                            </div>
-                            <div class="vip-price">Rp {prc}</div>
-                            <div class="vip-badge">{bandar}</div>
-                        </div>
-                        <div class="vip-stat-row">
-                            <div class="vip-stat">
-                                <div class="vip-stat-label">Beli</div>
-                                <div class="vip-stat-val" style="color:#00f2fe;">{area_beli}</div>
-                            </div>
-                            <div class="vip-stat">
-                                <div class="vip-stat-label">Cut</div>
-                                <div class="vip-stat-val" style="color:#f43f5e;">{ts}</div>
-                            </div>
-                            <div class="vip-stat">
-                                <div class="vip-stat-label">Lot</div>
-                                <div class="vip-stat-val" style="color:#38bdf8;">{lot}</div>
-                            </div>
-                        </div>
-                    </div>
-                    """
+                    html_cards += (
+                        f'<div class="vip-card">'
+                        f'<div><div style="display:flex; justify-content:space-between; align-items:flex-start;">'
+                        f'<h2 class="vip-title">{tkr}</h2><span style="color:{ret_color}; font-weight:800; font-size:0.85rem;">{ret_sign}{ret:.1f}%</span>'
+                        f'</div><div class="vip-price">Rp {prc}</div><div class="vip-badge">{bandar}</div></div>'
+                        f'<div class="vip-stat-row">'
+                        f'<div class="vip-stat"><div class="vip-stat-label">Beli</div><div class="vip-stat-val" style="color:#00f2fe;">{area_beli}</div></div>'
+                        f'<div class="vip-stat"><div class="vip-stat-label">Cut</div><div class="vip-stat-val" style="color:#f43f5e;">{ts}</div></div>'
+                        f'<div class="vip-stat"><div class="vip-stat-label">Lot</div><div class="vip-stat-val" style="color:#38bdf8;">{lot}</div></div>'
+                        f'</div></div>'
+                    )
                 html_cards += '</div>'
                 st.markdown(html_cards, unsafe_allow_html=True)
             
@@ -619,17 +617,17 @@ else:
             if not df_display.empty: st.dataframe(df_display.style.apply(style_t, axis=1), use_container_width=True)
 
         with tab_c3:
-            st.markdown("""
-            <div class="stocksly-card">
-                <div class="card-title">📖 Panduan Teknis & Bedah Data v17.4</div>
-                <div style="font-size:0.75rem; color:#cbd5e1; line-height: 1.5; padding: 5px;">
-                    <p><b>1. WPI (Whale Pressure Index):</b> Mengukur posisi harga saat ini terhadap rentang High-Low harian. WPI tinggi (>70%) menandakan tekanan beli institusi (Bandar) merangsek ke area tertinggi.</p>
-                    <p><b>2. Garis Rainbow Strategy:</b> Merepresentasikan level WPI. <span style='color:#f43f5e; font-weight:bold;'>Merah (Distribusi)</span> ➔ <span style='color:#facc15; font-weight:bold;'>Kuning (Netral)</span> ➔ <span style='color:#10b981; font-weight:bold;'>Hijau (Akumulasi kuat)</span>.</p>
-                    <p><b>3. Serok Bawah (Rejection):</b> Dideteksi saat harga menyentuh support 20-hari dengan bentuk candle ekor panjang (Hammer) + volume kering. Sinyal kuat untuk menadah guyuran panik ritel.</p>
-                    <p><b>4. Manajemen Lot Otomatis:</b> Alokasi <i>'Max Lot'</i> pada kartu dihitung dinamis menggunakan batas risiko % modal yang Anda geser di Sidebar, divalidasi dengan jarak harga ke Trailing Stop.</p>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+            html_sop = (
+                f'<div class="stocksly-card">'
+                f'<div class="card-title">📖 Panduan Teknis & Bedah Data v17.5</div>'
+                f'<div style="font-size:0.75rem; color:#cbd5e1; line-height: 1.5; padding: 5px;">'
+                f'<p><b>1. WPI (Whale Pressure Index):</b> Mengukur posisi harga saat ini terhadap rentang High-Low harian. WPI tinggi (>70%) menandakan tekanan beli institusi (Bandar) merangsek ke area tertinggi.</p>'
+                f'<p><b>2. Garis Rainbow Strategy:</b> Merepresentasikan level WPI. <span style="color:#f43f5e; font-weight:bold;">Merah (Distribusi)</span> ➔ <span style="color:#facc15; font-weight:bold;">Kuning (Netral)</span> ➔ <span style="color:#10b981; font-weight:bold;">Hijau (Akumulasi kuat)</span>.</p>'
+                f'<p><b>3. Serok Bawah (Rejection):</b> Dideteksi saat harga menyentuh support 20-hari dengan bentuk candle ekor panjang (Hammer) + volume kering. Sinyal kuat untuk menadah guyuran panik ritel.</p>'
+                f'<p><b>4. Manajemen Lot Otomatis:</b> Alokasi <i>\'Max Lot\'</i> pada kartu dihitung dinamis menggunakan batas risiko % modal yang Anda geser di Sidebar, divalidasi dengan jarak harga ke Trailing Stop.</p>'
+                f'</div></div>'
+            )
+            st.markdown(html_sop, unsafe_allow_html=True)
 
     else: 
         tab_i1, tab_i2 = st.tabs(["🛡️ VALUE MATRIX", "🧬 CLUSTERS"])
