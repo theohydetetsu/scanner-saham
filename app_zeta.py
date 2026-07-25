@@ -384,7 +384,7 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                         f'<div style="text-align:center; background:rgba(0,242,254,0.05); border:1px solid rgba(0,242,254,0.2); border-radius:5px; padding:6px; margin-bottom:4px;">'
                         f'<div style="font-size:0.95rem; font-weight:800; color:{color};">{sys_rec}</div>'
                         f'</div>'
-                        f'<div style="font-size:0.6rem; color:#94a3b8; text-align:center;">'
+                        f'<div style="font-size:0.95rem; color:#94a3b8; text-align:center;">'
                         f'Vol: <b>{vol_lot:,}</b> | Avg: <b>{avg_lot:,}</b>'
                         f'</div></div>'
                     )
@@ -590,7 +590,7 @@ else:
                     html_cards += (
                         f'<div class="vip-card">'
                         f'<div><div style="display:flex; justify-content:space-between; align-items:flex-start;">'
-                        f'<h2 class="vip-title">{tkr}</h2><span style="color:{ret_color}; font-weight:800; font-size:0.75rem;">{ret_sign}{ret:.1f}%</span>'
+                        f'<h2 class="vip-title">{tkr}</h2><span style="color:{ret_color}; font-weight:700; font-size:0.75rem;">{ret_sign}{ret:.1f}%</span>'
                         f'</div><div class="vip-price">Rp {prc}</div><div class="vip-badge">{bandar}</div></div>'
                         f'<div class="vip-stat-row">'
                         f'<div class="vip-stat"><div class="vip-stat-label">Beli</div><div class="vip-stat-val" style="color:#00f2fe;">{area_beli}</div></div>'
