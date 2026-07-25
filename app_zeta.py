@@ -16,7 +16,7 @@ warnings.filterwarnings('ignore')
 # ==========================================
 # 0. REACTIVE STATE MANAGEMENT & CACHE
 # ==========================================
-CACHE_FILE = "jihan_ghina_saham_cache_v173.json"
+CACHE_FILE = "jihan_ghina_saham_cache_v174.json"
 
 def load_smart_cache():
     if os.path.exists(CACHE_FILE):
@@ -37,9 +37,9 @@ if "scan_clicked" not in st.session_state: st.session_state.scan_clicked = len(s
 if "current_tf" not in st.session_state: st.session_state.current_tf = "1 Hari (Daily)"
 
 # ==========================================
-# 1. KONFIGURASI HALAMAN & MOBILE UI (v17.3)
+# 1. KONFIGURASI HALAMAN & MOBILE UI (v17.4)
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Masterpiece v17.3", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA Masterpiece v17.4", page_icon="⚡", layout="wide")
 
 st.markdown("""
 <style>
@@ -48,52 +48,52 @@ st.markdown("""
     [data-testid="stAppViewContainer"] { background: radial-gradient(circle at 50% -10%, #060d1a, #010308) !important; color: #f8fafc !important; overflow-x: hidden; }
     [data-testid="stHeader"] { background: transparent !important; height: 0px !important; }
     
-    .block-container { padding-top: 0.8rem !important; padding-bottom: 1.5rem !important; padding-left: 0.6rem !important; padding-right: 0.6rem !important; max-width: 100% !important; animation: fadeIn 0.4s ease-in-out; }
+    .block-container { padding-top: 1.2rem !important; padding-bottom: 1.5rem !important; padding-left: 0.8rem !important; padding-right: 0.8rem !important; max-width: 100% !important; animation: fadeIn 0.4s ease-in-out; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
     
-    h1 { color: #f8fafc; font-weight: 800; letter-spacing: -0.5px; font-size: 1.2rem !important; margin-bottom: 0; text-shadow: 0 2px 10px rgba(0,242,254,0.15); }
+    h1 { color: #f8fafc; font-weight: 800; letter-spacing: -0.5px; font-size: 1.4rem !important; margin-bottom: 0; text-shadow: 0 2px 10px rgba(0,242,254,0.15); }
     
     ::-webkit-scrollbar { width: 3px; height: 3px; }
     ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.8); }
     ::-webkit-scrollbar-thumb { background: rgba(0, 242, 254, 0.3); border-radius: 10px; }
     
-    /* MODULAR CARD DESIGN - ULTRA RAMPUNG */
-    .stocksly-card { background: linear-gradient(145deg, rgba(15,23,42,0.85) 0%, rgba(10,15,30,0.95) 100%); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 10px; box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; justify-content: space-between; height: 100%; position: relative; overflow: hidden; }
-    .card-title { font-size: 0.6rem; font-weight: 800; color: #64748b; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; gap: 4px; }
+    /* MODULAR CARD DESIGN */
+    .stocksly-card { background: linear-gradient(145deg, rgba(15,23,42,0.85) 0%, rgba(10,15,30,0.95) 100%); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 12px; box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; justify-content: space-between; height: 100%; position: relative; overflow: hidden; }
+    .card-title { font-size: 0.75rem; font-weight: 800; color: #64748b; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 4px; }
     
-    /* VIP HIGHLIGHT CARDS - SANGAT RAMPUNG */
-    .vip-card { background: linear-gradient(145deg, rgba(30,41,59,0.7) 0%, rgba(15,23,42,0.9) 100%); backdrop-filter: blur(10px); border: 1px solid rgba(0, 242, 254, 0.3); border-radius: 8px; padding: 8px 10px; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; height: 100%;}
-    .vip-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg, #00f2fe, #38bdf8, #00f2fe); }
-    .vip-title { font-size: 1.1rem; font-weight: 800; color: #f8fafc; margin: 0; line-height: 1.1;}
-    .vip-price { font-size: 0.9rem; font-weight: 800; margin: 2px 0 4px 0; }
-    .vip-badge { background: rgba(0, 242, 254, 0.15); color: #00f2fe; padding: 2px 6px; border-radius: 4px; font-size: 0.55rem; font-weight: 800; display: inline-block; border: 1px solid rgba(0, 242, 254, 0.4);}
-    .vip-stat-row { display: flex; justify-content: space-between; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.05); }
+    /* VIP HIGHLIGHT CARDS */
+    .vip-card { background: linear-gradient(145deg, rgba(30,41,59,0.7) 0%, rgba(15,23,42,0.9) 100%); backdrop-filter: blur(10px); border: 1px solid rgba(0, 242, 254, 0.3); border-radius: 10px; padding: 10px 12px; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; height: 100%;}
+    .vip-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: linear-gradient(90deg, #00f2fe, #38bdf8, #00f2fe); }
+    .vip-title { font-size: 1.25rem; font-weight: 800; color: #f8fafc; margin: 0; line-height: 1.1;}
+    .vip-price { font-size: 1.05rem; font-weight: 800; margin: 4px 0 6px 0; }
+    .vip-badge { background: rgba(0, 242, 254, 0.15); color: #00f2fe; padding: 3px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 800; display: inline-block; border: 1px solid rgba(0, 242, 254, 0.4);}
+    .vip-stat-row { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05); }
     .vip-stat { text-align: center; }
-    .vip-stat-label { font-size: 0.45rem; color: #64748b; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; }
-    .vip-stat-val { font-size: 0.7rem; font-weight: 800; margin-top: 1px; }
+    .vip-stat-label { font-size: 0.55rem; color: #64748b; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; }
+    .vip-stat-val { font-size: 0.8rem; font-weight: 800; margin-top: 2px; }
     
     /* SIDEBAR 150PX STRICT */
-    section[data-testid="stSidebar"] { width: 150px !important; min-width: 150px !important; max-width: 150px !important; background: linear-gradient(180deg, rgba(2,6,23,0.98) 0%, rgba(15,23,42,0.98) 100%) !important; border-right: 1px solid rgba(255, 255, 255, 0.03); padding-top: 0.8rem !important;}
-    section[data-testid="stSidebar"] .stMarkdown h2 { font-size: 0.85rem !important; margin-bottom: -5px !important; }
-    section[data-testid="stSidebar"] p, section[data-testid="stSidebar"] span { font-size: 0.55rem !important; }
-    section[data-testid="stSidebar"] label { font-size: 0.5rem !important; font-weight: 700 !important; color: #cbd5e1 !important; }
-    section[data-testid="stSidebar"] input { font-size: 0.6rem !important; padding: 3px !important; }
-    section[data-testid="stSidebar"] div[data-baseweb="select"] { font-size: 0.6rem !important; }
+    section[data-testid="stSidebar"] { width: 150px !important; min-width: 150px !important; max-width: 150px !important; background: linear-gradient(180deg, rgba(2,6,23,0.98) 0%, rgba(15,23,42,0.98) 100%) !important; border-right: 1px solid rgba(255, 255, 255, 0.03); padding-top: 1rem !important;}
+    section[data-testid="stSidebar"] .stMarkdown h2 { font-size: 1rem !important; margin-bottom: -5px !important; }
+    section[data-testid="stSidebar"] p, section[data-testid="stSidebar"] span { font-size: 0.7rem !important; }
+    section[data-testid="stSidebar"] label { font-size: 0.65rem !important; font-weight: 700 !important; color: #cbd5e1 !important; }
+    section[data-testid="stSidebar"] input { font-size: 0.75rem !important; padding: 4px !important; }
+    section[data-testid="stSidebar"] div[data-baseweb="select"] { font-size: 0.75rem !important; }
     
-    .stTabs [data-baseweb="tab-list"] { gap: 4px; background-color: rgba(15,23,42,0.4); padding: 3px; border-radius: 6px; margin-bottom: 8px;}
-    .stTabs [data-baseweb="tab"] { padding: 5px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; }
+    .stTabs [data-baseweb="tab-list"] { gap: 6px; background-color: rgba(15,23,42,0.4); padding: 4px; border-radius: 8px; margin-bottom: 12px;}
+    .stTabs [data-baseweb="tab"] { padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; }
     
-    .ihsg-box { display: flex; flex-direction: column; justify-content: center; height: 100%; padding: 6px 10px !important; background: linear-gradient(135deg, rgba(15,23,42,0.7) 0%, rgba(30,41,59,0.4) 100%); border-radius: 6px; }
-    .ihsg-title { color: #64748b; font-size: 0.5rem; font-weight: 800; letter-spacing: 0.5px; }
-    .ihsg-score { color: #f8fafc; font-size: 1rem; font-weight: 800; line-height: 1.1; margin: 2px 0; }
+    .ihsg-box { display: flex; flex-direction: column; justify-content: center; height: 100%; padding: 8px 12px !important; background: linear-gradient(135deg, rgba(15,23,42,0.7) 0%, rgba(30,41,59,0.4) 100%); border-radius: 8px; }
+    .ihsg-title { color: #64748b; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.5px; }
+    .ihsg-score { color: #f8fafc; font-size: 1.2rem; font-weight: 800; line-height: 1.1; margin: 3px 0; }
     
-    div.stButton > button:first-child { background: linear-gradient(90deg, rgba(30,41,59,0.5) 0%, rgba(15,23,42,0.8) 100%) !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; color: #cbd5e1 !important; border-radius: 6px !important; padding: 4px 8px !important; font-size: 0.6rem !important;}
+    div.stButton > button:first-child { background: linear-gradient(90deg, rgba(30,41,59,0.5) 0%, rgba(15,23,42,0.8) 100%) !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; color: #cbd5e1 !important; border-radius: 6px !important; padding: 6px 10px !important; font-size: 0.75rem !important; font-weight: 800 !important;}
     
-    .stDataFrame { font-size: 9.5px !important; }
-    th.row_heading { color: #00f2fe !important; font-size: 0.7rem !important; }
+    .stDataFrame { font-size: 11px !important; }
+    th.row_heading { color: #00f2fe !important; font-size: 0.8rem !important; }
 
-    .block-container [data-testid="stRadio"] > div[role="radiogroup"] > label { padding: 3px 8px !important; border-radius: 4px !important; }
-    .block-container [data-testid="stRadio"] > div[role="radiogroup"] > label p { font-size: 0.6rem !important; }
+    .block-container [data-testid="stRadio"] > div[role="radiogroup"] > label { padding: 4px 10px !important; border-radius: 4px !important; }
+    .block-container [data-testid="stRadio"] > div[role="radiogroup"] > label p { font-size: 0.75rem !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -140,9 +140,9 @@ def format_financials(val):
     else: return f"{val/1_000_000:.1f} Jt"
 
 def render_badges(tickers, hex_color):
-    if not tickers: return "<span style='color:#475569; font-size:0.55rem; font-style:italic;'>Kosong</span>"
-    res = "<div style='display:flex; flex-wrap:wrap; gap:4px; margin-top:4px;'>"
-    for t in tickers: res += f"<span style='background:rgba(0,0,0,0.2); border:1px solid {hex_color}40; border-radius:3px; padding:2px 5px; color:{hex_color}; font-size:0.55rem; font-weight:700;'>{t}</span>"
+    if not tickers: return "<span style='color:#475569; font-size:0.65rem; font-style:italic;'>Kosong</span>"
+    res = "<div style='display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;'>"
+    for t in tickers: res += f"<span style='background:rgba(0,0,0,0.2); border:1px solid {hex_color}40; border-radius:4px; padding:3px 6px; color:{hex_color}; font-size:0.65rem; font-weight:700;'>{t}</span>"
     res += "</div>"
     return res
 
@@ -275,13 +275,13 @@ def plot_luxury_bar(x_data, y1, y2, name1, name2, color1, color2, title):
     fig.add_trace(go.Bar(x=x_data, y=y1, name=name1, marker_color=color1, opacity=0.85))
     fig.add_trace(go.Bar(x=x_data, y=y2, name=name2, marker_color=color2, opacity=0.85))
     fig.update_layout(
-        height=200, 
-        title=dict(text=title, font=dict(color='#cbd5e1', size=10)),
+        height=220, 
+        title=dict(text=title, font=dict(color='#cbd5e1', size=11)),
         barmode='group', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="right", x=1, font=dict(size=7)),
-        margin=dict(l=5, r=5, t=20, b=5), 
-        xaxis=dict(showgrid=False, tickfont=dict(size=7)),
-        yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.05)', tickfont=dict(size=7))
+        legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="right", x=1, font=dict(size=8)),
+        margin=dict(l=5, r=5, t=25, b=5), 
+        xaxis=dict(showgrid=False, tickfont=dict(size=8)),
+        yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.05)', tickfont=dict(size=8))
     )
     return fig
 
@@ -291,11 +291,11 @@ def plot_luxury_bar(x_data, y1, y2, name1, name2, color1, color2, title):
 def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_trading_mode):
     st.markdown("---")
     if active_tickers_tuple:
-        safe_key = f"cv_target_v173_{st.session_state.current_tf}_{'TRD' if is_trading_mode else 'INV'}"
+        safe_key = f"cv_target_v174_{st.session_state.current_tf}_{'TRD' if is_trading_mode else 'INV'}"
         valid_targets = [t for t in active_tickers_tuple if next((i for i in st.session_state.raw_stocks if i.get("TICKER")==t), None)]
         if not valid_targets: return
         
-        emiten_signal = st.radio("Target:", options=valid_targets[:10], horizontal=True, key=safe_key, label_visibility="collapsed")
+        emiten_signal = st.radio("Bedah Target:", options=valid_targets[:10], horizontal=True, key=safe_key, label_visibility="collapsed")
         
         r = next((item for item in st.session_state.raw_stocks if item.get("TICKER") == emiten_signal), None)
         if r:
@@ -326,19 +326,19 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                 max_lots = int(((modal_trading * (risiko_pct * r_mult * market_climate_mult / 100)) / (h_tgt - t_stop_val)) / 100) if (h_tgt - t_stop_val)>0 and r_mult > 0 else 0
 
                 st.markdown(f"""
-                <div class="stocksly-card" style="margin-bottom: 10px; border-color: rgba(0, 242, 254, 0.25);">
+                <div class="stocksly-card" style="margin-bottom: 12px; border-color: rgba(0, 242, 254, 0.25);">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <div>
-                            <div style="display:flex; align-items:center; gap:6px;">
-                                <h2 style="color:#f8fafc; font-size:1.1rem; margin:0;">{emiten_signal}</h2>
-                                <span style="background:rgba(0,242,254,0.1); color:#00f2fe; padding:2px 5px; border-radius:3px; font-size:0.5rem; font-weight:800; border:1px solid rgba(0,242,254,0.3);">{sector}</span>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <h2 style="color:#f8fafc; font-size:1.2rem; margin:0;">{emiten_signal}</h2>
+                                <span style="background:rgba(0,242,254,0.1); color:#00f2fe; padding:3px 6px; border-radius:4px; font-size:0.6rem; font-weight:800; border:1px solid rgba(0,242,254,0.3);">{sector}</span>
                             </div>
-                            <p style="color:#94a3b8; font-size:0.6rem; margin:1px 0 0 0;">{long_name}</p>
+                            <p style="color:#94a3b8; font-size:0.75rem; margin:2px 0 0 0;">{long_name}</p>
                         </div>
                         <div style="text-align:right;">
-                            <div style="font-size:0.45rem; color:#64748b; font-weight:800; letter-spacing:0.5px;">WPI SCORE</div>
-                            <div style="font-size:1.1rem; font-weight:800; color:{'#10b981' if wpi>=70 else ('#d4af37' if wpi>=40 else '#f43f5e')}; line-height:1;">{wpi:.0f}%</div>
-                            <div style="font-size:0.5rem; color:#94a3b8; margin-top:1px;">{s_bandar}</div>
+                            <div style="font-size:0.55rem; color:#64748b; font-weight:800; letter-spacing:0.5px;">WPI SCORE</div>
+                            <div style="font-size:1.2rem; font-weight:800; color:{'#10b981' if wpi>=70 else ('#d4af37' if wpi>=40 else '#f43f5e')}; line-height:1;">{wpi:.0f}%</div>
+                            <div style="font-size:0.6rem; color:#94a3b8; margin-top:2px;">{s_bandar}</div>
                         </div>
                     </div>
                 </div>
@@ -347,27 +347,27 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                 col_g1, col_g2 = st.columns(2)
                 with col_g1:
                     st.markdown(f"""
-                    <div class="stocksly-card" style="margin-bottom: 8px;">
+                    <div class="stocksly-card" style="margin-bottom: 10px;">
                         <div class="card-title">📊 Strategi</div>
-                        <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.6rem;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.75rem;">
                             <span style="color:#64748b;">ROE {roe:.0f}%</span>
                             <span style="color:{'#10b981' if 'AKUM' in s_bandar or 'SEROK' in s_bandar else '#f43f5e'}; font-weight:800;">{s_bandar}</span>
                         </div>
-                        <div style="background:rgba(255,255,255,0.05); height:5px; border-radius:3px;">
-                            <div style="background:linear-gradient(90deg, #00f2fe, #38bdf8); width:{wpi}%; height:100%;"></div>
+                        <div style="background:rgba(255,255,255,0.05); height:6px; border-radius:3px;">
+                            <div style="background:linear-gradient(90deg, #f43f5e, #facc15, #10b981); width:{wpi}%; height:100%;"></div>
                         </div>
                     </div>
                     
-                    <div class="stocksly-card" style="margin-bottom: 8px;">
+                    <div class="stocksly-card" style="margin-bottom: 10px;">
                         <div class="card-title">📈 Harga</div>
-                        <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:5px; text-align:center;">
-                            <div style="background:rgba(255,255,255,0.02); padding:5px; border-radius:5px; border:1px solid rgba(255,255,255,0.04);">
-                                <div style="font-size:0.45rem; color:#64748b; font-weight:800;">LAST</div>
-                                <div style="font-size:0.8rem; color:#f8fafc; font-weight:800;">{int(h_tgt):,}</div>
+                        <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:6px; text-align:center;">
+                            <div style="background:rgba(255,255,255,0.02); padding:6px; border-radius:6px; border:1px solid rgba(255,255,255,0.04);">
+                                <div style="font-size:0.55rem; color:#64748b; font-weight:800;">LAST</div>
+                                <div style="font-size:0.9rem; color:#f8fafc; font-weight:800;">{int(h_tgt):,}</div>
                             </div>
-                            <div style="background:rgba(255,255,255,0.02); padding:5px; border-radius:5px; border:1px solid rgba(255,255,255,0.04);">
-                                <div style="font-size:0.45rem; color:#64748b; font-weight:800;">ATR</div>
-                                <div style="font-size:0.8rem; color:{'#f43f5e' if volatility_pct>5 else '#10b981'}; font-weight:800;">{volatility_pct:.1f}%</div>
+                            <div style="background:rgba(255,255,255,0.02); padding:6px; border-radius:6px; border:1px solid rgba(255,255,255,0.04);">
+                                <div style="font-size:0.55rem; color:#64748b; font-weight:800;">ATR</div>
+                                <div style="font-size:0.9rem; color:{'#f43f5e' if volatility_pct>5 else '#10b981'}; font-weight:800;">{volatility_pct:.1f}%</div>
                             </div>
                         </div>
                     </div>
@@ -375,29 +375,29 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
 
                 with col_g2:
                     st.markdown(f"""
-                    <div class="stocksly-card" style="margin-bottom: 8px;">
+                    <div class="stocksly-card" style="margin-bottom: 10px;">
                         <div class="card-title">🎯 Keputusan</div>
-                        <div style="text-align:center; background:rgba(0,242,254,0.05); border:1px solid rgba(0,242,254,0.2); border-radius:5px; padding:6px; margin-bottom:4px;">
-                            <div style="font-size:0.9rem; font-weight:800; color:{color};">{sys_rec}</div>
+                        <div style="text-align:center; background:rgba(0,242,254,0.05); border:1px solid rgba(0,242,254,0.2); border-radius:6px; padding:8px; margin-bottom:6px;">
+                            <div style="font-size:1.05rem; font-weight:800; color:{color};">{sys_rec}</div>
                         </div>
-                        <div style="font-size:0.55rem; color:#94a3b8; text-align:center;">
+                        <div style="font-size:0.65rem; color:#94a3b8; text-align:center;">
                             Vol: <b>{vol_lot:,}</b> | Avg: <b>{avg_lot:,}</b>
                         </div>
                     </div>
 
-                    <div class="stocksly-card" style="margin-bottom: 8px; border-left: 3px solid {'#10b981' if 'SEROK' in setup_grade or 'A+' in setup_grade else '#f43f5e'};">
+                    <div class="stocksly-card" style="margin-bottom: 10px; border-left: 3px solid {'#10b981' if 'SEROK' in setup_grade or 'A+' in setup_grade else '#f43f5e'};">
                         <div class="card-title">🛒 Entry & Stop</div>
-                        <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:5px; margin-bottom:4px;">
-                            <div style="background:rgba(255,255,255,0.02); padding:5px; border-radius:5px; text-align:center;">
-                                <div style="font-size:0.45rem; color:#64748b; font-weight:800;">BELI</div>
-                                <div style="font-size:0.75rem; color:#00f2fe; font-weight:800;">{a_beli}</div>
+                        <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:6px; margin-bottom:6px;">
+                            <div style="background:rgba(255,255,255,0.02); padding:6px; border-radius:6px; text-align:center;">
+                                <div style="font-size:0.55rem; color:#64748b; font-weight:800;">BELI</div>
+                                <div style="font-size:0.85rem; color:#00f2fe; font-weight:800;">{a_beli}</div>
                             </div>
-                            <div style="background:rgba(255,255,255,0.02); padding:5px; border-radius:5px; text-align:center;">
-                                <div style="font-size:0.45rem; color:#64748b; font-weight:800;">CUT</div>
-                                <div style="font-size:0.75rem; color:#f43f5e; font-weight:800;">{t_stop}</div>
+                            <div style="background:rgba(255,255,255,0.02); padding:6px; border-radius:6px; text-align:center;">
+                                <div style="font-size:0.55rem; color:#64748b; font-weight:800;">CUT</div>
+                                <div style="font-size:0.85rem; color:#f43f5e; font-weight:800;">{t_stop}</div>
                             </div>
                         </div>
-                        <div style="text-align:center; font-size:0.6rem; color:#cbd5e1; background:rgba(255,255,255,0.02); padding:3px; border-radius:4px;">
+                        <div style="text-align:center; font-size:0.75rem; color:#cbd5e1; background:rgba(255,255,255,0.02); padding:4px; border-radius:4px;">
                             Max Alokasi: <b style="color:#00f2fe;">{max_lots:,} Lot</b>
                         </div>
                     </div>
@@ -405,7 +405,7 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
 
             else:
                 per, pbv, yld = r.get("PER", 0), r.get("PBV", 0), r.get("DIV_YIELD", 0)
-                st.markdown(f"<div style='display:flex; justify-content:space-around; background:rgba(15,23,42,0.8); border:1px solid rgba(255,255,255,0.05); border-radius:6px; padding:8px; margin-bottom:8px;'><div style='text-align:center;'><span style='color:#64748b; font-size:0.5rem; font-weight:700;'>PER</span><br><span style='color:#f8fafc; font-weight:800; font-size:0.8rem;'>{per:.1f}x</span></div><div style='text-align:center;'><span style='color:#64748b; font-size:0.5rem; font-weight:700;'>PBV</span><br><span style='color:#f8fafc; font-weight:800; font-size:0.8rem;'>{pbv:.1f}x</span></div><div style='text-align:center;'><span style='color:#64748b; font-size:0.5rem; font-weight:700;'>YIELD</span><br><span style='color:#10b981; font-weight:800; font-size:0.8rem;'>{yld:.1f}%</span></div></div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='display:flex; justify-content:space-around; background:rgba(15,23,42,0.8); border:1px solid rgba(255,255,255,0.05); border-radius:8px; padding:10px; margin-bottom:12px;'><div style='text-align:center;'><span style='color:#64748b; font-size:0.6rem; font-weight:700;'>PER</span><br><span style='color:#f8fafc; font-weight:800; font-size:1rem;'>{per:.1f}x</span></div><div style='text-align:center;'><span style='color:#64748b; font-size:0.6rem; font-weight:700;'>PBV</span><br><span style='color:#f8fafc; font-weight:800; font-size:1rem;'>{pbv:.1f}x</span></div><div style='text-align:center;'><span style='color:#64748b; font-size:0.6rem; font-weight:700;'>YIELD</span><br><span style='color:#10b981; font-weight:800; font-size:1rem;'>{yld:.1f}%</span></div></div>", unsafe_allow_html=True)
                 with st.spinner("Mengunduh Laporan Keuangan..."):
                     dates, inc_data = fetch_quarterly_charts(emiten_signal)
                     if dates: st.plotly_chart(plot_luxury_bar(dates, inc_data[0], inc_data[1], "Rev", "Net", "#0ea5e9", "#10b981", "Revenue vs Net Income"), use_container_width=True)
@@ -415,7 +415,7 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #f8fafc; font-weight: 800;'>Quantum Matrix</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #00f2fe; letter-spacing: 1px; margin-bottom: 12px;'>v17.3 MASTER</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #00f2fe; letter-spacing: 1px; margin-bottom: 12px;'>v17.4 PERFECTION</p>", unsafe_allow_html=True)
     
     engine_mode = st.radio("MODE ENGINE:", ("⚔️ TRD (Reactive)", "🛡️ INV (Fund)"))
     
@@ -465,26 +465,26 @@ st.markdown("<h1>Stocks.ly Masterpiece</h1>", unsafe_allow_html=True)
 
 df_ihsg_hist, ihsg_now, ihsg_chg, ihsg_pct = fetch_ihsg_data()
 
-# IHSG & Climate Bererdampingan Menyesuaikan Layar HP
-c_h1, c_h2, c_h3 = st.columns([1, 1, 1])
-with c_h1:
-    q = get_quote_of_the_day()
-    st.markdown(f"<div style='margin-top:2px;'><span style='color:#00f2fe; font-size:0.5rem; font-weight:800; letter-spacing:0.5px;'>{q['theme'].upper()}</span><br><span style='color:#cbd5e1; font-size:0.6rem; font-style:italic;'>\"{q['quote']}\"</span></div>", unsafe_allow_html=True)
+q = get_quote_of_the_day()
+upd_time = st.session_state.last_update if st.session_state.last_update else "-"
+st.markdown(f"<div style='margin-bottom: 12px; margin-top: 5px;'><span style='color:#00f2fe; font-size:0.65rem; font-weight:800; letter-spacing:1px;'>{q['theme'].upper()}</span><br><span style='color:#cbd5e1; font-size:0.8rem; font-style:italic;'>\"{q['quote']}\"</span><br><span style='font-size:0.65rem; color:#64748b;'>Sync: {upd_time}</span></div>", unsafe_allow_html=True)
 
-with c_h2:
-    if ihsg_now:
-        w_p, w_g = ("▲", '#10b981') if ihsg_chg >= 0 else ("▼", '#f43f5e')
-        st.markdown(f"<div class='ihsg-box' style='border-left:2px solid {w_g};'><span class='ihsg-title'>IHSG</span><span class='ihsg-score'>{ihsg_now:,.0f}</span><span style='color:{w_g}; font-weight:700; font-size:0.55rem;'>{w_p} {ihsg_chg:+,.1f} ({ihsg_pct:+.2f}%)</span></div>", unsafe_allow_html=True)
+if st.session_state.scan_clicked and st.session_state.raw_stocks:
+    up_c = sum(1 for s in st.session_state.raw_stocks if s.get("UP_SMA50", False))
+    b_pct = (up_c / len(st.session_state.raw_stocks)) * 100
+    c_stat, c_col, c_mult = ("BULLISH", "#10b981", 1.0) if b_pct >= 50 else ("BEARISH", "#f43f5e", 0.5)
+else:
+    c_stat, c_col, c_mult, b_pct = "-", "#64748b", 1.0, 0
 
-with c_h3:
-    if st.session_state.scan_clicked and st.session_state.raw_stocks:
-        up_c = sum(1 for s in st.session_state.raw_stocks if s.get("UP_SMA50", False))
-        b_pct = (up_c / len(st.session_state.raw_stocks)) * 100
-        c_stat, c_col, c_mult = ("BULLISH", "#10b981", 1.0) if b_pct >= 50 else ("BEARISH", "#f43f5e", 0.5)
-        st.markdown(f"<div class='ihsg-box' style='border-left:2px solid {c_col};'><span class='ihsg-title'>CLIMATE</span><span class='ihsg-score' style='color:{c_col};'>{c_stat}</span><span style='color:#64748b; font-weight:700; font-size:0.55rem;'>Breadth: {b_pct:.0f}%</span></div>", unsafe_allow_html=True)
-    else: c_mult = 1.0
-
-st.markdown("---")
+if ihsg_now:
+    w_p, w_g = ("▲", '#10b981') if ihsg_chg >= 0 else ("▼", '#f43f5e')
+    # HTML GRID MURNI: 100% dipaksa bersebelahan di Mobile
+    st.markdown(f"""
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+        <div class='ihsg-box' style='border-left:3px solid {w_g};'><span class='ihsg-title'>IHSG</span><span class='ihsg-score'>{ihsg_now:,.0f}</span><span style='color:{w_g}; font-weight:700; font-size:0.75rem;'>{w_p} {ihsg_chg:+,.1f} ({ihsg_pct:+.2f}%)</span></div>
+        <div class='ihsg-box' style='border-left:3px solid {c_col};'><span class='ihsg-title'>CLIMATE</span><span class='ihsg-score' style='color:{c_col};'>{c_stat}</span><span style='color:#64748b; font-weight:700; font-size:0.75rem;'>Breadth: {b_pct:.0f}%</span></div>
+    </div>
+    """, unsafe_allow_html=True)
 
 if not st.session_state.scan_clicked or not st.session_state.raw_stocks:
     st.info("👈 Tekan tombol '🔄 SCAN' di sidebar untuk memulai.")
@@ -555,51 +555,52 @@ else:
     df_inv = pd.DataFrame(h_inv).sort_values("R_YLD", ascending=False).drop(columns=["R_YLD"]).set_index("TICKER").head(15) if h_inv else pd.DataFrame()
 
     if "TRD" in engine_mode:
-        # TAB TERPISAH: COMMAND CENTER, TOP 15 MATRIX, DAN SOP
-        tab_c1, tab_c2, tab_c3 = st.tabs(["🚀 ELITE PICKS", "📊 TOP 15 MATRIX", "📖 SOP & BEDAH DATA"])
+        tab_c1, tab_c2, tab_c3 = st.tabs(["🚀 ELITE PICKS", "📊 TOP 15 MATRIX", "📖 SOP & DATA"])
         
         with tab_c1:
-            st.markdown("<h3 style='font-size: 0.8rem; color:#00f2fe; margin-bottom: 6px;'>👑 Top 3 Elite Picks (Sangat Rampung)</h3>", unsafe_allow_html=True)
+            st.markdown("<h3 style='font-size: 0.9rem; color:#00f2fe; margin-bottom: 12px;'>👑 Top 4 Elite Picks</h3>", unsafe_allow_html=True)
             if not df_trd_full.empty:
-                top_3 = df_trd_full.head(3)
-                cols = st.columns(3)
-                for idx, row in enumerate(top_3.to_dict('records')):
-                    with cols[idx]:
-                        tkr, prc, ret, bandar, lot, wpi, ts, area_beli = row['TICKER'], row['HARGA'], row['RAW_RET'], row['BANDAR'], row['MAX_LOT'], row['WPI'], row['STOP'], f"{int(row['AREA_BELI']):,}".replace(",", ".")
-                        ret_color = "#10b981" if ret >= 0 else "#f43f5e"
-                        ret_sign = "+" if ret >= 0 else ""
-                        
-                        st.markdown(f"""
-                        <div class="vip-card">
-                            <div>
-                                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                                    <h2 class="vip-title">{tkr}</h2>
-                                    <span style="color:{ret_color}; font-weight:800; font-size:0.7rem;">{ret_sign}{ret:.1f}%</span>
-                                </div>
-                                <div class="vip-price">Rp {prc}</div>
-                                <div class="vip-badge">{bandar.replace('🐋 ', '').replace('🎯 ', '').replace('🚀 ', '')}</div>
+                # HTML GRID MURNI: 2x2 Grid (Kanan 2 Kiri 2)
+                html_cards = '<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px;">'
+                top_4 = df_trd_full.head(4)
+                for row in top_4.to_dict('records'):
+                    tkr, prc, ret, bandar = row['TICKER'], row['HARGA'], row['RAW_RET'], row['BANDAR'].replace('🐋 ', '').replace('🎯 ', '').replace('🚀 ', '')
+                    lot, ts, area_beli = row['MAX_LOT'].replace('Max ', ''), row['STOP'], f"{int(row['AREA_BELI']):,}".replace(",", ".")
+                    ret_color, ret_sign = ("#10b981", "+") if ret >= 0 else ("#f43f5e", "")
+                    
+                    html_cards += f"""
+                    <div class="vip-card">
+                        <div>
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                                <h2 class="vip-title">{tkr}</h2>
+                                <span style="color:{ret_color}; font-weight:800; font-size:0.85rem;">{ret_sign}{ret:.1f}%</span>
                             </div>
-                            <div class="vip-stat-row">
-                                <div class="vip-stat">
-                                    <div class="vip-stat-label">Beli</div>
-                                    <div class="vip-stat-val" style="color:#00f2fe;">{area_beli}</div>
-                                </div>
-                                <div class="vip-stat">
-                                    <div class="vip-stat-label">Cut</div>
-                                    <div class="vip-stat-val" style="color:#f43f5e;">{ts}</div>
-                                </div>
-                                <div class="vip-stat">
-                                    <div class="vip-stat-label">Lot</div>
-                                    <div class="vip-stat-val" style="color:#38bdf8;">{lot.replace('Max ', '')}</div>
-                                </div>
+                            <div class="vip-price">Rp {prc}</div>
+                            <div class="vip-badge">{bandar}</div>
+                        </div>
+                        <div class="vip-stat-row">
+                            <div class="vip-stat">
+                                <div class="vip-stat-label">Beli</div>
+                                <div class="vip-stat-val" style="color:#00f2fe;">{area_beli}</div>
+                            </div>
+                            <div class="vip-stat">
+                                <div class="vip-stat-label">Cut</div>
+                                <div class="vip-stat-val" style="color:#f43f5e;">{ts}</div>
+                            </div>
+                            <div class="vip-stat">
+                                <div class="vip-stat-label">Lot</div>
+                                <div class="vip-stat-val" style="color:#38bdf8;">{lot}</div>
                             </div>
                         </div>
-                        """, unsafe_allow_html=True)
+                    </div>
+                    """
+                html_cards += '</div>'
+                st.markdown(html_cards, unsafe_allow_html=True)
             
             render_cross_validation_ui(tuple(str(x) for x in df_trd_full['TICKER'].head(15)), c_mult, True)
 
         with tab_c2:
-            st.markdown("<h3 style='font-size: 0.8rem; color:#f8fafc; margin-bottom: 6px;'>🛰️ Top 15 Sinyal Aktif & Serok Bawah</h3>", unsafe_allow_html=True)
+            st.markdown("<h3 style='font-size: 0.9rem; color:#f8fafc; margin-bottom: 10px;'>🛰️ Top 15 Sinyal Aktif & Serok Bawah</h3>", unsafe_allow_html=True)
             df_display = df_trd_full.drop(columns=["PRIORITY", "RAW_WPI", "MAX_LOT", "RAW_RET", "AREA_BELI"]).set_index("TICKER").head(15)
             
             def style_t(row):
@@ -620,12 +621,12 @@ else:
         with tab_c3:
             st.markdown("""
             <div class="stocksly-card">
-                <div class="card-title">📖 Panduan Teknis & Bedah Data v17.3</div>
-                <div style="font-size:0.7rem; color:#cbd5e1; line-height: 1.4;">
-                    <p><b>1. WPI (Whale Pressure Index):</b> Mengukur posisi harga saat ini terhadap rentang High-Low harian (dalam persentase). WPI tinggi (>70%) menandakan tekanan beli institusi mendekati titik tertinggi harian.</p>
-                    <p><b>2. Serok Bawah (Rejection):</b> Dideteksi ketika harga mendekati support terendah 20 hari namun membentuk ekor bawah panjang (Hammer candle) disertai volume kering. Menunjukkan institusi sedang menadah guyuran ritel.</p>
-                    <p><b>3. Smart Money & Bandar Flow:</b> Menganalisis anomali volume spike dan pergerakan harga di atas EMA 20 untuk menyaring akumulasi murni dari jebakan distribusi palsu.</p>
-                    <p><b>4. Manajemen Risiko:</b> Alokasi lot dihitung secara otomatis berdasarkan batasan risiko modal Anda (diset di sidebar) terhadap jarak Trailing Stop / Cut Loss.</p>
+                <div class="card-title">📖 Panduan Teknis & Bedah Data v17.4</div>
+                <div style="font-size:0.75rem; color:#cbd5e1; line-height: 1.5; padding: 5px;">
+                    <p><b>1. WPI (Whale Pressure Index):</b> Mengukur posisi harga saat ini terhadap rentang High-Low harian. WPI tinggi (>70%) menandakan tekanan beli institusi (Bandar) merangsek ke area tertinggi.</p>
+                    <p><b>2. Garis Rainbow Strategy:</b> Merepresentasikan level WPI. <span style='color:#f43f5e; font-weight:bold;'>Merah (Distribusi)</span> ➔ <span style='color:#facc15; font-weight:bold;'>Kuning (Netral)</span> ➔ <span style='color:#10b981; font-weight:bold;'>Hijau (Akumulasi kuat)</span>.</p>
+                    <p><b>3. Serok Bawah (Rejection):</b> Dideteksi saat harga menyentuh support 20-hari dengan bentuk candle ekor panjang (Hammer) + volume kering. Sinyal kuat untuk menadah guyuran panik ritel.</p>
+                    <p><b>4. Manajemen Lot Otomatis:</b> Alokasi <i>'Max Lot'</i> pada kartu dihitung dinamis menggunakan batas risiko % modal yang Anda geser di Sidebar, divalidasi dengan jarak harga ke Trailing Stop.</p>
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -633,7 +634,7 @@ else:
     else: 
         tab_i1, tab_i2 = st.tabs(["🛡️ VALUE MATRIX", "🧬 CLUSTERS"])
         with tab_i1:
-            st.markdown("<h3 style='font-size: 0.8rem; color:#f8fafc;'>🛡️ Top 15 Value</h3>", unsafe_allow_html=True)
+            st.markdown("<h3 style='font-size: 0.9rem; color:#f8fafc;'>🛡️ Top 15 Value</h3>", unsafe_allow_html=True)
             def style_i(row):
                 stls = []
                 for c, v in row.items():
@@ -652,8 +653,8 @@ else:
             render_cross_validation_ui(tuple(str(x) for x in df_inv.index), c_mult, False)
         
         with tab_i2:
-            st.markdown("<h3 style='font-size: 0.8rem; color:#f8fafc;'>🧬 Clusters</h3>", unsafe_allow_html=True)
+            st.markdown("<h3 style='font-size: 0.9rem; color:#f8fafc;'>🧬 Clusters</h3>", unsafe_allow_html=True)
             col1, col2, col3 = st.columns(3)
-            with col1: st.markdown(f"<div class='stocksly-card' style='border-top: 2px solid #0ea5e9;'><div style='color:#0ea5e9; font-size:0.55rem; font-weight:800;'>💎 DEEP VALUE</div>{render_badges(c_val, '#0ea5e9')}</div>", unsafe_allow_html=True)
-            with col2: st.markdown(f"<div class='stocksly-card' style='border-top: 2px solid #8b5cf6;'><div style='color:#8b5cf6; font-size:0.55rem; font-weight:800;'>🚀 HIGH GROWTH</div>{render_badges(c_gro, '#8b5cf6')}</div>", unsafe_allow_html=True)
-            with col3: st.markdown(f"<div class='stocksly-card' style='border-top: 2px solid #10b981;'><div style='color:#10b981; font-size:0.55rem; font-weight:800;'>💰 DIVIDEND KINGS</div>{render_badges(c_div, '#10b981')}</div>", unsafe_allow_html=True)
+            with col1: st.markdown(f"<div class='stocksly-card' style='border-top: 2px solid #0ea5e9;'><div style='color:#0ea5e9; font-size:0.65rem; font-weight:800;'>💎 DEEP VALUE</div>{render_badges(c_val, '#0ea5e9')}</div>", unsafe_allow_html=True)
+            with col2: st.markdown(f"<div class='stocksly-card' style='border-top: 2px solid #8b5cf6;'><div style='color:#8b5cf6; font-size:0.65rem; font-weight:800;'>🚀 HIGH GROWTH</div>{render_badges(c_gro, '#8b5cf6')}</div>", unsafe_allow_html=True)
+            with col3: st.markdown(f"<div class='stocksly-card' style='border-top: 2px solid #10b981;'><div style='color:#10b981; font-size:0.65rem; font-weight:800;'>💰 DIVIDEND KINGS</div>{render_badges(c_div, '#10b981')}</div>", unsafe_allow_html=True)
