@@ -408,7 +408,7 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                         f'<span style="color:#64748b;">YIELD: <b style="color:#10b981;">{yld:.1f}%</b></span>'
                         f'</div></div>'
                         f'<div style="width:35%; display:flex; flex-direction:column; justify-content:center; align-items:flex-end; padding-left:10px; margin-top:-1px;">'
-                        f'<div style="font-size:0.5rem; color:#64748b; font-weight:800; letter-spacing:0.5px;">SMART MONEY</div>'
+                        f'<div style="font-size:0.75rem; color:#64748b; font-weight:800; letter-spacing:0.5px;">SMART MONEY</div>'
                         f'<div style="font-size:2.6rem; font-weight:900; color:{sm_col}; line-height:1; margin: 4px 0;">{sm_score}</div>'
                         f'<div style="font-size:0.75rem; font-weight:900; color:{sm_col};">{sm_text}</div>'
                         f'</div></div>'
@@ -418,7 +418,7 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                         f'<div style="background:rgba(255,255,255,0.05); height:6px; border-radius:3px; width:100%;">'
                         f'<div style="background:linear-gradient(90deg, #f43f5e, #facc15, #10b981); width:{wpi}%; height:100%; border-radius:3px;"></div>'
                         f'</div>'
-                        f'<div style="display:flex; justify-content:space-between; font-size:0.4rem; color:#64748b; margin-top:4px; font-weight:800; letter-spacing:0.5px;">'
+                        f'<div style="display:flex; justify-content:space-between; font-size:0.6rem; color:#64748b; margin-top:4px; font-weight:800; letter-spacing:0.5px;">'
                         f'<span>BEARISH</span><span>NEUTRAL</span><span>BULLISH</span>'
                         f'</div></div>'
                         
