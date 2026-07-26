@@ -407,7 +407,7 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                         f'<span style="color:#64748b;">PBV: <b style="color:#f8fafc;">{pbv:.1f}x</b></span>'
                         f'<span style="color:#64748b;">YIELD: <b style="color:#10b981;">{yld:.1f}%</b></span>'
                         f'</div></div>'
-                        f'<div style="width:35%; display:flex; flex-direction:column; justify-content:center; align-items:flex-end; padding-left:10px; margin-top:-2px;">'
+                        f'<div style="width:35%; display:flex; flex-direction:column; justify-content:center; align-items:flex-end; padding-left:10px; margin-top:-1px;">'
                         f'<div style="font-size:0.5rem; color:#64748b; font-weight:800; letter-spacing:0.5px;">SMART MONEY</div>'
                         f'<div style="font-size:2.6rem; font-weight:900; color:{sm_col}; line-height:1; margin: 4px 0;">{sm_score}</div>'
                         f'<div style="font-size:0.75rem; font-weight:900; color:{sm_col};">{sm_text}</div>'
