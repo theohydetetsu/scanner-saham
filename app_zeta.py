@@ -16,7 +16,7 @@ warnings.filterwarnings('ignore')
 # ==========================================
 # 0. REACTIVE STATE MANAGEMENT & CACHE
 # ==========================================
-CACHE_FILE = "jihan_ghina_saham_cache_v182.json"
+CACHE_FILE = "jihan_ghina_saham_cache_v183.json"
 
 def load_smart_cache():
     if os.path.exists(CACHE_FILE):
@@ -37,9 +37,9 @@ if "scan_clicked" not in st.session_state: st.session_state.scan_clicked = len(s
 if "current_tf" not in st.session_state: st.session_state.current_tf = "1 Hari (Daily)"
 
 # ==========================================
-# 1. KONFIGURASI HALAMAN & MOBILE UI (v18.2)
+# 1. KONFIGURASI HALAMAN & MOBILE UI (v18.3)
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA v18.2 - Master Crafted", page_icon="💎", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA v18.3 - Ultimate Layout", page_icon="💎", layout="wide")
 
 st.markdown("""
 <style>
@@ -111,6 +111,11 @@ st.markdown("""
         background: rgba(0, 242, 254, 0.05) !important;
     }
     .block-container div[role="radiogroup"] p { font-size: 0.65rem !important; font-weight: 800 !important; color: #cbd5e1 !important; margin: 0 !important; }
+
+    /* IHSG BOXES */
+    .ihsg-box { display: flex; flex-direction: column; justify-content: center; height: 100%; padding: 8px 10px !important; background: linear-gradient(135deg, rgba(15,23,42,0.7) 0%, rgba(30,41,59,0.4) 100%); border-radius: 6px; }
+    .ihsg-title { color: #64748b; font-size: 0.55rem; font-weight: 800; letter-spacing: 0.5px; }
+    .ihsg-score { color: #f8fafc; font-size: 1.05rem; font-weight: 900; line-height: 1.1; margin: 2px 0; }
     
 </style>
 """, unsafe_allow_html=True)
@@ -337,7 +342,7 @@ def plot_luxury_bar(x_data, y1, y2, name1, name2, color1, color2, title):
 def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_trading_mode):
     st.markdown("---")
     if active_tickers_tuple:
-        safe_key = f"cv_target_v182_{st.session_state.current_tf}_{'TRD' if is_trading_mode else 'INV'}"
+        safe_key = f"cv_target_v183_{st.session_state.current_tf}_{'TRD' if is_trading_mode else 'INV'}"
         valid_targets = [t for t in active_tickers_tuple if next((i for i in st.session_state.raw_stocks if i.get("TICKER")==t), None)]
         if not valid_targets: return
         
@@ -389,34 +394,38 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
 
                 col_g1, col_g2 = st.columns(2)
                 with col_g1:
-                    # FIX: ALIGNMENT SMART MONEY (NAIK) & RAINBOW (FULL)
+                    # FIX 1: RAINBOW BAR DIKELUARKAN DARI GRID KIRI AGAR 100% RATA KANAN-KIRI
                     html_strategy = (
                         f'<div class="stocksly-card" style="margin-bottom: 8px;">'
                         f'<div class="card-title" style="margin-bottom:12px;">📊 Strategi & Fundamental</div>'
+                        
                         f'<div style="display:flex; justify-content:space-between; align-items:flex-start;">'
                         f'<div style="flex:1; padding-right:15px; border-right:1px solid rgba(255,255,255,0.05);">'
-                        f'<div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; margin-bottom:18px; font-size:0.65rem;">'
+                        f'<div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; font-size:0.65rem;">'
                         f'<span style="color:#64748b;">ROE: <b style="color:#f8fafc;">{roe:.1f}%</b></span>'
                         f'<span style="color:#64748b;">PER: <b style="color:#f8fafc;">{per:.1f}x</b></span>'
                         f'<span style="color:#64748b;">PBV: <b style="color:#f8fafc;">{pbv:.1f}x</b></span>'
                         f'<span style="color:#64748b;">YIELD: <b style="color:#10b981;">{yld:.1f}%</b></span>'
-                        f'</div>'
-                        f'<div style="width:100%; position:relative; margin-top: auto;">'
+                        f'</div></div>'
+                        f'<div style="width:35%; display:flex; flex-direction:column; justify-content:center; align-items:flex-end; padding-left:10px; margin-top:-2px;">'
+                        f'<div style="font-size:0.5rem; color:#64748b; font-weight:800; letter-spacing:0.5px;">SMART MONEY</div>'
+                        f'<div style="font-size:2.6rem; font-weight:900; color:{sm_col}; line-height:1; margin: 4px 0;">{sm_score}</div>'
+                        f'<div style="font-size:0.75rem; font-weight:900; color:{sm_col};">{sm_text}</div>'
+                        f'</div></div>'
+                        
+                        # BAGIAN BAWAH - RAINBOW BAR MEMANJANG PENUH 100%
+                        f'<div style="width:100%; margin-top: 15px; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 12px;">'
                         f'<div style="background:rgba(255,255,255,0.05); height:6px; border-radius:3px; width:100%;">'
                         f'<div style="background:linear-gradient(90deg, #f43f5e, #facc15, #10b981); width:{wpi}%; height:100%; border-radius:3px;"></div>'
                         f'</div>'
                         f'<div style="display:flex; justify-content:space-between; font-size:0.4rem; color:#64748b; margin-top:4px; font-weight:800; letter-spacing:0.5px;">'
                         f'<span>BEARISH</span><span>NEUTRAL</span><span>BULLISH</span>'
-                        f'</div></div></div>'
-                        f'<div style="width:35%; display:flex; flex-direction:column; justify-content:flex-start; align-items:flex-end; padding-left:10px; margin-top:-2px;">'
-                        f'<div style="font-size:0.5rem; color:#64748b; font-weight:800; letter-spacing:0.5px;">SMART MONEY</div>'
-                        f'<div style="font-size:2.6rem; font-weight:900; color:{sm_col}; line-height:1; margin: 4px 0;">{sm_score}</div>'
-                        f'<div style="font-size:0.75rem; font-weight:900; color:{sm_col};">{sm_text}</div>'
-                        f'</div></div></div>'
+                        f'</div></div>'
+                        
+                        f'</div>'
                     )
                     st.markdown(html_strategy, unsafe_allow_html=True)
                     
-                    # FIX: ANALYST TARGET OVERLAP & SPACING
                     min_range = min(tgt_low, h_tgt) * 0.90
                     max_range = max(tgt_high, h_tgt) * 1.10
                     total_span = max_range - min_range if max_range > min_range else 1
@@ -424,7 +433,6 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                     pos_current = max(0, min(100, ((h_tgt - min_range) / total_span) * 100))
                     pos_mean = max(0, min(100, ((tgt_mean - min_range) / total_span) * 100))
                     
-                    # Prevent text from touching the extremely left/right boundaries (Anti-tabrakan text margin)
                     pos_current_txt = max(10, min(90, pos_current))
                     pos_mean_txt = max(10, min(90, pos_mean))
 
@@ -433,7 +441,6 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                         f'<div class="card-title">🎯 Analyst Price Targets</div>'
                         f'<div style="position:relative; margin-top:45px; margin-bottom:30px; padding:0 8px;">'
                         f'<div style="background:rgba(255,255,255,0.1); height:6px; border-radius:3px; width:100%;"></div>'
-                        # AVERAGE
                         f'<div style="position:absolute; top:-30px; left:{pos_mean_txt}%; transform:translateX(-50%); text-align:center; background:#00f2fe; padding:2px 8px; border-radius:4px; z-index:3;">'
                         f'<span style="color:#030712; font-size:0.65rem; font-weight:900;">{int(tgt_mean):,}</span>'
                         f'</div>'
@@ -441,14 +448,12 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                         f'<span style="font-size:0.5rem; color:#94a3b8; font-weight:800;">Average</span>'
                         f'</div>'
                         f'<div style="position:absolute; top:-4px; left:{pos_mean}%; transform:translateX(-50%); width:14px; height:14px; background:#00f2fe; border-radius:50%; border:3px solid #0a0f1e; z-index:2;"></div>'
-                        # CURRENT
                         f'<div style="position:absolute; top:-4px; left:{pos_current}%; transform:translateX(-50%); width:14px; height:14px; background:#f8fafc; border-radius:50%; border:3px solid #0a0f1e; z-index:4;"></div>'
                         f'<div style="position:absolute; top:16px; left:{pos_current_txt}%; transform:translateX(-50%); text-align:center; width:70px; z-index:4;">'
                         f'<span style="font-size:0.5rem; color:#94a3b8; font-weight:800;">Current</span><br>'
                         f'<span style="font-size:0.8rem; color:#f8fafc; font-weight:900;">{int(h_tgt):,}</span>'
                         f'</div>'
                         f'</div>'
-                        # LOW / HIGH BOUNDARIES with space barrier (Anti-tabrakan ke teks bawah)
                         f'<div style="display:flex; justify-content:space-between; align-items:center; font-size:0.55rem; color:#64748b; font-weight:800; margin-top:25px; padding-top:10px; border-top:1px dashed rgba(255,255,255,0.08);">'
                         f'<span>Low: <b style="color:#f43f5e;">{int(tgt_low):,}</b></span>'
                         f'<span>High: <b style="color:#10b981;">{int(tgt_high):,}</b></span>'
@@ -532,7 +537,7 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #f8fafc; font-weight: 900;'>Quantum Matrix</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #00f2fe; letter-spacing: 1px; margin-bottom: 10px; font-weight:700;'>v18.2 LUXURY</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #00f2fe; letter-spacing: 1px; margin-bottom: 10px; font-weight:700;'>v18.3 LUXURY</p>", unsafe_allow_html=True)
     
     engine_mode = st.radio("MODE ENGINE:", ("⚔️ TRD (Reactive)", "🛡️ INV (Fund)"))
     
@@ -602,10 +607,19 @@ else:
 
 if ihsg_now:
     w_p, w_g = ("▲", '#10b981') if ihsg_chg >= 0 else ("▼", '#f43f5e')
+    # FIX 2: IHSG BOX STRUCTURE MENGGUNAKAN DIV AGAR TEKS TURUN KE BARIS BARU (BLOCK)
     html_ihsg_grid = (
         f'<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px;">'
-        f'<div class="ihsg-box" style="border-left:3px solid {w_g};"><span class="ihsg-title">IHSG</span><span class="ihsg-score">{ihsg_now:,.0f}</span><span style="color:{w_g}; font-weight:800; font-size:0.7rem;">{w_p} {ihsg_chg:+,.1f} ({ihsg_pct:+.2f}%)</span></div>'
-        f'<div class="ihsg-box" style="border-left:3px solid {c_col};"><span class="ihsg-title">CLIMATE</span><span class="ihsg-score" style="color:{c_col};">{c_stat}</span><span style="color:#64748b; font-weight:800; font-size:0.7rem;">Breadth: {b_pct:.0f}%</span></div>'
+        f'<div class="ihsg-box" style="border-left:3px solid {w_g};">'
+        f'<div class="ihsg-title">IHSG</div>'
+        f'<div class="ihsg-score">{ihsg_now:,.0f}</div>'
+        f'<div style="color:{w_g}; font-weight:800; font-size:0.7rem;">{w_p} {ihsg_chg:+,.1f} ({ihsg_pct:+.2f}%)</div>'
+        f'</div>'
+        f'<div class="ihsg-box" style="border-left:3px solid {c_col};">'
+        f'<div class="ihsg-title">CLIMATE</div>'
+        f'<div class="ihsg-score" style="color:{c_col};">{c_stat}</div>'
+        f'<div style="color:#64748b; font-weight:800; font-size:0.7rem;">Breadth: {b_pct:.0f}%</div>'
+        f'</div>'
         f'</div>'
     )
     st.markdown(html_ihsg_grid, unsafe_allow_html=True)
@@ -733,7 +747,7 @@ else:
         with tab_c3:
             html_sop = (
                 f'<div class="stocksly-card">'
-                f'<div class="card-title">📖 Panduan Teknis & Bedah Data v18.2</div>'
+                f'<div class="card-title">📖 Panduan Teknis & Bedah Data v18.3</div>'
                 f'<div style="font-size:0.7rem; color:#cbd5e1; line-height: 1.4; padding: 4px;">'
                 f'<p><b>1. WPI & Smart Money:</b> Mengukur posisi harga saat ini terhadap rentang High-Low harian serta mendeteksi kekuatan dorongan institusi (Skor Smart Money).</p>'
                 f'<p><b>2. Analyst Price Targets:</b> Visualisasi rentang target harga konsensus analis (Low, Average, High) vs Harga Saat Ini (Current).</p>'
