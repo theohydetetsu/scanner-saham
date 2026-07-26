@@ -16,7 +16,7 @@ warnings.filterwarnings('ignore')
 # ==========================================
 # 0. REACTIVE STATE MANAGEMENT & CACHE
 # ==========================================
-CACHE_FILE = "jihan_ghina_saham_cache_v176.json"
+CACHE_FILE = "jihan_ghina_saham_cache_v177.json"
 
 def load_smart_cache():
     if os.path.exists(CACHE_FILE):
@@ -37,9 +37,9 @@ if "scan_clicked" not in st.session_state: st.session_state.scan_clicked = len(s
 if "current_tf" not in st.session_state: st.session_state.current_tf = "1 Hari (Daily)"
 
 # ==========================================
-# 1. KONFIGURASI HALAMAN & MOBILE UI (v17.6)
+# 1. KONFIGURASI HALAMAN & MOBILE UI (v17.7)
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA Masterpiece v17.6", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA v17.7 - Theo Hydetetsu", page_icon="⚡", layout="wide")
 
 st.markdown("""
 <style>
@@ -61,16 +61,16 @@ st.markdown("""
     .stocksly-card { background: linear-gradient(145deg, rgba(15,23,42,0.85) 0%, rgba(10,15,30,0.95) 100%); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 10px; box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; justify-content: space-between; height: 100%; position: relative; overflow: hidden; }
     .card-title { font-size: 0.7rem; font-weight: 800; color: #64748b; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; gap: 4px; }
     
-    /* VIP HIGHLIGHT CARDS - ULTRA COMPACT HEIGHT */
-    .vip-card { background: linear-gradient(145deg, rgba(30,41,59,0.7) 0%, rgba(15,23,42,0.9) 100%); backdrop-filter: blur(10px); border: 1px solid rgba(0, 242, 254, 0.3); border-radius: 8px; padding: 8px 10px; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; height: 100%;}
+    /* VIP HIGHLIGHT CARDS - EXTREME COMPACT HEIGHT */
+    .vip-card { background: linear-gradient(145deg, rgba(30,41,59,0.7) 0%, rgba(15,23,42,0.9) 100%); backdrop-filter: blur(10px); border: 1px solid rgba(0, 242, 254, 0.3); border-radius: 8px; padding: 6px 8px; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; height: 100%;}
     .vip-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg, #00f2fe, #38bdf8, #00f2fe); }
-    .vip-title { font-size: 1.1rem; font-weight: 800; color: #f8fafc; margin: 0; line-height: 1.1;}
-    .vip-price { font-size: 0.95rem; font-weight: 800; margin: 2px 0 4px 0; }
-    .vip-badge { background: rgba(0, 242, 254, 0.15); color: #00f2fe; padding: 2px 6px; border-radius: 4px; font-size: 0.55rem; font-weight: 800; display: inline-block; border: 1px solid rgba(0, 242, 254, 0.4);}
-    .vip-stat-row { display: flex; justify-content: space-between; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.05); }
+    .vip-title { font-size: 0.95rem; font-weight: 800; color: #f8fafc; margin: 0; line-height: 1.1;}
+    .vip-price { font-size: 0.85rem; font-weight: 800; margin: 2px 0 4px 0; }
+    .vip-badge { background: rgba(0, 242, 254, 0.15); color: #00f2fe; padding: 2px 4px; border-radius: 4px; font-size: 0.5rem; font-weight: 800; display: inline-block; border: 1px solid rgba(0, 242, 254, 0.4);}
+    .vip-stat-row { display: flex; justify-content: space-between; margin-top: 4px; padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.05); }
     .vip-stat { text-align: center; }
     .vip-stat-label { font-size: 0.45rem; color: #64748b; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; }
-    .vip-stat-val { font-size: 0.75rem; font-weight: 800; margin-top: 1px; }
+    .vip-stat-val { font-size: 0.7rem; font-weight: 800; margin-top: 1px; }
     
     /* SIDEBAR 150PX STRICT */
     section[data-testid="stSidebar"] { width: 150px !important; min-width: 150px !important; max-width: 150px !important; background: linear-gradient(180deg, rgba(2,6,23,0.98) 0%, rgba(15,23,42,0.98) 100%) !important; border-right: 1px solid rgba(255, 255, 255, 0.03); padding-top: 0.8rem !important;}
@@ -295,7 +295,7 @@ def plot_luxury_bar(x_data, y1, y2, name1, name2, color1, color2, title):
 def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_trading_mode):
     st.markdown("---")
     if active_tickers_tuple:
-        safe_key = f"cv_target_v176_{st.session_state.current_tf}_{'TRD' if is_trading_mode else 'INV'}"
+        safe_key = f"cv_target_v177_{st.session_state.current_tf}_{'TRD' if is_trading_mode else 'INV'}"
         valid_targets = [t for t in active_tickers_tuple if next((i for i in st.session_state.raw_stocks if i.get("TICKER")==t), None)]
         if not valid_targets: return
         
@@ -345,7 +345,7 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
 
                 col_g1, col_g2 = st.columns(2)
                 with col_g1:
-                    # KOTAK STRATEGI DENGAN DATA FUNDAMENTAL & SMART MONEY
+                    # KOTAK STRATEGI DENGAN DATA FUNDAMENTAL & SMART MONEY & RAINBOW SCALE
                     html_strategy = (
                         f'<div class="stocksly-card" style="margin-bottom: 8px;">'
                         f'<div class="card-title">📊 Strategi & Fundamental</div>'
@@ -355,10 +355,14 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                         f'<span style="color:#64748b;">PBV: <b style="color:#f8fafc;">{pbv:.1f}x</b></span>'
                         f'<span style="color:#64748b;">YIELD: <b style="color:#10b981;">{yld:.1f}%</b></span>'
                         f'</div>'
-                        f'<div style="font-size:0.6rem; color:#64748b; margin-bottom:2px;">SMART MONEY: <b style="color:#38bdf8;">{sm_flow}</b></div>'
-                        f'<div style="background:rgba(255,255,255,0.05); height:5px; border-radius:3px;">'
-                        f'<div style="background:linear-gradient(90deg, #f43f5e, #facc15, #10b981); width:{wpi}%; height:100%;"></div>'
-                        f'</div></div>'
+                        f'<div style="font-size:0.6rem; color:#64748b; margin-bottom:4px;">SMART MONEY: <b style="color:#38bdf8;">{sm_flow}</b></div>'
+                        f'<div style="position:relative;">'
+                        f'<div style="background:rgba(255,255,255,0.05); height:6px; border-radius:3px;">'
+                        f'<div style="background:linear-gradient(90deg, #f43f5e, #facc15, #10b981); width:{wpi}%; height:100%; border-radius:3px;"></div>'
+                        f'</div>'
+                        f'<div style="display:flex; justify-content:space-between; font-size:0.45rem; color:#64748b; margin-top:3px; font-weight:800; letter-spacing:0.5px;">'
+                        f'<span>BEARISH</span><span>NEUTRAL</span><span>BULLISH</span>'
+                        f'</div></div></div>'
                     )
                     st.markdown(html_strategy, unsafe_allow_html=True)
                     
@@ -384,7 +388,7 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                         f'<div style="text-align:center; background:rgba(0,242,254,0.05); border:1px solid rgba(0,242,254,0.2); border-radius:5px; padding:6px; margin-bottom:4px;">'
                         f'<div style="font-size:0.95rem; font-weight:800; color:{color};">{sys_rec}</div>'
                         f'</div>'
-                        f'<div style="font-size:0.95rem; color:#94a3b8; text-align:center;">'
+                        f'<div style="font-size:0.6rem; color:#94a3b8; text-align:center;">'
                         f'Vol: <b>{vol_lot:,}</b> | Avg: <b>{avg_lot:,}</b>'
                         f'</div></div>'
                     )
@@ -423,12 +427,22 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                     dates, inc_data = fetch_quarterly_charts(emiten_signal)
                     if dates: st.plotly_chart(plot_luxury_bar(dates, inc_data[0], inc_data[1], "Rev", "Net", "#0ea5e9", "#10b981", "Revenue vs Net Income"), use_container_width=True)
 
+            # FOOTER IDENTITY & SPACER 
+            # Diletakkan di bawah detail UI agar tidak menabrak tombol "Manage app"
+            html_footer = (
+                f'<div style="text-align:center; margin-top:20px; padding-bottom:70px;">'
+                f'<span style="font-size:0.55rem; color:#475569; font-weight:800; letter-spacing:1px;">⚡ STOCKS.LY MASTERPIECE ENGINE</span><br>'
+                f'<span style="font-size:0.5rem; color:#64748b; font-weight:700; letter-spacing:0.5px;">CREATED BY THEO HYDETETSU</span>'
+                f'</div>'
+            )
+            st.markdown(html_footer, unsafe_allow_html=True)
+
 # ==========================================
 # 5. SIDEBAR (150px STRICT)
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #f8fafc; font-weight: 800;'>Quantum Matrix</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #00f2fe; letter-spacing: 1px; margin-bottom: 10px;'>v17.6 ULTIMATE</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #00f2fe; letter-spacing: 1px; margin-bottom: 10px;'>v17.7 SIGNATURE</p>", unsafe_allow_html=True)
     
     engine_mode = st.radio("MODE ENGINE:", ("⚔️ TRD (Reactive)", "🛡️ INV (Fund)"))
     
@@ -590,7 +604,7 @@ else:
                     html_cards += (
                         f'<div class="vip-card">'
                         f'<div><div style="display:flex; justify-content:space-between; align-items:flex-start;">'
-                        f'<h2 class="vip-title">{tkr}</h2><span style="color:{ret_color}; font-weight:700; font-size:0.75rem;">{ret_sign}{ret:.1f}%</span>'
+                        f'<h2 class="vip-title">{tkr}</h2><span style="color:{ret_color}; font-weight:800; font-size:0.75rem;">{ret_sign}{ret:.1f}%</span>'
                         f'</div><div class="vip-price">Rp {prc}</div><div class="vip-badge">{bandar}</div></div>'
                         f'<div class="vip-stat-row">'
                         f'<div class="vip-stat"><div class="vip-stat-label">Beli</div><div class="vip-stat-val" style="color:#00f2fe;">{area_beli}</div></div>'
@@ -625,7 +639,7 @@ else:
         with tab_c3:
             html_sop = (
                 f'<div class="stocksly-card">'
-                f'<div class="card-title">📖 Panduan Teknis & Bedah Data v17.6</div>'
+                f'<div class="card-title">📖 Panduan Teknis & Bedah Data v17.7</div>'
                 f'<div style="font-size:0.7rem; color:#cbd5e1; line-height: 1.4; padding: 4px;">'
                 f'<p><b>1. WPI & Smart Money:</b> Mengukur posisi harga saat ini terhadap rentang High-Low harian serta mendeteksi tekanan volume institusi (Inflow/Outflow).</p>'
                 f'<p><b>2. Garis Rainbow Strategy:</b> <span style="color:#f43f5e; font-weight:bold;">Merah (Distribusi)</span> ➔ <span style="color:#facc15; font-weight:bold;">Kuning (Netral)</span> ➔ <span style="color:#10b981; font-weight:bold;">Hijau (Akumulasi kuat)</span>.</p>'
