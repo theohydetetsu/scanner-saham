@@ -16,7 +16,7 @@ warnings.filterwarnings('ignore')
 # ==========================================
 # 0. REACTIVE STATE MANAGEMENT & CACHE
 # ==========================================
-CACHE_FILE = "jihan_ghina_saham_cache_v184.json"
+CACHE_FILE = "jihan_ghina_saham_cache_v186.json"
 
 def load_smart_cache():
     if os.path.exists(CACHE_FILE):
@@ -35,13 +35,12 @@ if "raw_stocks" not in st.session_state:
 
 if "scan_clicked" not in st.session_state: st.session_state.scan_clicked = len(st.session_state.raw_stocks) > 0
 
-# BUG FIX 1: Penamaan default TF agar tidak memicu reset cache otomatis
 if "current_tf" not in st.session_state: st.session_state.current_tf = "1 Hari"
 
 # ==========================================
-# 1. KONFIGURASI HALAMAN & MOBILE UI (v18.4)
+# 1. KONFIGURASI HALAMAN & MOBILE UI (v18.6)
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA v18.4 - Flawless Precision", page_icon="💎", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA v18.6 - Ultimate Dashboard", page_icon="💎", layout="wide")
 
 st.markdown("""
 <style>
@@ -326,7 +325,7 @@ def plot_luxury_bar(x_data, y1, y2, name1, name2, color1, color2, title):
 def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_trading_mode):
     st.markdown("---")
     if active_tickers_tuple:
-        safe_key = f"cv_target_v184_{st.session_state.current_tf}_{'TRD' if is_trading_mode else 'INV'}"
+        safe_key = f"cv_target_v186_{st.session_state.current_tf}_{'TRD' if is_trading_mode else 'INV'}"
         valid_targets = [t for t in active_tickers_tuple if next((i for i in st.session_state.raw_stocks if i.get("TICKER")==t), None)]
         if not valid_targets: return
         
@@ -366,25 +365,23 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                     f'<div style="display:flex; justify-content:space-between; align-items:center;">'
                     f'<div style="max-width: 65%;"><div style="display:flex; align-items:center; gap:8px;">'
                     f'<div style="color:#f8fafc; font-size:1.8rem; font-weight:900; line-height:1;">{emiten_signal}</div>'
-                    f'<span style="background:rgba(0,242,254,0.1); color:#00f2fe; padding:2px 5px; border-radius:3px; font-size:0.55rem; font-weight:800; border:1px solid rgba(0,242,254,0.3);">{sector}</span>'
+                    f'<span style="background:rgba(0,242,254,0.1); color:#00f2fe; padding:2px 5px; border-radius:3px; font-size:0.55rem; font-weight:800; border:1px solid rgba(0,242,254,0.3); white-space:nowrap;">{sector}</span>'
                     f'</div><p style="color:#cbd5e1; font-size:0.7rem; margin:4px 0 0 0; font-weight:500; white-space:normal; line-height:1.2;">{long_name}</p></div>'
                     f'<div style="text-align:right;">'
-                    f'<div style="font-size:0.45rem; color:#64748b; font-weight:800; letter-spacing:0.5px;">WPI SCORE</div>'
-                    f'<div style="font-size:1.8rem; font-weight:900; color:{"#10b981" if wpi>=70 else ("#d4af37" if wpi>=40 else "#f43f5e")}; line-height:1; margin-top:2px;">{wpi:.0f}%</div>'
-                    f'<div style="font-size:0.55rem; color:#94a3b8; margin-top:2px; font-weight:700;">{s_bandar}</div>'
+                    f'<div style="font-size:0.45rem; color:#64748b; font-weight:800; letter-spacing:0.5px;">SMART MONEY</div>'
+                    f'<div style="font-size:1.8rem; font-weight:900; color:{sm_col}; line-height:1; margin-top:2px;">{sm_score}</div>'
+                    f'<div style="font-size:0.55rem; color:{sm_col}; margin-top:2px; font-weight:700;">{sm_text}</div>'
                     f'</div></div></div>'
                 )
                 st.markdown(html_header, unsafe_allow_html=True)
 
                 col_g1, col_g2 = st.columns(2)
                 with col_g1:
-                    # FIX 2 & 3: KOTAK STRATEGI LEBIH TIPIS, SMART MONEY SEJAJAR CARD-TITLE
                     html_strategy = (
                         f'<div class="stocksly-card" style="margin-bottom: 8px;">'
-                        # Card Title dipisah ke Kiri dan Kanan (Label SMART MONEY)
                         f'<div class="card-title" style="margin-bottom:8px; display:flex; justify-content:space-between; width:100%;">'
                         f'<span>📊 Strategi & Fundamental</span>'
-                        f'<span style="font-size:0.5rem; color:#64748b; font-weight:800; letter-spacing:0.5px;">SMART MONEY</span>'
+                        f'<span style="font-size:0.5rem; color:#64748b; font-weight:800; letter-spacing:0.5px;">WPI SCORE</span>'
                         f'</div>'
                         
                         f'<div style="display:flex; justify-content:space-between; align-items:center;">'
@@ -395,13 +392,12 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                         f'<span style="color:#64748b;">PBV: <b style="color:#f8fafc;">{pbv:.1f}x</b></span>'
                         f'<span style="color:#64748b;">YIELD: <b style="color:#10b981;">{yld:.1f}%</b></span>'
                         f'</div></div>'
-                        # Angka Score diperkecil sedikit menjadi 2.2rem
+                        
                         f'<div style="width:35%; display:flex; flex-direction:column; justify-content:center; align-items:flex-end; padding-left:10px;">'
-                        f'<div style="font-size:2.2rem; font-weight:900; color:{sm_col}; line-height:1; margin-bottom: 2px;">{sm_score}</div>'
-                        f'<div style="font-size:0.65rem; font-weight:900; color:{sm_col};">{sm_text}</div>'
+                        f'<div style="font-size:2.2rem; font-weight:900; color:{"#10b981" if wpi>=70 else ("#d4af37" if wpi>=40 else "#f43f5e")}; line-height:1; margin-bottom: 2px;">{wpi:.0f}%</div>'
+                        f'<div style="font-size:0.6rem; font-weight:800; color:#94a3b8; white-space:nowrap;">{s_bandar}</div>'
                         f'</div></div>'
                         
-                        # Rainbow Bar - Margin diperkecil agar tidak terlalu lebar ke bawah
                         f'<div style="width:100%; margin-top: 8px; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 8px;">'
                         f'<div style="background:rgba(255,255,255,0.05); height:6px; border-radius:3px; width:100%;">'
                         f'<div style="background:linear-gradient(90deg, #f43f5e, #facc15, #10b981); width:{wpi}%; height:100%; border-radius:3px;"></div>'
@@ -423,25 +419,27 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                     pos_current_txt = max(10, min(90, pos_current))
                     pos_mean_txt = max(10, min(90, pos_mean))
 
-                    # FIX 4: KOTAK ANALYST TARGET LEBIH KECIL & RAPI
                     html_analyst_target = (
                         f'<div class="stocksly-card" style="margin-bottom: 8px;">'
                         f'<div class="card-title">🎯 Analyst Price Targets</div>'
-                        f'<div style="position:relative; margin-top:30px; margin-bottom:25px; padding:0 8px;">'
+                        f'<div style="position:relative; margin-top:40px; margin-bottom:45px; padding:0 8px;">'
                         f'<div style="background:rgba(255,255,255,0.1); height:4px; border-radius:2px; width:100%;"></div>'
-                        f'<div style="position:absolute; top:-22px; left:{pos_mean_txt}%; transform:translateX(-50%); text-align:center; background:#00f2fe; padding:1px 6px; border-radius:3px; z-index:3;">'
-                        f'<span style="color:#030712; font-size:0.55rem; font-weight:900;">{int(tgt_mean):,}</span>'
-                        f'</div>'
-                        f'<div style="position:absolute; top:-35px; left:{pos_mean_txt}%; transform:translateX(-50%); text-align:center; width:50px;">'
-                        f'<span style="font-size:0.45rem; color:#94a3b8; font-weight:800;">Average</span>'
-                        f'</div>'
+                        
+                        f'<div style="position:absolute; bottom:12px; left:{pos_mean_txt}%; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; z-index:3; width:60px;">'
+                        f'<span style="font-size:0.45rem; color:#94a3b8; font-weight:800; margin-bottom:2px;">Average</span>'
+                        f'<div style="background:#00f2fe; padding:2px 6px; border-radius:3px;">'
+                        f'<span style="color:#030712; font-size:0.55rem; font-weight:900; line-height:1;">{int(tgt_mean):,}</span>'
+                        f'</div></div>'
+                        
                         f'<div style="position:absolute; top:-3px; left:{pos_mean}%; transform:translateX(-50%); width:10px; height:10px; background:#00f2fe; border-radius:50%; border:2px solid #0a0f1e; z-index:2;"></div>'
                         f'<div style="position:absolute; top:-3px; left:{pos_current}%; transform:translateX(-50%); width:10px; height:10px; background:#f8fafc; border-radius:50%; border:2px solid #0a0f1e; z-index:4;"></div>'
-                        f'<div style="position:absolute; top:12px; left:{pos_current_txt}%; transform:translateX(-50%); text-align:center; width:60px; z-index:4;">'
-                        f'<span style="font-size:0.45rem; color:#94a3b8; font-weight:800;">Current</span><br>'
-                        f'<span style="font-size:0.65rem; color:#f8fafc; font-weight:900;">{int(h_tgt):,}</span>'
+                        
+                        f'<div style="position:absolute; top:12px; left:{pos_current_txt}%; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; z-index:4; width:60px;">'
+                        f'<span style="font-size:0.45rem; color:#94a3b8; font-weight:800; margin-bottom:1px;">Current</span>'
+                        f'<span style="font-size:0.65rem; color:#f8fafc; font-weight:900; line-height:1;">{int(h_tgt):,}</span>'
                         f'</div>'
                         f'</div>'
+                        
                         f'<div style="display:flex; justify-content:space-between; align-items:center; font-size:0.5rem; color:#64748b; font-weight:800; margin-top:10px; padding-top:6px; border-top:1px dashed rgba(255,255,255,0.08);">'
                         f'<span>Low: <b style="color:#f43f5e;">{int(tgt_low):,}</b></span>'
                         f'<span>High: <b style="color:#10b981;">{int(tgt_high):,}</b></span>'
@@ -525,7 +523,7 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #f8fafc; font-weight: 900;'>Quantum Matrix</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #00f2fe; letter-spacing: 1px; margin-bottom: 10px; font-weight:700;'>v18.4 LUXURY</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #00f2fe; letter-spacing: 1px; margin-bottom: 10px; font-weight:700;'>v18.6 LUXURY</p>", unsafe_allow_html=True)
     
     engine_mode = st.radio("MODE ENGINE:", ("⚔️ TRD (Reactive)", "🛡️ INV (Fund)"))
     
@@ -734,7 +732,7 @@ else:
         with tab_c3:
             html_sop = (
                 f'<div class="stocksly-card">'
-                f'<div class="card-title">📖 Panduan Teknis & Bedah Data v18.4</div>'
+                f'<div class="card-title">📖 Panduan Teknis & Bedah Data v18.6</div>'
                 f'<div style="font-size:0.7rem; color:#cbd5e1; line-height: 1.4; padding: 4px;">'
                 f'<p><b>1. WPI & Smart Money:</b> Mengukur posisi harga saat ini terhadap rentang High-Low harian serta mendeteksi kekuatan dorongan institusi (Skor Smart Money).</p>'
                 f'<p><b>2. Analyst Price Targets:</b> Visualisasi rentang target harga konsensus analis (Low, Average, High) vs Harga Saat Ini (Current).</p>'
@@ -745,8 +743,45 @@ else:
             st.markdown(html_sop, unsafe_allow_html=True)
 
     else: 
-        tab_i1, tab_i2 = st.tabs(["🛡️ VALUE MATRIX", "🧬 CLUSTERS"])
+        # FIX: PENGGABUNGAN TAB BARU INVESTOR DASHBOARD
+        tab_i1, tab_i2, tab_i3 = st.tabs(["🏦 DASHBOARD", "🛡️ VALUE MATRIX", "🧬 CLUSTERS"])
+        
         with tab_i1:
+            st.markdown("<h3 style='font-size: 0.85rem; color:#0ea5e9; margin-bottom: 10px; letter-spacing:1px;'>👑 TOP 4 VALUE PICKS</h3>", unsafe_allow_html=True)
+            if not df_inv.empty:
+                html_cards_inv = '<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 15px;">'
+                top_4_inv = df_inv.head(4).reset_index()
+                
+                for row in top_4_inv.to_dict('records'):
+                    tkr = row['TICKER']
+                    prc = row['HARGA']
+                    yld = row['YIELD']
+                    val = row['VALUASI'].replace('💎 ', '').replace('⚖️ ', '').replace('⚠️ ', '')
+                    per = row['PER']
+                    pbv = row['PBV']
+                    val_color = "#0ea5e9" if "UNDERVALUED" in val else ("#facc15" if "FAIR" in val else "#f43f5e")
+
+                    html_cards_inv += (
+                        f'<div class="vip-card">'
+                        f'<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 2px;">'
+                        f'<div class="vip-title">{tkr}</div><span style="color:#10b981; font-weight:900; font-size:0.65rem;">Yield: {yld}</span>'
+                        f'</div>'
+                        f'<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 3px;">'
+                        f'<div class="vip-price">Rp {prc}</div><div class="vip-badge" style="color:{val_color}; border-color:{val_color}60; background:{val_color}15;">{val}</div>'
+                        f'</div>'
+                        f'<div class="vip-stat-row">'
+                        f'<div class="vip-stat"><div class="vip-stat-label">PER</div><div class="vip-stat-val" style="color:#38bdf8;">{per}</div></div>'
+                        f'<div class="vip-stat"><div class="vip-stat-label">PBV</div><div class="vip-stat-val" style="color:#38bdf8;">{pbv}</div></div>'
+                        f'<div class="vip-stat"><div class="vip-stat-label">MCAP</div><div class="vip-stat-val" style="color:#cbd5e1;">{row["MCAP"]}</div></div>'
+                        f'</div></div>'
+                    )
+                html_cards_inv += '</div>'
+                st.markdown(html_cards_inv, unsafe_allow_html=True)
+            
+            # Memindahkan Panel Target Khusus ke Dashboard agar mirip Mode TRD
+            render_cross_validation_ui(tuple(str(x) for x in df_inv.index), c_mult, False)
+            
+        with tab_i2:
             st.markdown("<h3 style='font-size: 0.85rem; color:#f8fafc;'>🛡️ Top 15 Value</h3>", unsafe_allow_html=True)
             def style_i(row):
                 stls = []
@@ -763,9 +798,8 @@ else:
                     else: stls.append('color:#cbd5e1;')
                 return stls
             if not df_inv.empty: st.dataframe(df_inv.style.apply(style_i, axis=1), use_container_width=True)
-            render_cross_validation_ui(tuple(str(x) for x in df_inv.index), c_mult, False)
         
-        with tab_i2:
+        with tab_i3:
             st.markdown("<h3 style='font-size: 0.85rem; color:#f8fafc;'>🧬 Clusters</h3>", unsafe_allow_html=True)
             col1, col2, col3 = st.columns(3)
             with col1: st.markdown(f"<div class='stocksly-card' style='border-top: 2px solid #0ea5e9;'><div style='color:#0ea5e9; font-size:0.6rem; font-weight:800;'>💎 DEEP VALUE</div>{render_badges(c_val, '#0ea5e9')}</div>", unsafe_allow_html=True)
