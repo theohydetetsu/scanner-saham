@@ -16,7 +16,7 @@ warnings.filterwarnings('ignore')
 # ==========================================
 # 0. REACTIVE STATE MANAGEMENT & CACHE
 # ==========================================
-CACHE_FILE = "jihan_ghina_saham_cache_v186.json"
+CACHE_FILE = "jihan_ghina_saham_cache_v187.json"
 
 def load_smart_cache():
     if os.path.exists(CACHE_FILE):
@@ -38,9 +38,9 @@ if "scan_clicked" not in st.session_state: st.session_state.scan_clicked = len(s
 if "current_tf" not in st.session_state: st.session_state.current_tf = "1 Hari"
 
 # ==========================================
-# 1. KONFIGURASI HALAMAN & MOBILE UI (v18.6)
+# 1. KONFIGURASI HALAMAN & MOBILE UI (v18.7)
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA v18.6 - Ultimate Dashboard", page_icon="💎", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA v18.7 - Grandmaster", page_icon="💎", layout="wide")
 
 st.markdown("""
 <style>
@@ -282,40 +282,53 @@ def fetch_single_stock(emiten, mode_tf):
             "DIV_YIELD": round((info.get('trailingAnnualDividendRate', 0) / h_skg * 100) if info.get('trailingAnnualDividendRate', 0) else 0, 2),
             "RET_1D": ((h_skg - prev_c) / prev_c * 100) if prev_c > 0 else 0, "MARKET_CAP": info.get('marketCap', 0),
             "BID": bid_price, "OFFER": ask_price, "LONGNAME": full_company_name, "SECTOR": info.get('sector', 'Market')[:12],
-            "AVG_VOL": vol_sma20, "TODAY_VOL": v_skg, "ATR": atr
+            "AVG_VOL": vol_sma20, "TODAY_VOL": v_skg, "ATR": atr, "SMA50": sma50
         }
     except: return None
 
+# FIX CHART: 4 DATA (REVENUE, NET INCOME, OCF, TOTAL EQUITY) + AXIS MATI
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_quarterly_charts(emiten):
     try:
         tkr = yf.Ticker(f"{emiten}.JK")
         inc = tkr.quarterly_financials
+        cf = tkr.quarterly_cashflow
         bs = tkr.quarterly_balance_sheet
+        
         if inc.empty and bs.empty: return None, None
         dates = inc.columns[:3][::-1] if not inc.empty else bs.columns[:3][::-1]
         str_dates = [d.strftime('%b%y') for d in dates]
+        
         def safe_get(df, keys):
+            if df is None or df.empty: return [0] * len(str_dates)
             for k in keys:
                 if k in df.index: return df.loc[k][:3][::-1].fillna(0).tolist()
             return [0] * len(str_dates)
+            
         rev = safe_get(inc, ['Total Revenue', 'Operating Revenue'])
         net_inc = safe_get(inc, ['Net Income', 'Net Income Continuous Operations'])
-        return str_dates, (rev, net_inc)
+        ocf = safe_get(cf, ['Operating Cash Flow', 'Total Cash From Operating Activities'])
+        teq = safe_get(bs, ['Total Equity', 'Stockholders Equity'])
+        
+        return str_dates, (rev, net_inc, ocf, teq)
     except: return None, None
 
-def plot_luxury_bar(x_data, y1, y2, name1, name2, color1, color2, title):
+def plot_luxury_bar(x_data, y1, y2, y3, y4, name1, name2, name3, name4, color1, color2, color3, color4, title):
     fig = go.Figure()
     fig.add_trace(go.Bar(x=x_data, y=y1, name=name1, marker_color=color1, opacity=0.85))
     fig.add_trace(go.Bar(x=x_data, y=y2, name=name2, marker_color=color2, opacity=0.85))
+    fig.add_trace(go.Bar(x=x_data, y=y3, name=name3, marker_color=color3, opacity=0.85))
+    fig.add_trace(go.Bar(x=x_data, y=y4, name=name4, marker_color=color4, opacity=0.85))
     fig.update_layout(
-        height=220, 
+        height=260, 
         title=dict(text=title, font=dict(family='Outfit', color='#cbd5e1', size=11)),
         barmode='group', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="right", x=1, font=dict(family='Outfit', size=8)),
+        legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5, font=dict(family='Outfit', size=7)),
         margin=dict(l=5, r=5, t=25, b=5), 
-        xaxis=dict(showgrid=False, tickfont=dict(family='Outfit', size=8)),
-        yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.05)', tickfont=dict(family='Outfit', size=8))
+        # MENONAKTIFKAN ZOOM & PAN
+        xaxis=dict(showgrid=False, fixedrange=True, tickfont=dict(family='Outfit', size=8)),
+        yaxis=dict(showgrid=True, fixedrange=True, gridcolor='rgba(255,255,255,0.05)', tickfont=dict(family='Outfit', size=8)),
+        dragmode=False 
     )
     return fig
 
@@ -325,7 +338,7 @@ def plot_luxury_bar(x_data, y1, y2, name1, name2, color1, color2, title):
 def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_trading_mode):
     st.markdown("---")
     if active_tickers_tuple:
-        safe_key = f"cv_target_v186_{st.session_state.current_tf}_{'TRD' if is_trading_mode else 'INV'}"
+        safe_key = f"cv_target_v187_{st.session_state.current_tf}_{'TRD' if is_trading_mode else 'INV'}"
         valid_targets = [t for t in active_tickers_tuple if next((i for i in st.session_state.raw_stocks if i.get("TICKER")==t), None)]
         if not valid_targets: return
         
@@ -333,122 +346,119 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
         
         r = next((item for item in st.session_state.raw_stocks if item.get("TICKER") == emiten_signal), None)
         if r:
-            if is_trading_mode:
-                setup_grade = r.get("SETUP_GRADE", "")
-                s_bandar = r.get("STATUS_BANDAR", "")
-                h_tgt, wpi = r.get('HARGA', 0), r.get('WPI_SCORE', 50)
-                long_name = r.get('LONGNAME', emiten_signal)
-                sector = r.get('SECTOR', 'Market')
-                a_beli = f"{int(r.get('AREA BELI', h_tgt)):,}".replace(",", ".")
-                t_stop_val = r.get('TRAILING STOP', h_tgt * 0.95)
-                t_stop = f"{int(t_stop_val):,}".replace(",", ".")
-                s_ara = r.get('STATUS_ARA_ARB', "")
-                per, pbv, roe, yld = r.get('PER', 0), r.get('PBV', 0), r.get('ROE', 0), r.get('DIV_YIELD', 0)
-                sm_text, sm_score, sm_col = r.get('SM_TEXT', '-'), r.get('SM_SCORE', 0), r.get('SM_COLOR', '#38bdf8')
-                tgt_low, tgt_mean, tgt_high = r.get('TGT_LOW', h_tgt*0.9), r.get('TGT_MEAN', h_tgt*1.1), r.get('TGT_HIGH', h_tgt*1.25)
-                vol_lot = int(r.get('TODAY_VOL', 0) / 100)
-                avg_lot = int(r.get('AVG_VOL', 0) / 100)
-                atr_val = r.get('ATR', 0)
-                volatility_pct = (atr_val / h_tgt) * 100 if h_tgt > 0 else 0
-                
-                if "REACTIVE" in setup_grade: sys_rec, color, r_mult = "SEROK BAWAH", "#d4af37", 1.5
-                elif "AVOID" in setup_grade: sys_rec, color, r_mult = "AVOID (FAKE)", "#f43f5e", 0.0
-                elif "A+" in setup_grade: sys_rec, color, r_mult = "STRONG ACCUM", "#10b981", 2.0 
-                elif "SCALP" in setup_grade: sys_rec, color, r_mult = "AGRES SCALP", "#8b5cf6", 1.5
-                else: sys_rec, color, r_mult = "ACCUMULATE", "#00f2fe", 1.0 
-                if "ARA" in s_ara: sys_rec, color = "ARA LOCKED", "#facc15"
+            h_tgt, wpi = r.get('HARGA', 0), r.get('WPI_SCORE', 50)
+            long_name = r.get('LONGNAME', emiten_signal)
+            sector = r.get('SECTOR', 'Market')
+            s_bandar = r.get("STATUS_BANDAR", "")
+            sm_text, sm_score, sm_col = r.get('SM_TEXT', '-'), r.get('SM_SCORE', 0), r.get('SM_COLOR', '#38bdf8')
+            roe, per, pbv, yld = r.get('ROE', 0), r.get('PER', 0), r.get('PBV', 0), r.get('DIV_YIELD', 0)
+            tgt_low, tgt_mean, tgt_high = r.get('TGT_LOW', h_tgt*0.9), r.get('TGT_MEAN', h_tgt*1.1), r.get('TGT_HIGH', h_tgt*1.25)
+            vol_lot = int(r.get('TODAY_VOL', 0) / 100)
+            avg_lot = int(r.get('AVG_VOL', 0) / 100)
+            atr_val = r.get('ATR', 0)
+            volatility_pct = (atr_val / h_tgt) * 100 if h_tgt > 0 else 0
 
-                max_lots = int(((modal_trading * (risiko_pct * r_mult * market_climate_mult / 100)) / (h_tgt - t_stop_val)) / 100) if (h_tgt - t_stop_val)>0 and r_mult > 0 else 0
-
-                html_header = (
-                    f'<div class="stocksly-card" style="margin-bottom: 10px; border-color: rgba(0, 242, 254, 0.25);">'
+            # --- COMMON HEADER ---
+            html_header = (
+                f'<div class="stocksly-card" style="margin-bottom: 10px; border-color: rgba(0, 242, 254, 0.25);">'
+                f'<div style="display:flex; justify-content:space-between; align-items:center;">'
+                f'<div style="max-width: 65%;"><div style="display:flex; align-items:center; gap:8px;">'
+                f'<div style="color:#f8fafc; font-size:1.8rem; font-weight:900; line-height:1;">{emiten_signal}</div>'
+                f'<span style="background:rgba(0,242,254,0.1); color:#00f2fe; padding:2px 5px; border-radius:3px; font-size:0.55rem; font-weight:800; border:1px solid rgba(0,242,254,0.3); white-space:nowrap;">{sector}</span>'
+                f'</div><p style="color:#cbd5e1; font-size:0.7rem; margin:4px 0 0 0; font-weight:500; white-space:normal; line-height:1.2;">{long_name}</p></div>'
+                f'<div style="text-align:right;">'
+                f'<div style="font-size:0.45rem; color:#64748b; font-weight:800; letter-spacing:0.5px;">SMART MONEY</div>'
+                f'<div style="font-size:1.8rem; font-weight:900; color:{sm_col}; line-height:1; margin-top:2px;">{sm_score}</div>'
+                f'<div style="font-size:0.55rem; color:{sm_col}; margin-top:2px; font-weight:700;">{sm_text}</div>'
+                f'</div></div></div>'
+            )
+            st.markdown(html_header, unsafe_allow_html=True)
+            
+            col_g1, col_g2 = st.columns(2)
+            
+            with col_g1:
+                # --- STRATEGY & FUNDAMENTAL ---
+                html_strategy = (
+                    f'<div class="stocksly-card" style="margin-bottom: 8px;">'
+                    f'<div class="card-title" style="margin-bottom:8px; display:flex; justify-content:space-between; width:100%;">'
+                    f'<span>📊 Strategi & Fundamental</span>'
+                    f'<span style="font-size:0.5rem; color:#64748b; font-weight:800; letter-spacing:0.5px;">WPI SCORE</span>'
+                    f'</div>'
                     f'<div style="display:flex; justify-content:space-between; align-items:center;">'
-                    f'<div style="max-width: 65%;"><div style="display:flex; align-items:center; gap:8px;">'
-                    f'<div style="color:#f8fafc; font-size:1.8rem; font-weight:900; line-height:1;">{emiten_signal}</div>'
-                    f'<span style="background:rgba(0,242,254,0.1); color:#00f2fe; padding:2px 5px; border-radius:3px; font-size:0.55rem; font-weight:800; border:1px solid rgba(0,242,254,0.3); white-space:nowrap;">{sector}</span>'
-                    f'</div><p style="color:#cbd5e1; font-size:0.7rem; margin:4px 0 0 0; font-weight:500; white-space:normal; line-height:1.2;">{long_name}</p></div>'
-                    f'<div style="text-align:right;">'
-                    f'<div style="font-size:0.45rem; color:#64748b; font-weight:800; letter-spacing:0.5px;">SMART MONEY</div>'
-                    f'<div style="font-size:1.8rem; font-weight:900; color:{sm_col}; line-height:1; margin-top:2px;">{sm_score}</div>'
-                    f'<div style="font-size:0.55rem; color:{sm_col}; margin-top:2px; font-weight:700;">{sm_text}</div>'
+                    f'<div style="flex:1; padding-right:15px; border-right:1px solid rgba(255,255,255,0.05);">'
+                    f'<div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; font-size:0.65rem;">'
+                    f'<span style="color:#64748b;">ROE: <b style="color:#f8fafc;">{roe:.1f}%</b></span>'
+                    f'<span style="color:#64748b;">PER: <b style="color:#f8fafc;">{per:.1f}x</b></span>'
+                    f'<span style="color:#64748b;">PBV: <b style="color:#f8fafc;">{pbv:.1f}x</b></span>'
+                    f'<span style="color:#64748b;">YIELD: <b style="color:#10b981;">{yld:.1f}%</b></span>'
+                    f'</div></div>'
+                    f'<div style="width:35%; display:flex; flex-direction:column; justify-content:center; align-items:flex-end; padding-left:10px;">'
+                    f'<div style="font-size:2.2rem; font-weight:900; color:{"#10b981" if wpi>=70 else ("#d4af37" if wpi>=40 else "#f43f5e")}; line-height:1; margin-bottom: 2px;">{wpi:.0f}%</div>'
+                    f'<div style="font-size:0.6rem; font-weight:800; color:#94a3b8; white-space:nowrap;">{s_bandar}</div>'
+                    f'</div></div>'
+                    f'<div style="width:100%; margin-top: 8px; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 8px;">'
+                    f'<div style="background:rgba(255,255,255,0.05); height:6px; border-radius:3px; width:100%;">'
+                    f'<div style="background:linear-gradient(90deg, #f43f5e, #facc15, #10b981); width:{wpi}%; height:100%; border-radius:3px;"></div>'
+                    f'</div>'
+                    f'<div style="display:flex; justify-content:space-between; font-size:0.4rem; color:#64748b; margin-top:4px; font-weight:800; letter-spacing:0.5px;">'
+                    f'<span>BEARISH</span><span>NEUTRAL</span><span>BULLISH</span>'
                     f'</div></div></div>'
                 )
-                st.markdown(html_header, unsafe_allow_html=True)
+                st.markdown(html_strategy, unsafe_allow_html=True)
+                
+                # --- ANALYST TARGETS ---
+                min_range = min(tgt_low, h_tgt) * 0.90
+                max_range = max(tgt_high, h_tgt) * 1.10
+                total_span = max_range - min_range if max_range > min_range else 1
+                pos_current = max(0, min(100, ((h_tgt - min_range) / total_span) * 100))
+                pos_mean = max(0, min(100, ((tgt_mean - min_range) / total_span) * 100))
+                pos_current_txt = max(10, min(90, pos_current))
+                pos_mean_txt = max(10, min(90, pos_mean))
 
-                col_g1, col_g2 = st.columns(2)
-                with col_g1:
-                    html_strategy = (
-                        f'<div class="stocksly-card" style="margin-bottom: 8px;">'
-                        f'<div class="card-title" style="margin-bottom:8px; display:flex; justify-content:space-between; width:100%;">'
-                        f'<span>📊 Strategi & Fundamental</span>'
-                        f'<span style="font-size:0.5rem; color:#64748b; font-weight:800; letter-spacing:0.5px;">WPI SCORE</span>'
-                        f'</div>'
-                        
-                        f'<div style="display:flex; justify-content:space-between; align-items:center;">'
-                        f'<div style="flex:1; padding-right:15px; border-right:1px solid rgba(255,255,255,0.05);">'
-                        f'<div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; font-size:0.65rem;">'
-                        f'<span style="color:#64748b;">ROE: <b style="color:#f8fafc;">{roe:.1f}%</b></span>'
-                        f'<span style="color:#64748b;">PER: <b style="color:#f8fafc;">{per:.1f}x</b></span>'
-                        f'<span style="color:#64748b;">PBV: <b style="color:#f8fafc;">{pbv:.1f}x</b></span>'
-                        f'<span style="color:#64748b;">YIELD: <b style="color:#10b981;">{yld:.1f}%</b></span>'
-                        f'</div></div>'
-                        
-                        f'<div style="width:35%; display:flex; flex-direction:column; justify-content:center; align-items:flex-end; padding-left:10px;">'
-                        f'<div style="font-size:2.2rem; font-weight:900; color:{"#10b981" if wpi>=70 else ("#d4af37" if wpi>=40 else "#f43f5e")}; line-height:1; margin-bottom: 2px;">{wpi:.0f}%</div>'
-                        f'<div style="font-size:0.6rem; font-weight:800; color:#94a3b8; white-space:nowrap;">{s_bandar}</div>'
-                        f'</div></div>'
-                        
-                        f'<div style="width:100%; margin-top: 8px; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 8px;">'
-                        f'<div style="background:rgba(255,255,255,0.05); height:6px; border-radius:3px; width:100%;">'
-                        f'<div style="background:linear-gradient(90deg, #f43f5e, #facc15, #10b981); width:{wpi}%; height:100%; border-radius:3px;"></div>'
-                        f'</div>'
-                        f'<div style="display:flex; justify-content:space-between; font-size:0.4rem; color:#64748b; margin-top:4px; font-weight:800; letter-spacing:0.5px;">'
-                        f'<span>BEARISH</span><span>NEUTRAL</span><span>BULLISH</span>'
-                        f'</div></div>'
-                        f'</div>'
-                    )
-                    st.markdown(html_strategy, unsafe_allow_html=True)
+                html_analyst_target = (
+                    f'<div class="stocksly-card" style="margin-bottom: 8px;">'
+                    f'<div class="card-title">🎯 Analyst Price Targets</div>'
+                    f'<div style="position:relative; margin-top:40px; margin-bottom:45px; padding:0 8px;">'
+                    f'<div style="background:rgba(255,255,255,0.1); height:4px; border-radius:2px; width:100%;"></div>'
+                    f'<div style="position:absolute; bottom:12px; left:{pos_mean_txt}%; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; z-index:3; width:60px;">'
+                    f'<span style="font-size:0.45rem; color:#94a3b8; font-weight:800; margin-bottom:2px;">Average</span>'
+                    f'<div style="background:#00f2fe; padding:2px 6px; border-radius:3px;">'
+                    f'<span style="color:#030712; font-size:0.55rem; font-weight:900; line-height:1;">{int(tgt_mean):,}</span>'
+                    f'</div></div>'
+                    f'<div style="position:absolute; top:-3px; left:{pos_mean}%; transform:translateX(-50%); width:10px; height:10px; background:#00f2fe; border-radius:50%; border:2px solid #0a0f1e; z-index:2;"></div>'
+                    f'<div style="position:absolute; top:-3px; left:{pos_current}%; transform:translateX(-50%); width:10px; height:10px; background:#f8fafc; border-radius:50%; border:2px solid #0a0f1e; z-index:4;"></div>'
+                    f'<div style="position:absolute; top:12px; left:{pos_current_txt}%; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; z-index:4; width:60px;">'
+                    f'<span style="font-size:0.45rem; color:#94a3b8; font-weight:800; margin-bottom:1px;">Current</span>'
+                    f'<span style="font-size:0.65rem; color:#f8fafc; font-weight:900; line-height:1;">{int(h_tgt):,}</span>'
+                    f'</div></div>'
+                    f'<div style="display:flex; justify-content:space-between; align-items:center; font-size:0.5rem; color:#64748b; font-weight:800; margin-top:10px; padding-top:6px; border-top:1px dashed rgba(255,255,255,0.08);">'
+                    f'<span>Low: <b style="color:#f43f5e;">{int(tgt_low):,}</b></span>'
+                    f'<span>High: <b style="color:#10b981;">{int(tgt_high):,}</b></span>'
+                    f'</div></div>'
+                )
+                st.markdown(html_analyst_target, unsafe_allow_html=True)
+                
+            with col_g2:
+                # --- PENGKONDISIAN TRADING VS INVESTING ---
+                if is_trading_mode:
+                    setup_grade = r.get("SETUP_GRADE", "")
+                    s_ara = r.get('STATUS_ARA_ARB', "")
+                    a_beli = f"{int(r.get('AREA BELI', h_tgt)):,}".replace(",", ".")
+                    t_stop_val = r.get('TRAILING STOP', h_tgt * 0.95)
+                    t_stop = f"{int(t_stop_val):,}".replace(",", ".")
                     
-                    min_range = min(tgt_low, h_tgt) * 0.90
-                    max_range = max(tgt_high, h_tgt) * 1.10
-                    total_span = max_range - min_range if max_range > min_range else 1
-                    
-                    pos_current = max(0, min(100, ((h_tgt - min_range) / total_span) * 100))
-                    pos_mean = max(0, min(100, ((tgt_mean - min_range) / total_span) * 100))
-                    
-                    pos_current_txt = max(10, min(90, pos_current))
-                    pos_mean_txt = max(10, min(90, pos_mean))
+                    if "REACTIVE" in setup_grade: sys_rec, color, r_mult = "SEROK BAWAH", "#d4af37", 1.5
+                    elif "AVOID" in setup_grade: sys_rec, color, r_mult = "AVOID (FAKE)", "#f43f5e", 0.0
+                    elif "A+" in setup_grade: sys_rec, color, r_mult = "STRONG ACCUM", "#10b981", 2.0 
+                    elif "SCALP" in setup_grade: sys_rec, color, r_mult = "AGRES SCALP", "#8b5cf6", 1.5
+                    else: sys_rec, color, r_mult = "ACCUMULATE", "#00f2fe", 1.0 
+                    if "ARA" in s_ara: sys_rec, color = "ARA LOCKED", "#facc15"
 
-                    html_analyst_target = (
-                        f'<div class="stocksly-card" style="margin-bottom: 8px;">'
-                        f'<div class="card-title">🎯 Analyst Price Targets</div>'
-                        f'<div style="position:relative; margin-top:40px; margin-bottom:45px; padding:0 8px;">'
-                        f'<div style="background:rgba(255,255,255,0.1); height:4px; border-radius:2px; width:100%;"></div>'
-                        
-                        f'<div style="position:absolute; bottom:12px; left:{pos_mean_txt}%; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; z-index:3; width:60px;">'
-                        f'<span style="font-size:0.45rem; color:#94a3b8; font-weight:800; margin-bottom:2px;">Average</span>'
-                        f'<div style="background:#00f2fe; padding:2px 6px; border-radius:3px;">'
-                        f'<span style="color:#030712; font-size:0.55rem; font-weight:900; line-height:1;">{int(tgt_mean):,}</span>'
-                        f'</div></div>'
-                        
-                        f'<div style="position:absolute; top:-3px; left:{pos_mean}%; transform:translateX(-50%); width:10px; height:10px; background:#00f2fe; border-radius:50%; border:2px solid #0a0f1e; z-index:2;"></div>'
-                        f'<div style="position:absolute; top:-3px; left:{pos_current}%; transform:translateX(-50%); width:10px; height:10px; background:#f8fafc; border-radius:50%; border:2px solid #0a0f1e; z-index:4;"></div>'
-                        
-                        f'<div style="position:absolute; top:12px; left:{pos_current_txt}%; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; z-index:4; width:60px;">'
-                        f'<span style="font-size:0.45rem; color:#94a3b8; font-weight:800; margin-bottom:1px;">Current</span>'
-                        f'<span style="font-size:0.65rem; color:#f8fafc; font-weight:900; line-height:1;">{int(h_tgt):,}</span>'
-                        f'</div>'
-                        f'</div>'
-                        
-                        f'<div style="display:flex; justify-content:space-between; align-items:center; font-size:0.5rem; color:#64748b; font-weight:800; margin-top:10px; padding-top:6px; border-top:1px dashed rgba(255,255,255,0.08);">'
-                        f'<span>Low: <b style="color:#f43f5e;">{int(tgt_low):,}</b></span>'
-                        f'<span>High: <b style="color:#10b981;">{int(tgt_high):,}</b></span>'
-                        f'</div>'
-                        f'</div>'
-                    )
-                    st.markdown(html_analyst_target, unsafe_allow_html=True)
-
-                with col_g2:
+                    max_lots = int(((modal_trading * (risiko_pct * r_mult * market_climate_mult / 100)) / (h_tgt - t_stop_val)) / 100) if (h_tgt - t_stop_val)>0 and r_mult > 0 else 0
+                    
+                    entry_border = "#10b981" if "SEROK" in setup_grade or "A+" in setup_grade else "#f43f5e"
+                    
+                    # Kotak Keputusan Trading
                     html_keputusan = (
                         f'<div class="stocksly-card" style="margin-bottom: 8px;">'
                         f'<div class="card-title">🎯 Keputusan</div>'
@@ -459,10 +469,9 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                         f'Vol: <b>{vol_lot:,}</b> | Avg: <b>{avg_lot:,}</b>'
                         f'</div></div>'
                     )
-                    st.markdown(html_keputusan, unsafe_allow_html=True)
-
-                    entry_border = "#10b981" if "SEROK" in setup_grade or "A+" in setup_grade else "#f43f5e"
-                    html_entry = (
+                    
+                    # Kotak Entry & Stop Trading
+                    html_entry_val = (
                         f'<div class="stocksly-card" style="margin-bottom: 8px; border-left: 3px solid {entry_border};">'
                         f'<div class="card-title">🛒 Entry & Stop</div>'
                         f'<div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:5px; margin-bottom:4px;">'
@@ -478,36 +487,84 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                         f'Max Alokasi: <b style="color:#00f2fe;">{max_lots:,} Lot</b>'
                         f'</div></div>'
                     )
-                    st.markdown(html_entry, unsafe_allow_html=True)
+                else:
+                    # LOGIKA INVESTING
+                    peg = r.get('PEG', 0)
+                    up_sma50 = r.get('UP_SMA50', False)
+                    skor = (20 if 0<per<15 else 0) + (20 if 0<pbv<1.5 else 0) + (20 if yld>4 else 0) + (15 if up_sma50 else 0) + (25 if 0<peg<=1.0 else 0)
+                    
+                    if skor >= 70: sys_rec_inv, color_inv = "💎 DEEP VALUE", "#0ea5e9"
+                    elif skor >= 40: sys_rec_inv, color_inv = "⚖️ FAIR VALUE", "#facc15"
+                    else: sys_rec_inv, color_inv = "⚠️ OVERVALUED", "#f43f5e"
 
-                    html_harga = (
+                    mos = ((tgt_mean - h_tgt) / tgt_mean * 100) if tgt_mean > h_tgt else 0
+                    mos_str = f"+{mos:.1f}%" if mos > 0 else f"{mos:.1f}%"
+                    mos_col = "#10b981" if mos > 10 else ("#facc15" if mos > 0 else "#f43f5e")
+
+                    # Kotak Keputusan Investing
+                    html_keputusan = (
                         f'<div class="stocksly-card" style="margin-bottom: 8px;">'
-                        f'<div class="card-title">📈 Harga</div>'
-                        f'<div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:5px; text-align:center;">'
-                        f'<div style="background:rgba(255,255,255,0.02); padding:5px; border-radius:5px; border:1px solid rgba(255,255,255,0.04);">'
-                        f'<div style="font-size:0.5rem; color:#64748b; font-weight:800;">LAST</div>'
-                        f'<div style="font-size:0.9rem; color:#f8fafc; font-weight:900;">{int(h_tgt):,}</div>'
+                        f'<div class="card-title">🎯 Keputusan Fundamental</div>'
+                        f'<div style="text-align:center; background:rgba(0,242,254,0.05); border:1px solid rgba(0,242,254,0.2); border-radius:5px; padding:6px; margin-bottom:4px;">'
+                        f'<div style="font-size:0.95rem; font-weight:900; color:{color_inv};">{sys_rec_inv}</div>'
                         f'</div>'
-                        f'<div style="background:rgba(255,255,255,0.02); padding:5px; border-radius:5px; border:1px solid rgba(255,255,255,0.04);">'
-                        f'<div style="font-size:0.5rem; color:#64748b; font-weight:800;">ATR</div>'
-                        f'<div style="font-size:0.9rem; color:{"#f43f5e" if volatility_pct>5 else "#10b981"}; font-weight:900;">{volatility_pct:.1f}%</div>'
-                        f'</div></div></div>'
+                        f'<div style="font-size:0.6rem; color:#94a3b8; text-align:center;">'
+                        f'Vol: <b>{vol_lot:,}</b> | Avg: <b>{avg_lot:,}</b>'
+                        f'</div></div>'
                     )
-                    st.markdown(html_harga, unsafe_allow_html=True)
+                    
+                    # Kotak Valuation & Target Investing
+                    html_entry_val = (
+                        f'<div class="stocksly-card" style="margin-bottom: 8px; border-left: 3px solid {color_inv};">'
+                        f'<div class="card-title">🛡️ Valuation Target</div>'
+                        f'<div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:5px; margin-bottom:4px;">'
+                        f'<div style="background:rgba(255,255,255,0.02); padding:5px; border-radius:5px; text-align:center;">'
+                        f'<div style="font-size:0.5rem; color:#64748b; font-weight:800;">FAIR VALUE</div>'
+                        f'<div style="font-size:0.85rem; color:#0ea5e9; font-weight:900;">{int(tgt_mean):,}</div>'
+                        f'</div>'
+                        f'<div style="background:rgba(255,255,255,0.02); padding:5px; border-radius:5px; text-align:center;">'
+                        f'<div style="font-size:0.5rem; color:#64748b; font-weight:800;">M O S</div>'
+                        f'<div style="font-size:0.85rem; color:{mos_col}; font-weight:900;">{mos_str}</div>'
+                        f'</div></div>'
+                        f'<div style="text-align:center; font-size:0.7rem; color:#cbd5e1; background:rgba(255,255,255,0.02); padding:3px; border-radius:4px;">'
+                        f'Dividend Yield: <b style="color:#10b981;">{yld:.1f}%</b>'
+                        f'</div></div>'
+                    )
 
-            else:
-                per, pbv, yld = r.get("PER", 0), r.get("PBV", 0), r.get("DIV_YIELD", 0)
-                html_val = (
-                    f'<div style="display:flex; justify-content:space-around; background:rgba(15,23,42,0.8); border:1px solid rgba(255,255,255,0.05); border-radius:6px; padding:8px; margin-bottom:10px;">'
-                    f'<div style="text-align:center;"><span style="color:#64748b; font-size:0.55rem; font-weight:700;">PER</span><br><span style="color:#f8fafc; font-weight:900; font-size:0.9rem;">{per:.1f}x</span></div>'
-                    f'<div style="text-align:center;"><span style="color:#64748b; font-size:0.55rem; font-weight:700;">PBV</span><br><span style="color:#f8fafc; font-weight:900; font-size:0.9rem;">{pbv:.1f}x</span></div>'
-                    f'<div style="text-align:center;"><span style="color:#64748b; font-size:0.55rem; font-weight:700;">YIELD</span><br><span style="color:#10b981; font-weight:900; font-size:0.9rem;">{yld:.1f}%</span></div>'
+                st.markdown(html_keputusan, unsafe_allow_html=True)
+                st.markdown(html_entry_val, unsafe_allow_html=True)
+
+                # --- HARGA ---
+                html_harga = (
+                    f'<div class="stocksly-card" style="margin-bottom: 8px;">'
+                    f'<div class="card-title">📈 Harga</div>'
+                    f'<div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:5px; text-align:center;">'
+                    f'<div style="background:rgba(255,255,255,0.02); padding:5px; border-radius:5px; border:1px solid rgba(255,255,255,0.04);">'
+                    f'<div style="font-size:0.5rem; color:#64748b; font-weight:800;">LAST</div>'
+                    f'<div style="font-size:0.9rem; color:#f8fafc; font-weight:900;">{int(h_tgt):,}</div>'
                     f'</div>'
+                    f'<div style="background:rgba(255,255,255,0.02); padding:5px; border-radius:5px; border:1px solid rgba(255,255,255,0.04);">'
+                    f'<div style="font-size:0.5rem; color:#64748b; font-weight:800;">ATR</div>'
+                    f'<div style="font-size:0.9rem; color:{"#f43f5e" if volatility_pct>5 else "#10b981"}; font-weight:900;">{volatility_pct:.1f}%</div>'
+                    f'</div></div></div>'
                 )
-                st.markdown(html_val, unsafe_allow_html=True)
-                with st.spinner("Mengunduh Laporan Keuangan..."):
-                    dates, inc_data = fetch_quarterly_charts(emiten_signal)
-                    if dates: st.plotly_chart(plot_luxury_bar(dates, inc_data[0], inc_data[1], "Rev", "Net", "#0ea5e9", "#10b981", "Revenue vs Net Income"), use_container_width=True)
+                st.markdown(html_harga, unsafe_allow_html=True)
+                
+            # --- RENDER CHART KEUANGAN (AXIS MATI) BAWAH KOLOM ---
+            with st.spinner("Mengunduh Laporan Keuangan..."):
+                dates, inc_data = fetch_quarterly_charts(emiten_signal)
+                if dates: 
+                    # Memanggil Chart dengan konfig displayModeBar False (Meniadakan toolbar Plotly)
+                    st.plotly_chart(
+                        plot_luxury_bar(
+                            dates, inc_data[0], inc_data[1], inc_data[2], inc_data[3], 
+                            "Rev (IS)", "Net (IS)", "OCF (CF)", "Eqty (BS)", 
+                            "#0ea5e9", "#10b981", "#facc15", "#8b5cf6", 
+                            "Financial Fundamentals (IS, CF, BS)"
+                        ), 
+                        use_container_width=True,
+                        config={'displayModeBar': False} # Meniadakan tombol-tombol melayang
+                    )
 
             # FOOTER IDENTITY
             html_footer = (
@@ -523,7 +580,7 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #f8fafc; font-weight: 900;'>Quantum Matrix</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #00f2fe; letter-spacing: 1px; margin-bottom: 10px; font-weight:700;'>v18.6 LUXURY</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #00f2fe; letter-spacing: 1px; margin-bottom: 10px; font-weight:700;'>v18.7 LUXURY</p>", unsafe_allow_html=True)
     
     engine_mode = st.radio("MODE ENGINE:", ("⚔️ TRD (Reactive)", "🛡️ INV (Fund)"))
     
@@ -732,7 +789,7 @@ else:
         with tab_c3:
             html_sop = (
                 f'<div class="stocksly-card">'
-                f'<div class="card-title">📖 Panduan Teknis & Bedah Data v18.6</div>'
+                f'<div class="card-title">📖 Panduan Teknis & Bedah Data v18.7</div>'
                 f'<div style="font-size:0.7rem; color:#cbd5e1; line-height: 1.4; padding: 4px;">'
                 f'<p><b>1. WPI & Smart Money:</b> Mengukur posisi harga saat ini terhadap rentang High-Low harian serta mendeteksi kekuatan dorongan institusi (Skor Smart Money).</p>'
                 f'<p><b>2. Analyst Price Targets:</b> Visualisasi rentang target harga konsensus analis (Low, Average, High) vs Harga Saat Ini (Current).</p>'
@@ -743,7 +800,6 @@ else:
             st.markdown(html_sop, unsafe_allow_html=True)
 
     else: 
-        # FIX: PENGGABUNGAN TAB BARU INVESTOR DASHBOARD
         tab_i1, tab_i2, tab_i3 = st.tabs(["🏦 DASHBOARD", "🛡️ VALUE MATRIX", "🧬 CLUSTERS"])
         
         with tab_i1:
@@ -778,7 +834,6 @@ else:
                 html_cards_inv += '</div>'
                 st.markdown(html_cards_inv, unsafe_allow_html=True)
             
-            # Memindahkan Panel Target Khusus ke Dashboard agar mirip Mode TRD
             render_cross_validation_ui(tuple(str(x) for x in df_inv.index), c_mult, False)
             
         with tab_i2:
