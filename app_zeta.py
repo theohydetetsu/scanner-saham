@@ -16,7 +16,7 @@ warnings.filterwarnings('ignore')
 # ==========================================
 # 0. REACTIVE STATE MANAGEMENT & CACHE
 # ==========================================
-CACHE_FILE = "jihan_ghina_saham_cache_v187.json"
+CACHE_FILE = "jihan_ghina_saham_cache_v188.json"
 
 def load_smart_cache():
     if os.path.exists(CACHE_FILE):
@@ -38,9 +38,9 @@ if "scan_clicked" not in st.session_state: st.session_state.scan_clicked = len(s
 if "current_tf" not in st.session_state: st.session_state.current_tf = "1 Hari"
 
 # ==========================================
-# 1. KONFIGURASI HALAMAN & MOBILE UI (v18.7)
+# 1. KONFIGURASI HALAMAN & MOBILE UI (v18.8)
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA v18.7 - Grandmaster", page_icon="💎", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA v18.8 - Ultimate Investor", page_icon="💎", layout="wide")
 
 st.markdown("""
 <style>
@@ -286,7 +286,9 @@ def fetch_single_stock(emiten, mode_tf):
         }
     except: return None
 
+# ==========================================
 # FIX CHART: 4 DATA (REVENUE, NET INCOME, OCF, TOTAL EQUITY) + AXIS MATI
+# ==========================================
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_quarterly_charts(emiten):
     try:
@@ -313,19 +315,20 @@ def fetch_quarterly_charts(emiten):
         return str_dates, (rev, net_inc, ocf, teq)
     except: return None, None
 
-def plot_luxury_bar(x_data, y1, y2, y3, y4, name1, name2, name3, name4, color1, color2, color3, color4, title):
+def plot_luxury_bar(x_data, y1, y2, y3, y4, name1, name2, name3, name4, color1, color2, color3, color4):
     fig = go.Figure()
     fig.add_trace(go.Bar(x=x_data, y=y1, name=name1, marker_color=color1, opacity=0.85))
     fig.add_trace(go.Bar(x=x_data, y=y2, name=name2, marker_color=color2, opacity=0.85))
     fig.add_trace(go.Bar(x=x_data, y=y3, name=name3, marker_color=color3, opacity=0.85))
     fig.add_trace(go.Bar(x=x_data, y=y4, name=name4, marker_color=color4, opacity=0.85))
+    
+    # FIX: Judul dihapus dari plotly (dimasukkan via st.markdown) & Margins disesuaikan agar tidak tabrakan
     fig.update_layout(
-        height=260, 
-        title=dict(text=title, font=dict(family='Outfit', color='#cbd5e1', size=11)),
+        height=240, 
         barmode='group', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5, font=dict(family='Outfit', size=7)),
-        margin=dict(l=5, r=5, t=25, b=5), 
-        # MENONAKTIFKAN ZOOM & PAN
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, font=dict(family='Outfit', size=8)),
+        margin=dict(l=5, r=5, t=10, b=5), 
+        # MENONAKTIFKAN ZOOM & PAN SEPENUHNYA
         xaxis=dict(showgrid=False, fixedrange=True, tickfont=dict(family='Outfit', size=8)),
         yaxis=dict(showgrid=True, fixedrange=True, gridcolor='rgba(255,255,255,0.05)', tickfont=dict(family='Outfit', size=8)),
         dragmode=False 
@@ -338,7 +341,7 @@ def plot_luxury_bar(x_data, y1, y2, y3, y4, name1, name2, name3, name4, color1, 
 def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_trading_mode):
     st.markdown("---")
     if active_tickers_tuple:
-        safe_key = f"cv_target_v187_{st.session_state.current_tf}_{'TRD' if is_trading_mode else 'INV'}"
+        safe_key = f"cv_target_v188_{st.session_state.current_tf}_{'TRD' if is_trading_mode else 'INV'}"
         valid_targets = [t for t in active_tickers_tuple if next((i for i in st.session_state.raw_stocks if i.get("TICKER")==t), None)]
         if not valid_targets: return
         
@@ -352,11 +355,26 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
             s_bandar = r.get("STATUS_BANDAR", "")
             sm_text, sm_score, sm_col = r.get('SM_TEXT', '-'), r.get('SM_SCORE', 0), r.get('SM_COLOR', '#38bdf8')
             roe, per, pbv, yld = r.get('ROE', 0), r.get('PER', 0), r.get('PBV', 0), r.get('DIV_YIELD', 0)
+            peg = r.get('PEG', 0)
             tgt_low, tgt_mean, tgt_high = r.get('TGT_LOW', h_tgt*0.9), r.get('TGT_MEAN', h_tgt*1.1), r.get('TGT_HIGH', h_tgt*1.25)
             vol_lot = int(r.get('TODAY_VOL', 0) / 100)
             avg_lot = int(r.get('AVG_VOL', 0) / 100)
             atr_val = r.get('ATR', 0)
             volatility_pct = (atr_val / h_tgt) * 100 if h_tgt > 0 else 0
+
+            # --- SUNTIKAN BADGE CLUSTER KHUSUS INVESTING MODE ---
+            cluster_badges = ""
+            if not is_trading_mode:
+                badges = []
+                if 0 < per < 10 and 0 < pbv < 1.0:
+                    badges.append('<span style="background:rgba(14,165,233,0.15); color:#0ea5e9; padding:2px 6px; border-radius:3px; font-size:0.5rem; font-weight:800; border:1px solid rgba(14,165,233,0.3);">💎 DEEP VALUE</span>')
+                if 0 < peg <= 1.0:
+                    badges.append('<span style="background:rgba(139,92,246,0.15); color:#8b5cf6; padding:2px 6px; border-radius:3px; font-size:0.5rem; font-weight:800; border:1px solid rgba(139,92,246,0.3);">🚀 HIGH GROWTH</span>')
+                if yld >= 5.0:
+                    badges.append('<span style="background:rgba(16,185,129,0.15); color:#10b981; padding:2px 6px; border-radius:3px; font-size:0.5rem; font-weight:800; border:1px solid rgba(16,185,129,0.3);">💰 DIV KINGS</span>')
+                
+                if badges:
+                    cluster_badges = f'<div style="display:flex; gap:5px; margin-top:6px; flex-wrap:wrap;">{"".join(badges)}</div>'
 
             # --- COMMON HEADER ---
             html_header = (
@@ -365,7 +383,9 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                 f'<div style="max-width: 65%;"><div style="display:flex; align-items:center; gap:8px;">'
                 f'<div style="color:#f8fafc; font-size:1.8rem; font-weight:900; line-height:1;">{emiten_signal}</div>'
                 f'<span style="background:rgba(0,242,254,0.1); color:#00f2fe; padding:2px 5px; border-radius:3px; font-size:0.55rem; font-weight:800; border:1px solid rgba(0,242,254,0.3); white-space:nowrap;">{sector}</span>'
-                f'</div><p style="color:#cbd5e1; font-size:0.7rem; margin:4px 0 0 0; font-weight:500; white-space:normal; line-height:1.2;">{long_name}</p></div>'
+                f'</div><p style="color:#cbd5e1; font-size:0.7rem; margin:4px 0 0 0; font-weight:500; white-space:normal; line-height:1.2;">{long_name}</p>'
+                f'{cluster_badges}' # Inject Badge Cluster di sini
+                f'</div>'
                 f'<div style="text-align:right;">'
                 f'<div style="font-size:0.45rem; color:#64748b; font-weight:800; letter-spacing:0.5px;">SMART MONEY</div>'
                 f'<div style="font-size:1.8rem; font-weight:900; color:{sm_col}; line-height:1; margin-top:2px;">{sm_score}</div>'
@@ -489,7 +509,6 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                     )
                 else:
                     # LOGIKA INVESTING
-                    peg = r.get('PEG', 0)
                     up_sma50 = r.get('UP_SMA50', False)
                     skor = (20 if 0<per<15 else 0) + (20 if 0<pbv<1.5 else 0) + (20 if yld>4 else 0) + (15 if up_sma50 else 0) + (25 if 0<peg<=1.0 else 0)
                     
@@ -550,17 +569,24 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                 )
                 st.markdown(html_harga, unsafe_allow_html=True)
                 
-            # --- RENDER CHART KEUANGAN (AXIS MATI) BAWAH KOLOM ---
+            # --- RENDER CHART KEUANGAN (AXIS MATI & JUDUL ANTI-TABRAK) ---
             with st.spinner("Mengunduh Laporan Keuangan..."):
                 dates, inc_data = fetch_quarterly_charts(emiten_signal)
                 if dates: 
+                    # Judul diekstrak keluar dari plot plotly untuk menghindari tabrakan selamanya!
+                    st.markdown(
+                        '<div style="font-size:0.75rem; color:#cbd5e1; font-weight:800; letter-spacing:1px; margin-top:10px; margin-bottom:-5px; padding-left:5px;">'
+                        '📊 FINANCIAL FUNDAMENTALS (IS, CF, BS)'
+                        '</div>', 
+                        unsafe_allow_html=True
+                    )
+                    
                     # Memanggil Chart dengan konfig displayModeBar False (Meniadakan toolbar Plotly)
                     st.plotly_chart(
                         plot_luxury_bar(
                             dates, inc_data[0], inc_data[1], inc_data[2], inc_data[3], 
                             "Rev (IS)", "Net (IS)", "OCF (CF)", "Eqty (BS)", 
-                            "#0ea5e9", "#10b981", "#facc15", "#8b5cf6", 
-                            "Financial Fundamentals (IS, CF, BS)"
+                            "#0ea5e9", "#10b981", "#facc15", "#8b5cf6"
                         ), 
                         use_container_width=True,
                         config={'displayModeBar': False} # Meniadakan tombol-tombol melayang
@@ -580,7 +606,7 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #f8fafc; font-weight: 900;'>Quantum Matrix</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #00f2fe; letter-spacing: 1px; margin-bottom: 10px; font-weight:700;'>v18.7 LUXURY</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #00f2fe; letter-spacing: 1px; margin-bottom: 10px; font-weight:700;'>v18.8 LUXURY</p>", unsafe_allow_html=True)
     
     engine_mode = st.radio("MODE ENGINE:", ("⚔️ TRD (Reactive)", "🛡️ INV (Fund)"))
     
@@ -789,7 +815,7 @@ else:
         with tab_c3:
             html_sop = (
                 f'<div class="stocksly-card">'
-                f'<div class="card-title">📖 Panduan Teknis & Bedah Data v18.7</div>'
+                f'<div class="card-title">📖 Panduan Teknis & Bedah Data v18.8</div>'
                 f'<div style="font-size:0.7rem; color:#cbd5e1; line-height: 1.4; padding: 4px;">'
                 f'<p><b>1. WPI & Smart Money:</b> Mengukur posisi harga saat ini terhadap rentang High-Low harian serta mendeteksi kekuatan dorongan institusi (Skor Smart Money).</p>'
                 f'<p><b>2. Analyst Price Targets:</b> Visualisasi rentang target harga konsensus analis (Low, Average, High) vs Harga Saat Ini (Current).</p>'
@@ -800,7 +826,8 @@ else:
             st.markdown(html_sop, unsafe_allow_html=True)
 
     else: 
-        tab_i1, tab_i2, tab_i3 = st.tabs(["🏦 DASHBOARD", "🛡️ VALUE MATRIX", "🧬 CLUSTERS"])
+        # FIX: Tab DASHBOARD diubah namanya, dan Tab CLUSTERS diganti SOP
+        tab_i1, tab_i2, tab_i3 = st.tabs(["🏦 INVESTMENTS", "🛡️ VALUE MATRIX", "📖 SOP & DATA"])
         
         with tab_i1:
             st.markdown("<h3 style='font-size: 0.85rem; color:#0ea5e9; margin-bottom: 10px; letter-spacing:1px;'>👑 TOP 4 VALUE PICKS</h3>", unsafe_allow_html=True)
@@ -855,8 +882,15 @@ else:
             if not df_inv.empty: st.dataframe(df_inv.style.apply(style_i, axis=1), use_container_width=True)
         
         with tab_i3:
-            st.markdown("<h3 style='font-size: 0.85rem; color:#f8fafc;'>🧬 Clusters</h3>", unsafe_allow_html=True)
-            col1, col2, col3 = st.columns(3)
-            with col1: st.markdown(f"<div class='stocksly-card' style='border-top: 2px solid #0ea5e9;'><div style='color:#0ea5e9; font-size:0.6rem; font-weight:800;'>💎 DEEP VALUE</div>{render_badges(c_val, '#0ea5e9')}</div>", unsafe_allow_html=True)
-            with col2: st.markdown(f"<div class='stocksly-card' style='border-top: 2px solid #8b5cf6;'><div style='color:#8b5cf6; font-size:0.6rem; font-weight:800;'>🚀 HIGH GROWTH</div>{render_badges(c_gro, '#8b5cf6')}</div>", unsafe_allow_html=True)
-            with col3: st.markdown(f"<div class='stocksly-card' style='border-top: 2px solid #10b981;'><div style='color:#10b981; font-size:0.6rem; font-weight:800;'>💰 DIVIDEND KINGS</div>{render_badges(c_div, '#10b981')}</div>", unsafe_allow_html=True)
+            # Mengganti Tab CLUSTERS lama menjadi SOP khusus Fundamental
+            html_sop_inv = (
+                f'<div class="stocksly-card">'
+                f'<div class="card-title">📖 Panduan Teknis & Bedah Data v18.8</div>'
+                f'<div style="font-size:0.7rem; color:#cbd5e1; line-height: 1.4; padding: 4px;">'
+                f'<p><b>1. WPI & Smart Money:</b> Mengukur posisi harga saat ini terhadap rentang High-Low harian serta mendeteksi kekuatan dorongan institusi (Skor Smart Money).</p>'
+                f'<p><b>2. Analyst Price Targets:</b> Visualisasi rentang target harga konsensus analis (Low, Average, High) vs Harga Saat Ini (Current).</p>'
+                f'<p><b>3. Serok Bawah (Rejection):</b> Dideteksi saat harga menyentuh support 20-hari dengan bentuk candle ekor panjang (Hammer) + volume kering.</p>'
+                f'<p><b>4. Manajemen Lot Otomatis:</b> Alokasi <i>\'Max Lot\'</i> dihitung dinamis menggunakan batas risiko % modal terhadap jarak harga ke Trailing Stop.</p>'
+                f'</div></div>'
+            )
+            st.markdown(html_sop_inv, unsafe_allow_html=True)
