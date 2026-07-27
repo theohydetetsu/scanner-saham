@@ -16,7 +16,7 @@ warnings.filterwarnings('ignore')
 # ==========================================
 # 0. REACTIVE STATE MANAGEMENT & CACHE
 # ==========================================
-CACHE_FILE = "jihan_ghina_saham_cache_v188.json"
+CACHE_FILE = "jihan_ghina_saham_cache_v190.json"
 
 def load_smart_cache():
     if os.path.exists(CACHE_FILE):
@@ -38,13 +38,12 @@ if "scan_clicked" not in st.session_state: st.session_state.scan_clicked = len(s
 if "current_tf" not in st.session_state: st.session_state.current_tf = "1 Hari"
 
 # ==========================================
-# 1. KONFIGURASI HALAMAN & MOBILE UI (v18.8)
+# 1. KONFIGURASI HALAMAN & MOBILE UI (v19.0)
 # ==========================================
-st.set_page_config(page_title="JIHAN-GHINA v18.8 - Ultimate Investor", page_icon="💎", layout="wide")
+st.set_page_config(page_title="JIHAN-GHINA v19.0 - Fortress Edition", page_icon="🛡️", layout="wide")
 
 st.markdown("""
 <style>
-    /* UPGRADE FONT: OUTFIT (LUXURY, MODERN, ELEGANT) */
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;800;900&display=swap');
     html, body, [class*="css"] { font-family: 'Outfit', sans-serif; scroll-behavior: smooth; }
     [data-testid="stAppViewContainer"] { background: radial-gradient(circle at 50% -10%, #060d1a, #02040a) !important; color: #f8fafc !important; overflow-x: hidden; }
@@ -59,7 +58,6 @@ st.markdown("""
     ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.8); }
     ::-webkit-scrollbar-thumb { background: rgba(0, 242, 254, 0.3); border-radius: 10px; }
     
-    /* MINIMIZE / TOGGLE SIDEBAR BUTTON */
     [data-testid="collapsedControl"] {
         background-color: rgba(15, 23, 42, 0.95) !important; border: 1px solid rgba(0, 242, 254, 0.5) !important;
         border-radius: 50% !important; box-shadow: 0 0 12px rgba(0, 242, 254, 0.3) !important;
@@ -69,11 +67,9 @@ st.markdown("""
     }
     [data-testid="collapsedControl"] svg { fill: #00f2fe !important; color: #00f2fe !important; width: 1.4rem !important; height: 1.4rem !important; }
     
-    /* MODULAR CARD DESIGN */
     .stocksly-card { background: linear-gradient(145deg, rgba(15,23,42,0.85) 0%, rgba(10,15,30,0.95) 100%); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 10px; box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; justify-content: space-between; height: 100%; position: relative; overflow: hidden; }
     .card-title { font-size: 0.7rem; font-weight: 800; color: #64748b; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; gap: 4px; }
     
-    /* VIP HIGHLIGHT CARDS */
     .vip-card { background: linear-gradient(145deg, rgba(30,41,59,0.7) 0%, rgba(15,23,42,0.9) 100%); backdrop-filter: blur(10px); border: 1px solid rgba(0, 242, 254, 0.2); border-radius: 8px; padding: 5px 8px; position: relative; overflow: hidden; display: flex; flex-direction: column; height: auto;}
     .vip-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg, #00f2fe, #38bdf8, #00f2fe); }
     .vip-title { font-size: 0.95rem; font-weight: 900; color: #f8fafc; margin: 0; line-height: 1;}
@@ -84,18 +80,15 @@ st.markdown("""
     .vip-stat-label { font-size: 0.45rem; color: #64748b; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; }
     .vip-stat-val { font-size: 0.65rem; font-weight: 900; margin-top: 1px; }
     
-    /* SIDEBAR 150PX STRICT */
     section[data-testid="stSidebar"] { width: 150px !important; min-width: 150px !important; max-width: 150px !important; background: linear-gradient(180deg, rgba(2,6,23,0.98) 0%, rgba(15,23,42,0.98) 100%) !important; border-right: 1px solid rgba(255, 255, 255, 0.03); padding-top: 0.8rem !important;}
     section[data-testid="stSidebar"] .stMarkdown h2 { font-size: 0.9rem !important; margin-bottom: -5px !important; font-weight: 800; }
     section[data-testid="stSidebar"] p, section[data-testid="stSidebar"] span { font-size: 0.6rem !important; }
     
-    /* RADIO BUTTONS GRID (5 COLUMNS x 3 ROWS) - HANYA UNTUK MAIN BLOCK */
     .block-container div[role="radiogroup"] { display: grid !important; grid-template-columns: repeat(5, minmax(0, 1fr)) !important; gap: 6px !important; justify-items: start !important; align-items: center !important; width: 100% !important; }
     .block-container div[role="radiogroup"] > label { background: rgba(255, 255, 255, 0.02) !important; border: 1px solid rgba(255, 255, 255, 0.05) !important; padding: 6px 8px !important; border-radius: 6px !important; width: 100% !important; transition: all 0.2s ease-in-out !important; margin: 0 !important; }
     .block-container div[role="radiogroup"] > label:hover { border-color: rgba(0, 242, 254, 0.4) !important; background: rgba(0, 242, 254, 0.05) !important; }
     .block-container div[role="radiogroup"] p { font-size: 0.65rem !important; font-weight: 800 !important; color: #cbd5e1 !important; margin: 0 !important; }
 
-    /* IHSG BOXES */
     .ihsg-box { display: flex; flex-direction: column; justify-content: center; height: 100%; padding: 8px 10px !important; background: linear-gradient(135deg, rgba(15,23,42,0.7) 0%, rgba(30,41,59,0.4) 100%); border-radius: 6px; }
     .ihsg-title { color: #64748b; font-size: 0.55rem; font-weight: 800; letter-spacing: 0.5px; }
     .ihsg-score { color: #f8fafc; font-size: 1.05rem; font-weight: 900; line-height: 1.1; margin: 2px 0; }
@@ -107,13 +100,13 @@ st.markdown("""
 # 2. DATABASE QUOTES & SOP CONTENT
 # ==========================================
 QUOTES_DATABASE = [
-    {"quote": "Disiplin eksekusi melahirkan profit konsisten.", "author": "Quant SOP", "theme": "Discipline"},
-    {"quote": "Ekor lilin di support adalah jejak akumulasi nyata.", "author": "Price Action", "theme": "Rejection"}
+    {"quote": "Pertahanan modal (Risk Management) adalah aturan #1 Wall Street.", "author": "V19 Logic", "theme": "Protection"},
+    {"quote": "Jangan tangkap pisau jatuh. Tunggu konfirmasi pantulan.", "author": "Quant SOP", "theme": "Patience"}
 ]
 def get_quote_of_the_day(): return QUOTES_DATABASE[datetime.now(pytz.timezone('Asia/Jakarta')).timetuple().tm_yday % len(QUOTES_DATABASE)]
 
 # ==========================================
-# 3. CORE ENGINE (REALIST v16.6 - ANTI BONCOS)
+# 3. CORE ENGINE (REALIST v19.0 - THE FORTRESS)
 # ==========================================
 MASTER_UNIVERSE = [
     "BBCA", "BBRI", "BMRI", "BBNI", "TLKM", "ASII", "UNTR", "ICBP", "INDF", "AMRT", "GOTO", "PGAS", "PTBA", "ITMG", 
@@ -183,7 +176,8 @@ def get_dynamic_market_roster():
 
 def fetch_single_stock(emiten, mode_tf):
     try:
-        per, inv = ("3y", "1wk") if "Minggu" in mode_tf else ("1y", "1d")
+        # v19 FIX: Tarik data 2 tahun agar bisa baca Trend Major SMA-200
+        per, inv = ("3y", "1wk") if "Minggu" in mode_tf else ("2y", "1d")
         kode = emiten.replace(".JK", "")
         df = yf.download(emiten, period=per, interval=inv, progress=False)
         if df.empty: return None
@@ -193,6 +187,8 @@ def fetch_single_stock(emiten, mode_tf):
         
         df['EMA20'] = df['Close'].ewm(span=20, adjust=False).mean()
         df['SMA50'] = df['Close'].rolling(window=50).mean()
+        df['SMA200'] = df['Close'].rolling(window=200).mean() # v19 TREND GUARD
+        
         high_low = df['High'] - df['Low']
         high_close = np.abs(df['High'] - df['Close'].shift())
         low_close = np.abs(df['Low'] - df['Close'].shift())
@@ -202,6 +198,7 @@ def fetch_single_stock(emiten, mode_tf):
         h_skg, o_skg, hi_skg, lo_skg, v_skg = float(df['Close'].iloc[-1]), float(df['Open'].iloc[-1]), float(df['High'].iloc[-1]), float(df['Low'].iloc[-1]), float(df['Volume'].iloc[-1])
         prev_c = float(df['Close'].iloc[-2])
         ema20, sma50, atr = float(df['EMA20'].iloc[-1]), float(df['SMA50'].iloc[-1]) if not pd.isna(df['SMA50'].iloc[-1]) else float(df['EMA20'].iloc[-1]), float(df['ATR'].iloc[-1])
+        sma200 = float(df['SMA200'].iloc[-1]) if not pd.isna(df['SMA200'].iloc[-1]) else 0
         vol_sma20 = float(df['Vol_SMA20'].iloc[-1])
         
         b_ara, b_arb = (int(prev_c * 1.35), int(prev_c * 0.65)) if prev_c < 200 else ((int(prev_c * 1.25), int(prev_c * 0.75)) if prev_c < 5000 else (int(prev_c * 1.20), int(prev_c * 0.80)))
@@ -239,6 +236,7 @@ def fetch_single_stock(emiten, mode_tf):
             
         score = sum([h_skg > ema20, wpi_score > 85, is_spike]) * 2 + (3 if v_skg > vol_sma20*3 and h_skg >= float(df['High'].tail(20).max()) else 0)
         
+        # LOGIKA DASAR
         if "SEROK" in s_bandar: grade = "🎯 SETUP REACTIVE"
         elif "FAKE" in s_bandar: grade = "⚠️ AVOID"
         elif score >= 6 and wpi_score >= 70: grade = "⭐ SETUP A+" 
@@ -246,28 +244,33 @@ def fetch_single_stock(emiten, mode_tf):
         elif score >= 2: grade = "✔️ SETUP B"
         else: grade = "⚠️ SETUP C"
 
+        # ==========================================
+        # V19 SABUK PENGAMAN (RISK MANAGEMENT RULES)
+        # ==========================================
+        target_mean = info.get('targetMeanPrice') or int(h_skg + (atr * 2.5))
+        target_low = info.get('targetLowPrice') or max(int(h_skg * 0.90), int(t_stop))
+        target_high = info.get('targetHighPrice') or int(h_skg + (atr * 5.0))
+        
+        volatility_pct = (atr / h_skg) * 100 if h_skg > 0 else 0
+        rrr = (target_mean - h_skg) / (h_skg - t_stop) if h_skg > t_stop else 0
+        
+        # 1. Anti-Liar (Volatilitas Ekstrem Blocker)
+        if volatility_pct > 8.0:
+            grade = "🚫 HIGH RISK"
+        # 2. Major Trend Guard (Anti Tangkap Pisau Jatuh)
+        elif sma200 > 0 and h_skg < sma200 and "REACTIVE" not in grade:
+            grade = "⚠️ DOWNTREND"
+        # 3. Risk-Reward Filter (Jangan pertaruhkan nyawa untuk receh)
+        elif rrr < 1.2 and "REACTIVE" not in grade and "SCALP" not in grade:
+            grade = "⚠️ POOR RRR"
+
         vol_ratio = v_skg / vol_sma20 if vol_sma20 > 0 else 1
         sm_raw_score = (wpi_score * 0.5) + (min(vol_ratio, 2.5) * 20)
         sm_score_val = min(int(sm_raw_score), 99)
         
-        if wpi_score >= 60 and v_skg > vol_sma20: 
-            sm_text = "INFLOW"
-            sm_col = "#10b981"
-        elif wpi_score < 40: 
-            sm_text = "OUTFLOW"
-            sm_col = "#f43f5e"
-        else: 
-            sm_text = "NEUTRAL"
-            sm_col = "#facc15"
-
-        target_low = info.get('targetLowPrice') or 0
-        target_mean = info.get('targetMeanPrice') or 0
-        target_high = info.get('targetHighPrice') or 0
-        
-        if target_low == 0 or target_mean == 0 or target_high == 0:
-            target_low = max(int(h_skg * 0.90), int(t_stop))
-            target_mean = int(h_skg + (atr * 2.5))
-            target_high = int(h_skg + (atr * 5.0))
+        if wpi_score >= 60 and v_skg > vol_sma20: sm_text, sm_col = "INFLOW", "#10b981"
+        elif wpi_score < 40: sm_text, sm_col = "OUTFLOW", "#f43f5e"
+        else: sm_text, sm_col = "NEUTRAL", "#facc15"
 
         full_company_name = info.get('longName') or info.get('shortName') or kode
 
@@ -287,7 +290,7 @@ def fetch_single_stock(emiten, mode_tf):
     except: return None
 
 # ==========================================
-# FIX CHART: 4 DATA (REVENUE, NET INCOME, OCF, TOTAL EQUITY) + AXIS MATI
+# CHART: 4 DATA (REVENUE, NET INCOME, OCF, TOTAL EQUITY) + AXIS MATI
 # ==========================================
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_quarterly_charts(emiten):
@@ -322,13 +325,11 @@ def plot_luxury_bar(x_data, y1, y2, y3, y4, name1, name2, name3, name4, color1, 
     fig.add_trace(go.Bar(x=x_data, y=y3, name=name3, marker_color=color3, opacity=0.85))
     fig.add_trace(go.Bar(x=x_data, y=y4, name=name4, marker_color=color4, opacity=0.85))
     
-    # FIX: Judul dihapus dari plotly (dimasukkan via st.markdown) & Margins disesuaikan agar tidak tabrakan
     fig.update_layout(
         height=240, 
         barmode='group', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, font=dict(family='Outfit', size=8)),
         margin=dict(l=5, r=5, t=10, b=5), 
-        # MENONAKTIFKAN ZOOM & PAN SEPENUHNYA
         xaxis=dict(showgrid=False, fixedrange=True, tickfont=dict(family='Outfit', size=8)),
         yaxis=dict(showgrid=True, fixedrange=True, gridcolor='rgba(255,255,255,0.05)', tickfont=dict(family='Outfit', size=8)),
         dragmode=False 
@@ -341,7 +342,7 @@ def plot_luxury_bar(x_data, y1, y2, y3, y4, name1, name2, name3, name4, color1, 
 def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_trading_mode):
     st.markdown("---")
     if active_tickers_tuple:
-        safe_key = f"cv_target_v188_{st.session_state.current_tf}_{'TRD' if is_trading_mode else 'INV'}"
+        safe_key = f"cv_target_v190_{st.session_state.current_tf}_{'TRD' if is_trading_mode else 'INV'}"
         valid_targets = [t for t in active_tickers_tuple if next((i for i in st.session_state.raw_stocks if i.get("TICKER")==t), None)]
         if not valid_targets: return
         
@@ -361,20 +362,20 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
             avg_lot = int(r.get('AVG_VOL', 0) / 100)
             atr_val = r.get('ATR', 0)
             volatility_pct = (atr_val / h_tgt) * 100 if h_tgt > 0 else 0
+            
+            # Perhitungan Visual RRR v19
+            t_stop_val = r.get('TRAILING STOP', h_tgt * 0.95)
+            rrr_val = (tgt_mean - h_tgt) / (h_tgt - t_stop_val) if h_tgt > t_stop_val else 0
+            rrr_col = "#10b981" if rrr_val >= 1.5 else ("#facc15" if rrr_val >= 1.0 else "#f43f5e")
 
             # --- SUNTIKAN BADGE CLUSTER KHUSUS INVESTING MODE ---
             cluster_badges = ""
             if not is_trading_mode:
                 badges = []
-                if 0 < per < 10 and 0 < pbv < 1.0:
-                    badges.append('<span style="background:rgba(14,165,233,0.15); color:#0ea5e9; padding:2px 6px; border-radius:3px; font-size:0.5rem; font-weight:800; border:1px solid rgba(14,165,233,0.3);">💎 DEEP VALUE</span>')
-                if 0 < peg <= 1.0:
-                    badges.append('<span style="background:rgba(139,92,246,0.15); color:#8b5cf6; padding:2px 6px; border-radius:3px; font-size:0.5rem; font-weight:800; border:1px solid rgba(139,92,246,0.3);">🚀 HIGH GROWTH</span>')
-                if yld >= 5.0:
-                    badges.append('<span style="background:rgba(16,185,129,0.15); color:#10b981; padding:2px 6px; border-radius:3px; font-size:0.5rem; font-weight:800; border:1px solid rgba(16,185,129,0.3);">💰 DIV KINGS</span>')
-                
-                if badges:
-                    cluster_badges = f'<div style="display:flex; gap:5px; margin-top:6px; flex-wrap:wrap;">{"".join(badges)}</div>'
+                if 0 < per < 10 and 0 < pbv < 1.0: badges.append('<span style="background:rgba(14,165,233,0.15); color:#0ea5e9; padding:2px 6px; border-radius:3px; font-size:0.5rem; font-weight:800; border:1px solid rgba(14,165,233,0.3);">💎 DEEP VALUE</span>')
+                if 0 < peg <= 1.0: badges.append('<span style="background:rgba(139,92,246,0.15); color:#8b5cf6; padding:2px 6px; border-radius:3px; font-size:0.5rem; font-weight:800; border:1px solid rgba(139,92,246,0.3);">🚀 HIGH GROWTH</span>')
+                if yld >= 5.0: badges.append('<span style="background:rgba(16,185,129,0.15); color:#10b981; padding:2px 6px; border-radius:3px; font-size:0.5rem; font-weight:800; border:1px solid rgba(16,185,129,0.3);">💰 DIV KINGS</span>')
+                if badges: cluster_badges = f'<div style="display:flex; gap:5px; margin-top:6px; flex-wrap:wrap;">{"".join(badges)}</div>'
 
             # --- COMMON HEADER ---
             html_header = (
@@ -384,8 +385,7 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                 f'<div style="color:#f8fafc; font-size:1.8rem; font-weight:900; line-height:1;">{emiten_signal}</div>'
                 f'<span style="background:rgba(0,242,254,0.1); color:#00f2fe; padding:2px 5px; border-radius:3px; font-size:0.55rem; font-weight:800; border:1px solid rgba(0,242,254,0.3); white-space:nowrap;">{sector}</span>'
                 f'</div><p style="color:#cbd5e1; font-size:0.7rem; margin:4px 0 0 0; font-weight:500; white-space:normal; line-height:1.2;">{long_name}</p>'
-                f'{cluster_badges}' # Inject Badge Cluster di sini
-                f'</div>'
+                f'{cluster_badges}</div>'
                 f'<div style="text-align:right;">'
                 f'<div style="font-size:0.45rem; color:#64748b; font-weight:800; letter-spacing:0.5px;">SMART MONEY</div>'
                 f'<div style="font-size:1.8rem; font-weight:900; color:{sm_col}; line-height:1; margin-top:2px;">{sm_score}</div>'
@@ -459,30 +459,33 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                 st.markdown(html_analyst_target, unsafe_allow_html=True)
                 
             with col_g2:
-                # --- PENGKONDISIAN TRADING VS INVESTING ---
                 if is_trading_mode:
+                    # IMPLEMENTASI V19.0 SABUK PENGAMAN PADA TAMPILAN TRADING
                     setup_grade = r.get("SETUP_GRADE", "")
                     s_ara = r.get('STATUS_ARA_ARB', "")
                     a_beli = f"{int(r.get('AREA BELI', h_tgt)):,}".replace(",", ".")
-                    t_stop_val = r.get('TRAILING STOP', h_tgt * 0.95)
                     t_stop = f"{int(t_stop_val):,}".replace(",", ".")
                     
                     if "REACTIVE" in setup_grade: sys_rec, color, r_mult = "SEROK BAWAH", "#d4af37", 1.5
-                    elif "AVOID" in setup_grade: sys_rec, color, r_mult = "AVOID (FAKE)", "#f43f5e", 0.0
                     elif "A+" in setup_grade: sys_rec, color, r_mult = "STRONG ACCUM", "#10b981", 2.0 
                     elif "SCALP" in setup_grade: sys_rec, color, r_mult = "AGRES SCALP", "#8b5cf6", 1.5
-                    else: sys_rec, color, r_mult = "ACCUMULATE", "#00f2fe", 1.0 
+                    elif "HIGH RISK" in setup_grade: sys_rec, color, r_mult = "HIGH RISK (ATR > 8%)", "#f43f5e", 0.0
+                    elif "DOWNTREND" in setup_grade: sys_rec, color, r_mult = "DOWNTREND (Di Bawah SMA200)", "#f97316", 0.0
+                    elif "POOR RRR" in setup_grade: sys_rec, color, r_mult = "RISIKO TERLALU BESAR", "#fbbf24", 0.0
+                    elif "AVOID" in setup_grade: sys_rec, color, r_mult = "AVOID (FAKE)", "#f43f5e", 0.0
+                    elif "B" in setup_grade: sys_rec, color, r_mult = "ACCUMULATE", "#00f2fe", 1.0 
+                    else: sys_rec, color, r_mult = "HOLD / WAIT", "#64748b", 0.0
+                    
                     if "ARA" in s_ara: sys_rec, color = "ARA LOCKED", "#facc15"
 
                     max_lots = int(((modal_trading * (risiko_pct * r_mult * market_climate_mult / 100)) / (h_tgt - t_stop_val)) / 100) if (h_tgt - t_stop_val)>0 and r_mult > 0 else 0
                     
-                    entry_border = "#10b981" if "SEROK" in setup_grade or "A+" in setup_grade else "#f43f5e"
+                    entry_border = "#10b981" if "SEROK" in setup_grade or "A+" in setup_grade else ("#f43f5e" if r_mult == 0 else "#00f2fe")
                     
-                    # Kotak Keputusan Trading
                     html_keputusan = (
                         f'<div class="stocksly-card" style="margin-bottom: 8px;">'
-                        f'<div class="card-title">🎯 Keputusan</div>'
-                        f'<div style="text-align:center; background:rgba(0,242,254,0.05); border:1px solid rgba(0,242,254,0.2); border-radius:5px; padding:6px; margin-bottom:4px;">'
+                        f'<div class="card-title">🎯 Keputusan Trading (V19)</div>'
+                        f'<div style="text-align:center; background:rgba(0,0,0,0.2); border:1px solid {color}40; border-radius:5px; padding:6px; margin-bottom:4px;">'
                         f'<div style="font-size:0.95rem; font-weight:900; color:{color};">{sys_rec}</div>'
                         f'</div>'
                         f'<div style="font-size:0.6rem; color:#94a3b8; text-align:center;">'
@@ -490,7 +493,7 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                         f'</div></div>'
                     )
                     
-                    # Kotak Entry & Stop Trading
+                    # V19 FITUR: PENAMBAHAN INDIKATOR RRR (Risk Reward Ratio) DI KOTAK ENTRY
                     html_entry_val = (
                         f'<div class="stocksly-card" style="margin-bottom: 8px; border-left: 3px solid {entry_border};">'
                         f'<div class="card-title">🛒 Entry & Stop</div>'
@@ -503,12 +506,13 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                         f'<div style="font-size:0.5rem; color:#64748b; font-weight:800;">CUT</div>'
                         f'<div style="font-size:0.85rem; color:#f43f5e; font-weight:900;">{t_stop}</div>'
                         f'</div></div>'
-                        f'<div style="text-align:center; font-size:0.7rem; color:#cbd5e1; background:rgba(255,255,255,0.02); padding:3px; border-radius:4px;">'
-                        f'Max Alokasi: <b style="color:#00f2fe;">{max_lots:,} Lot</b>'
+                        f'<div style="text-align:center; font-size:0.7rem; color:#cbd5e1; background:rgba(255,255,255,0.02); padding:3px; border-radius:4px; display:flex; justify-content:space-around;">'
+                        f'<span>Max: <b style="color:#00f2fe;">{max_lots:,} Lot</b></span>'
+                        f'<span>RRR: <b style="color:{rrr_col};">1 : {rrr_val:.1f}</b></span>'
                         f'</div></div>'
                     )
                 else:
-                    # LOGIKA INVESTING
+                    # LOGIKA INVESTING TETAP MENGGUNAKAN SCORE FUNDAMENTAL
                     up_sma50 = r.get('UP_SMA50', False)
                     skor = (20 if 0<per<15 else 0) + (20 if 0<pbv<1.5 else 0) + (20 if yld>4 else 0) + (15 if up_sma50 else 0) + (25 if 0<peg<=1.0 else 0)
                     
@@ -520,7 +524,6 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                     mos_str = f"+{mos:.1f}%" if mos > 0 else f"{mos:.1f}%"
                     mos_col = "#10b981" if mos > 10 else ("#facc15" if mos > 0 else "#f43f5e")
 
-                    # Kotak Keputusan Investing
                     html_keputusan = (
                         f'<div class="stocksly-card" style="margin-bottom: 8px;">'
                         f'<div class="card-title">🎯 Keputusan Fundamental</div>'
@@ -532,7 +535,6 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                         f'</div></div>'
                     )
                     
-                    # Kotak Valuation & Target Investing
                     html_entry_val = (
                         f'<div class="stocksly-card" style="margin-bottom: 8px; border-left: 3px solid {color_inv};">'
                         f'<div class="card-title">🛡️ Valuation Target</div>'
@@ -564,24 +566,21 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                     f'</div>'
                     f'<div style="background:rgba(255,255,255,0.02); padding:5px; border-radius:5px; border:1px solid rgba(255,255,255,0.04);">'
                     f'<div style="font-size:0.5rem; color:#64748b; font-weight:800;">ATR</div>'
-                    f'<div style="font-size:0.9rem; color:{"#f43f5e" if volatility_pct>5 else "#10b981"}; font-weight:900;">{volatility_pct:.1f}%</div>'
+                    f'<div style="font-size:0.9rem; color:{"#f43f5e" if volatility_pct>8 else ("#facc15" if volatility_pct>5 else "#10b981")}; font-weight:900;">{volatility_pct:.1f}%</div>'
                     f'</div></div></div>'
                 )
                 st.markdown(html_harga, unsafe_allow_html=True)
                 
-            # --- RENDER CHART KEUANGAN (AXIS MATI & JUDUL ANTI-TABRAK) ---
+            # --- RENDER CHART KEUANGAN (AXIS MATI) ---
             with st.spinner("Mengunduh Laporan Keuangan..."):
                 dates, inc_data = fetch_quarterly_charts(emiten_signal)
                 if dates: 
-                    # Judul diekstrak keluar dari plot plotly untuk menghindari tabrakan selamanya!
                     st.markdown(
                         '<div style="font-size:0.75rem; color:#cbd5e1; font-weight:800; letter-spacing:1px; margin-top:10px; margin-bottom:-5px; padding-left:5px;">'
                         '📊 FINANCIAL FUNDAMENTALS (IS, CF, BS)'
                         '</div>', 
                         unsafe_allow_html=True
                     )
-                    
-                    # Memanggil Chart dengan konfig displayModeBar False (Meniadakan toolbar Plotly)
                     st.plotly_chart(
                         plot_luxury_bar(
                             dates, inc_data[0], inc_data[1], inc_data[2], inc_data[3], 
@@ -589,13 +588,13 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
                             "#0ea5e9", "#10b981", "#facc15", "#8b5cf6"
                         ), 
                         use_container_width=True,
-                        config={'displayModeBar': False} # Meniadakan tombol-tombol melayang
+                        config={'displayModeBar': False} 
                     )
 
             # FOOTER IDENTITY
             html_footer = (
                 f'<div style="text-align:center; margin-top:20px; padding-bottom:70px;">'
-                f'<span style="font-size:0.55rem; color:#475569; font-weight:900; letter-spacing:1px;">⚡ STOCKS.LY MASTERPIECE ENGINE</span><br>'
+                f'<span style="font-size:0.55rem; color:#475569; font-weight:900; letter-spacing:1px;">🛡️ STOCKS.LY FORTRESS ENGINE V19.0</span><br>'
                 f'<span style="font-size:0.5rem; color:#64748b; font-weight:700; letter-spacing:0.5px;">CREATED BY THEO HYDETETSU</span>'
                 f'</div>'
             )
@@ -606,7 +605,7 @@ def render_cross_validation_ui(active_tickers_tuple, market_climate_mult, is_tra
 # ==========================================
 with st.sidebar:
     st.markdown("<h2 style='color: #f8fafc; font-weight: 900;'>Quantum Matrix</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #00f2fe; letter-spacing: 1px; margin-bottom: 10px; font-weight:700;'>v18.8 LUXURY</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #10b981; letter-spacing: 1px; margin-bottom: 10px; font-weight:700;'>v19.0 FORTRESS</p>", unsafe_allow_html=True)
     
     engine_mode = st.radio("MODE ENGINE:", ("⚔️ TRD (Reactive)", "🛡️ INV (Fund)"))
     
@@ -712,16 +711,19 @@ else:
         elif "A+" in setup_grade: kep_t, prio, r_mult = "🚀 STRONG ACCUM", 4, 2.0
         elif "SCALP" in setup_grade: kep_t, prio, r_mult = "⚡ SCALP", 3, 1.5
         elif "B" in setup_grade: kep_t, prio, r_mult = "🟢 ACCUMULATE", 2, 1.0
+        elif "HIGH RISK" in setup_grade: kep_t, prio, r_mult = "🚫 HIGH RISK", 0, 0.0
+        elif "DOWNTREND" in setup_grade: kep_t, prio, r_mult = "⚠️ DOWNTREND", 0, 0.0
+        elif "POOR RRR" in setup_grade: kep_t, prio, r_mult = "⚠️ RRR JELEK", 0, 0.0
         elif "AVOID" in setup_grade: kep_t, prio, r_mult = "⚠️ AVOID", 0, 0.0
         else: kep_t, prio, r_mult = "🟡 HOLD", 1, 0.0
         
         risk_ps = h - t_stop_val
-        if ("ACCUM" in kep_t or "SCALP" in kep_t or "SEROK" in kep_t) and risk_ps > 0 and "ARA" not in status_ara:
+        if r_mult > 0 and risk_ps > 0 and "ARA" not in status_ara:
             final_risk = risiko_pct * r_mult * c_mult
             max_lots = int(((modal_trading * (final_risk / 100)) / risk_ps) / 100)
             rec_lot_text = f"Max {max_lots:,} Lot"
         elif "ARA" in status_ara: rec_lot_text = "ARA LOCKED"
-        elif "AVOID" in kep_t: rec_lot_text = "🚫 Dilarang"
+        elif r_mult == 0: rec_lot_text = "🚫 Dilarang"
         else: rec_lot_text = "🔒 Hold"
 
         wpi_score = r.get('WPI_SCORE', 50)
@@ -805,7 +807,8 @@ else:
                     elif c == 'WPI': stls.append('color:#f43f5e; font-weight:900;' if '🚫' in str(v) else ('color:#d4af37; font-weight:900;' if '🎯' in str(v) else ('color:#10b981; font-weight:900;' if 'POWER' in str(v) else ('color:#f43f5e; font-weight:900;' if 'DUMP' in str(v) else 'color:#94a3b8;'))))
                     elif c == 'LOT': stls.append('color:#00f2fe; font-weight:900;' if 'Lot' in str(v) else ('color:#f43f5e; font-weight:900;' if 'Dilarang' in str(v) else 'color:#64748b;'))
                     elif c == 'STOP': stls.append('color:#f43f5e; font-weight:900; text-align:center;')
-                    elif c == 'REK': stls.append('color:#d4af37; font-weight:900;' if 'REACTIVE' in v else ('color:#f43f5e; font-weight:900;' if 'AVOID' in v else ('color:#10b981; font-weight:900;' if 'A+' in v else ('color:#c4b5fd; font-weight:900;' if 'SCALP' in v else ('color:#38bdf8; font-weight:800;' if 'B' in v else 'color:#fb7185;')))))
+                    # V19 - Pewarnaan khusus untuk setup blokir (Downtrend, Poor RRR, High Risk)
+                    elif c == 'REK': stls.append('color:#d4af37; font-weight:900;' if 'REACTIVE' in v else ('color:#f43f5e; font-weight:900;' if 'AVOID' in v or 'HIGH RISK' in v else ('color:#f97316; font-weight:900;' if 'DOWNTREND' in v else ('color:#fbbf24; font-weight:900;' if 'RRR' in v else ('color:#10b981; font-weight:900;' if 'A+' in v else ('color:#c4b5fd; font-weight:900;' if 'SCALP' in v else ('color:#38bdf8; font-weight:800;' if 'B' in v else 'color:#64748b;')))))))
                     elif c == 'BANDAR': stls.append('color:#d4af37; font-weight:900;' if 'SEROK' in v else ('color:#f43f5e; font-weight:900;' if 'FAKE' in v or 'DISTRIB' in v else ('color:#00f2fe; font-weight:900;' if 'AKUM' in v else ('color:#10b981; font-weight:900;' if 'MARK-UP' in v else 'color:#64748b;'))))
                     else: stls.append('color:#cbd5e1;')
                 return stls
@@ -815,18 +818,17 @@ else:
         with tab_c3:
             html_sop = (
                 f'<div class="stocksly-card">'
-                f'<div class="card-title">📖 Panduan Teknis & Bedah Data v18.8</div>'
+                f'<div class="card-title">🛡️ Panduan Fortress V19.0</div>'
                 f'<div style="font-size:0.7rem; color:#cbd5e1; line-height: 1.4; padding: 4px;">'
-                f'<p><b>1. WPI & Smart Money:</b> Mengukur posisi harga saat ini terhadap rentang High-Low harian serta mendeteksi kekuatan dorongan institusi (Skor Smart Money).</p>'
-                f'<p><b>2. Analyst Price Targets:</b> Visualisasi rentang target harga konsensus analis (Low, Average, High) vs Harga Saat Ini (Current).</p>'
-                f'<p><b>3. Serok Bawah (Rejection):</b> Dideteksi saat harga menyentuh support 20-hari dengan bentuk candle ekor panjang (Hammer) + volume kering.</p>'
-                f'<p><b>4. Manajemen Lot Otomatis:</b> Alokasi <i>\'Max Lot\'</i> dihitung dinamis menggunakan batas risiko % modal terhadap jarak harga ke Trailing Stop.</p>'
+                f'<p><b>1. Trend Guard (SMA200):</b> Mesin otomatis mencegat rekomendasi saham yang pergerakannya sedang Downtrend parah di bawah SMA-200.</p>'
+                f'<p><b>2. Anti-Liar Filter:</b> Saham dengan lonjakan ATR di atas 8% per hari (sangat volatile) akan diblokir ke status HIGH RISK.</p>'
+                f'<p><b>3. RRR Filter:</b> Mesin menghitung Rasio Risk-Reward. Jika target terlalu dekat sementara cut loss terlalu dalam (< 1.2), mesin melarang entry.</p>'
+                f'<p><b>4. Auto Lot Management:</b> Pembelian dibatasi modal maksimal yang siap dikorbankan untuk menyentuh level Cut Loss.</p>'
                 f'</div></div>'
             )
             st.markdown(html_sop, unsafe_allow_html=True)
 
     else: 
-        # FIX: Tab DASHBOARD diubah namanya, dan Tab CLUSTERS diganti SOP
         tab_i1, tab_i2, tab_i3 = st.tabs(["🏦 INVESTMENTS", "🛡️ VALUE MATRIX", "📖 SOP & DATA"])
         
         with tab_i1:
@@ -882,15 +884,14 @@ else:
             if not df_inv.empty: st.dataframe(df_inv.style.apply(style_i, axis=1), use_container_width=True)
         
         with tab_i3:
-            # Mengganti Tab CLUSTERS lama menjadi SOP khusus Fundamental
             html_sop_inv = (
                 f'<div class="stocksly-card">'
-                f'<div class="card-title">📖 Panduan Teknis & Bedah Data v18.8</div>'
+                f'<div class="card-title">📖 Panduan Investasi Fundamental</div>'
                 f'<div style="font-size:0.7rem; color:#cbd5e1; line-height: 1.4; padding: 4px;">'
-                f'<p><b>1. WPI & Smart Money:</b> Mengukur posisi harga saat ini terhadap rentang High-Low harian serta mendeteksi kekuatan dorongan institusi (Skor Smart Money).</p>'
-                f'<p><b>2. Analyst Price Targets:</b> Visualisasi rentang target harga konsensus analis (Low, Average, High) vs Harga Saat Ini (Current).</p>'
-                f'<p><b>3. Serok Bawah (Rejection):</b> Dideteksi saat harga menyentuh support 20-hari dengan bentuk candle ekor panjang (Hammer) + volume kering.</p>'
-                f'<p><b>4. Manajemen Lot Otomatis:</b> Alokasi <i>\'Max Lot\'</i> dihitung dinamis menggunakan batas risiko % modal terhadap jarak harga ke Trailing Stop.</p>'
+                f'<p><b>1. Fair Value & MOS:</b> Margin of Safety mengukur diskon harga saat ini terhadap nilai wajarnya. Semakin hijau MOS, semakin murah.</p>'
+                f'<p><b>2. Cluster Deep Value:</b> Diberikan pada emiten yang diremehkan pasar (PER < 10x dan PBV < 1.0x).</p>'
+                f'<p><b>3. Cluster High Growth:</b> Diberikan pada perusahaan dengan rasio PEG di bawah 1 (Harga murah berbanding kecepatan pertumbuhannya).</p>'
+                f'<p><b>4. Membaca Laporan:</b> Pastikan Net Income (Hijau) positif dan disokong oleh Arus Kas / OCF (Kuning) yang juga memadai (bukan laba bodong).</p>'
                 f'</div></div>'
             )
             st.markdown(html_sop_inv, unsafe_allow_html=True)
